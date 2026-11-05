@@ -20,10 +20,12 @@ Human readability, emotional engagement, difficulty, and the 8–10 / 3–5 minu
 
 Guest account recovery is device-local unless the recovery export is saved. There is no email login or cross-device account discovery. There are eight runs per admitted testnet account. The most recent eight practice records are retained locally; exports preserve a chosen record.
 
-The first delivery intentionally uses simple SVG geometry, text, and CSS animation. Final art, sound, cinematics, and the submission demo are a later pass after gameplay acceptance.
+The current presentation uses a persistent procedural 3D world, authored text, and live animation. Final art, sound, cinematics, and the submission demo are a later pass after gameplay acceptance.
 
 The full local-node integration test uses `near-sandbox` 0.3.5 (node 2.14.0), the official near-api-js client, and the actual compiled contract WASM. It tests a complete campaign plus rejected unauthorized and stale calls, independently of public testnet.
 
 All 24 authoritative testnet sols also matched browser-WASM output exactly at every committed three-sol boundary. Local Sandbox integration passed independently. Current unit checks: 10 simulation tests and 4 contract tests; browser checks: 2 offline flows and one separately opted-in testnet flow.
 
 Hosted QA caught a FastNear testnet shard error during guest creation. Both hosted sponsorship and browser signing now use two RPC providers. Provisioning retries reuse the same generated keys/account, and recovery exports carry a run identifier for restoration in a clean browser. Practice remains explicitly labeled if a network outage prevents sponsored play.
+
+Village presentation checks cover continuous canvas persistence through all eight decisions, desktop/mobile layout, pan/zoom/reset, resident hover and pinning, building inspection, 4× visual playback, and the first-person impact scene.

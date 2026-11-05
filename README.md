@@ -2,13 +2,13 @@
 
 Earth is gone. Govern humanity's last Martian settlement through 24 sols and eight decisions. NPC institutions buy inputs, produce essentials, pay wages, adjust prices, and defer repairs when their money or materials run out. Your policies determine who can afford to survive.
 
-A complete scrappy game for NEAR HACKATHON, Games With Real Economies. All story, economics, recovery actions, endings, and replay are implemented. Geometry and authored text deliberately stand in for the later art and audio pass.
+A complete scrappy game for NEAR HACKATHON, Games With Real Economies. All story, economics, recovery actions, endings, and replay are implemented. The game now has a persistent 3D colony with original procedural buildings, moving residents and rovers, hover inspection, and a first-person opening. Gameplay still precedes the final asset polish.
 
 ## Play
 
 Hosted: https://last-signal-mars.ajiqbal1.chatgpt.site
 
-Select **Take command**, read or skip the transmission, and choose your first allocation policy. Choose **Fast** between decisions to accelerate the colony. A complete run targets 8–10 minutes, or 3–5 using fast-forward; reading speed and testnet latency affect this.
+Select **Take command**, watch or skip the opening, and choose your first allocation policy. Drag the colony to pan, scroll to zoom, hover over residents, or select a building to inspect it. Use **Fast** or the 1–4× time slider to accelerate both the colony and its visible activity. A complete run targets 8–10 minutes, or 3–5 using fast-forward; reading speed and testnet latency affect this.
 
 - Eight choices govern allocation, access to essentials, construction, working capital, maintenance, rescue, storm response, and recovery.
 - Five autonomous NPC institutions, three household groups, a public treasury, six resource/accounting types.
@@ -87,3 +87,5 @@ This repository was started from an empty workspace during the eligible build wi
 This is the full scrappy playtest version. Final artwork/audio, human gameplay approval, a public source repository, the public X demo post, and the organizer's final submission remain separate milestones. No social post or hackathon submission has been sent by this app.
 
 For a full isolated local blockchain integration test, run `npm run test:sandbox` after building the contract. The `near-sandbox` library downloads a version-pinned local node on first use. The test deploys the real WASM, verifies admission/idempotency/ownership, plays all 24 sols, and checks stale-revision rejection without using public RPCs.
+
+The village interface and opening are documented in `docs/VISUALS.md`. The world remains visible during choices; deeper economic records stay in optional panels.

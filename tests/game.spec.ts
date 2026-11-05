@@ -25,10 +25,16 @@ test("a full colony: story, aid, decisions, market, ending, refresh and replay",
   await expect(
     page.getByRole("heading", { name: "The last transmission" }),
   ).toBeVisible();
+  await expect(
+    page.locator('[data-testid="colony-world"] canvas'),
+  ).toBeVisible();
+  await page
+    .locator('[data-testid="colony-world"] canvas')
+    .evaluate((e) => e.setAttribute("data-session-canvas", "original"));
   await page.screenshot({ path: "outputs/colony.png", fullPage: true });
   await page.getByRole("button", { name: /Colony aid/ }).click();
   await page
-    .getByRole("button", { name: "Release an emergency ration cache" })
+    .getByRole("button", { name: /Release emergency supplies/ })
     .click();
   await expect(page.getByRole("button", { name: /Colony aid/ })).toContainText(
     "2/3",
@@ -47,7 +53,13 @@ test("a full colony: story, aid, decisions, market, ending, refresh and replay",
   await expect(
     page.getByRole("heading", { name: "A New Dawn", exact: true }),
   ).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.locator('canvas[data-session-canvas="original"]'),
+  ).toHaveCount(1);
   await page.screenshot({ path: "outputs/ending.png", fullPage: true });
+  await page
+    .getByRole("button", { name: "Inspect Greenhouse", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Inspect inventory & trades" })
     .click();
@@ -103,9 +115,9 @@ test("NEAR guest provisioning and a real signed decision", async ({
     .filter({ hasText: "Protect the greenhouse" })
     .click();
   await expect(
-    page.getByRole("heading", { name: "A colony in motion." }),
+    page.getByText("Colony is operating", { exact: true }),
   ).toBeVisible({ timeout: 90000 });
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await page.getByRole("button", { name: "Pause colony", exact: true }).click();
   await page
     .getByRole("button", { name: "Mission record", exact: true })
     .click();
@@ -137,7 +149,76 @@ test("NEAR guest provisioning and a real signed decision", async ({
     restored.getByRole("button", { name: "NEAR TESTNET", exact: true }),
   ).toBeVisible({ timeout: 30000 });
   await expect(
-    restored.getByRole("heading", { name: "A colony in motion." }),
+    restored.getByText("Colony paused", { exact: true }),
   ).toBeVisible();
   await clean.close();
+});
+
+test("the village stays interactive: camera, residents, speed and opening", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await page.goto("/");
+  await page.getByRole("checkbox").uncheck();
+  await page.getByRole("button", { name: "Take command", exact: true }).click();
+  await expect(page.locator(".opening-canvas canvas")).toBeVisible();
+  await page.waitForTimeout(12500);
+  await page.screenshot({ path: "outputs/asteroid-impact.png" });
+  await expect(
+    page.getByText("IMPACT DETECTED", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Skip transmission" }).click();
+  const canvas = page.locator('[data-testid="colony-world"] canvas');
+  await expect(canvas).toBeVisible();
+  await page.getByRole("button", { name: /Your decision is needed/ }).click();
+  await expect
+    .poll(async () => canvas.getAttribute("data-agents"), { timeout: 20000 })
+    .toBe("37");
+  const zoom = Number(await canvas.getAttribute("data-zoom"));
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await expect
+    .poll(async () => Number(await canvas.getAttribute("data-zoom")), {
+      timeout: 15000,
+    })
+    .toBeGreaterThan(zoom + 0.08);
+  await page.getByRole("button", { name: "Return to colony overview" }).click();
+  const before = await canvas.getAttribute("data-camera");
+  await page.mouse.move(500, 470);
+  await page.mouse.down();
+  await page.mouse.move(600, 510, { steps: 12 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => canvas.getAttribute("data-camera"), { timeout: 15000 })
+    .not.toBe(before);
+  await page.getByRole("button", { name: "Return to colony overview" }).click();
+  await page.waitForTimeout(1300);
+  let found = false;
+  const residents = JSON.parse(
+    (await canvas.getAttribute("data-residents")) || "[]",
+  ) as { x: number; y: number; name: string }[];
+  for (const resident of residents) {
+    await page.mouse.move(resident.x, resident.y);
+    await page.waitForTimeout(180);
+    if (await page.locator(".world-tooltip.person").isVisible()) {
+      await page.mouse.click(resident.x, resident.y);
+      await page.waitForTimeout(150);
+      if (await page.locator(".resident-card").isVisible()) {
+        found = true;
+        break;
+      }
+    }
+  }
+  expect(found).toBe(true);
+  await expect(page.locator(".resident-card")).toBeVisible();
+  await page.getByRole("button", { name: "Close resident details" }).click();
+  await page
+    .getByRole("button", { name: "Inspect Greenhouse", exact: true })
+    .click();
+  await expect(page.locator(".building-inspector")).toContainText("Greenhouse");
+  await page.getByRole("button", { name: "Close building inspector" }).click();
+  await page.getByRole("button", { name: /Your decision is needed/ }).click();
+  await page.locator("button.choice").first().click();
+  await page.getByLabel("Simulation speed").fill("4");
+  await expect.poll(async () => canvas.getAttribute("data-speed")).toBe("4");
+  await page.screenshot({ path: "outputs/living-colony.png" });
 });

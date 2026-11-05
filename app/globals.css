@@ -1399,3 +1399,1848 @@ td {
   margin-top: 8px;
   max-width: 300px;
 }
+/* Living colony interface: the world owns the screen; controls sit around its edges. */
+.world-game {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #c68b5d;
+  color: #f1ead9;
+  isolation: isolate;
+}
+.world-layer,
+.world-canvas {
+  position: absolute;
+  inset: 0;
+}
+.world-canvas canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  outline-offset: -4px;
+}
+.world-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    #1d2b3740,
+    transparent 23%,
+    transparent 80%,
+    #1c2b3440
+  );
+  z-index: 1;
+}
+.world-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #b97b53;
+  color: #fff3dc;
+  font: 500 18px "Space Grotesk";
+  padding: 40px;
+  text-align: center;
+  z-index: 2;
+}
+.world-loading i {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffe6bd;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: world-spin 1s linear infinite;
+}
+.hud-header {
+  position: absolute;
+  inset: 20px 22px auto;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  z-index: 10;
+  pointer-events: none;
+}
+.hud-header > * {
+  pointer-events: auto;
+}
+.hud-header .wordmark {
+  padding: 14px 17px;
+  border: 1px solid #8fa1a66b;
+  border-radius: 13px;
+  background: linear-gradient(#344c58, #263c47);
+  font-size: 19px;
+  box-shadow:
+    0 4px 0 #24323888,
+    0 6px 16px #31251f33;
+  color: #fff5df;
+}
+.hud-header .wordmark svg {
+  color: #ffc475;
+}
+.colony-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-shadow: 0 2px 4px #3b291e88;
+}
+.colony-name > span {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #fff5e2;
+}
+.colony-name > strong {
+  font: 600 23px "Space Grotesk";
+}
+.colony-name small {
+  font: 11px var(--font);
+  opacity: 0.75;
+}
+.hud-header .network {
+  position: fixed;
+  right: 24px;
+  top: 108px;
+  border: 1px solid #ffffff44;
+  background: #2b4148e8;
+  border-radius: 20px;
+  padding: 6px 11px;
+  font-size: 8px;
+  box-shadow: 0 2px 6px #38261726;
+}
+.hud-resources {
+  position: absolute;
+  right: 22px;
+  top: 20px;
+  display: flex;
+  gap: 9px;
+  z-index: 10;
+}
+.vital-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 12px 9px;
+  background: linear-gradient(#fff5df, #e9d2ad);
+  border: 1px solid #ffedcd;
+  border-bottom: 3px solid #bd996a;
+  border-radius: 12px;
+  min-width: 123px;
+  color: #34464b;
+  box-shadow: 0 4px 10px #553d2a3d;
+}
+.vital-pill > div > span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: #79735d;
+  display: block;
+  margin-bottom: 3px;
+}
+.vital-pill strong {
+  font: 700 21px "Space Grotesk";
+  line-height: 1;
+}
+.vital-pill small {
+  font: 500 10px var(--font);
+  color: #8a8068;
+}
+.vital-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 31px;
+  height: 35px;
+  color: #ce943d;
+}
+.vital-0 {
+  color: #638f39;
+}
+.vital-1 {
+  color: #358fa7;
+}
+.vital-2 {
+  color: #499c9e;
+}
+.vital-fill {
+  position: absolute;
+  left: 43px;
+  bottom: 4px;
+  right: 13px;
+  height: 3px;
+  background: #c4b99466;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.vital-fill i {
+  display: block;
+  height: 100%;
+  background: #8fa957;
+  border-radius: 3px;
+  transition: width 0.9s ease;
+}
+.vital-pill.danger {
+  border-color: #e5a083;
+}
+.vital-pill.danger strong {
+  color: #b64d3a;
+}
+.wallet {
+  min-width: 143px;
+}
+.settlement-health {
+  position: absolute;
+  top: 94px;
+  left: 25px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  z-index: 8;
+  color: #fff4de;
+  font-size: 10px;
+  text-shadow: 0 2px 4px #382b20;
+}
+.settlement-health > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.settlement-health svg {
+  color: #ffe1a9;
+}
+.settlement-health strong {
+  font-size: 13px;
+}
+.world-mission {
+  position: absolute;
+  top: 105px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  padding: 8px 15px;
+  border-radius: 20px;
+  background: #334d52dc;
+  border: 1px solid #c9d6bb55;
+  z-index: 9;
+  box-shadow: 0 2px 8px #49372422;
+  white-space: nowrap;
+}
+.world-mission.storm {
+  background: #704a35e8;
+  border-color: #ffc47c80;
+  color: #ffdd9d;
+}
+.building-dock {
+  position: absolute;
+  left: 22px;
+  top: 155px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 8;
+}
+.building-dock button {
+  position: relative;
+  width: 59px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px;
+  background: linear-gradient(#fff1d5, #dfc69d);
+  border: 1px solid #fff0cf;
+  border-bottom: 3px solid #b08a59;
+  border-radius: 12px;
+  color: #475858;
+  box-shadow: 0 3px 6px #62452c3d;
+}
+.building-dock button:hover,
+.building-dock button.active {
+  background: linear-gradient(#fffbdc, #f2d48a);
+  border-color: #ffdf8d;
+  transform: translateY(-1px);
+}
+.building-dock span {
+  font-size: 8px;
+  font-weight: 700;
+}
+.problem-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: #dc7650;
+  border: 1px solid #ffe1a5;
+  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+}
+.world-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9;
+}
+.world-overlays > * {
+  pointer-events: auto;
+}
+.council-tab {
+  position: absolute;
+  right: 22px;
+  top: 154px;
+  display: flex;
+  gap: 11px;
+  background: linear-gradient(#fff1d7, #e6cca4);
+  color: #45544f;
+  border: 1px solid #ffedc8;
+  border-bottom: 3px solid #b49263;
+  box-shadow: 0 4px 12px #4d352835;
+  border-radius: 13px;
+  padding: 12px 15px;
+  font-size: 12px;
+  min-height: 48px;
+}
+.council-tab.waiting > svg:first-child {
+  color: #b5792e;
+}
+.council-tab.waiting:before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  background: #df9560;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px #df95601c;
+}
+.council-tab strong {
+  font-size: 10px;
+  background: #d3bc91;
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: #735c3c;
+}
+.council-tab:hover {
+  background: #fff0d0;
+  border-color: #fff2cb;
+}
+.world-game .council-panel {
+  display: none;
+  position: absolute;
+  right: 22px;
+  top: 218px;
+  bottom: auto;
+  width: 350px;
+  max-height: calc(100dvh - 325px);
+  overflow: auto;
+  border-radius: 16px;
+  padding: 21px;
+  background: linear-gradient(135deg, #fff8e8, #eee0c7);
+  color: #34464a;
+  border: 1px solid #fff0d6;
+  box-shadow:
+    0 5px 0 #a7804a66,
+    0 15px 35px #4e32272b;
+  scrollbar-width: thin;
+  scrollbar-color: #bba57b transparent;
+  animation: world-panel-in 0.25s ease;
+}
+.world-game .council-panel.open {
+  display: block;
+}
+.world-game .council-panel h1 {
+  font-size: 25px;
+  letter-spacing: -0.9px;
+  margin-bottom: 12px;
+  line-height: 1.18;
+}
+.world-game .council-panel .eyebrow {
+  font-size: 8px;
+  color: #978265;
+  letter-spacing: 1px;
+}
+.world-game .council-panel .chapter-kicker {
+  color: #ab7847;
+  margin-bottom: 14px;
+}
+.world-game .chapter-progress {
+  margin-bottom: 16px;
+  gap: 4px;
+}
+.world-game .chapter-progress i {
+  background: #d1c3a7;
+  height: 3px;
+  border-radius: 4px;
+}
+.world-game .chapter-progress .complete {
+  background: #799764;
+}
+.world-game .chapter-progress .current {
+  background: #d59656;
+}
+.world-game .chapter-progress > span {
+  color: #8d826a;
+  font-size: 8px;
+}
+.world-game .speaker {
+  margin-bottom: 14px;
+  gap: 9px;
+}
+.world-game .avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 10px;
+  background: #40585d;
+  color: #fff0d6 !important;
+  border: 2px solid #c8ad7e !important;
+  box-shadow: 0 2px 2px #6f624627;
+}
+.world-game .speaker strong {
+  font-size: 11px;
+}
+.world-game .speaker div > span {
+  font-size: 9px;
+  color: #90866e;
+}
+.world-game .speaker > svg {
+  color: #b1a17f;
+}
+.world-game .story-text {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #706f5e;
+  margin-bottom: 18px;
+}
+.world-game .decision-label {
+  font-size: 8px;
+  color: #8c826d;
+  gap: 12px;
+  letter-spacing: 0.6px;
+}
+.world-game .decision-label span {
+  font-size: 8px;
+  letter-spacing: 0;
+  text-align: right;
+}
+.world-game .choices {
+  gap: 9px;
+}
+.world-game .choice-wrap {
+  border: 1px solid #c5b899;
+  background: #fff9ea;
+  border-bottom: 2px solid #c6b28a;
+  border-radius: 9px;
+}
+.world-game .choice-wrap:hover {
+  border-color: #c5964b;
+  box-shadow: 0 0 0 2px #e6bd6b33;
+}
+.world-game .choice {
+  padding: 12px 11px;
+  gap: 9px;
+  color: #3c5050;
+}
+.world-game .choice strong {
+  font-size: 12px;
+  font-weight: 700;
+}
+.world-game .choice p {
+  font-size: 10px;
+  color: #82816d;
+  margin: 5px 0 7px;
+  line-height: 1.5;
+}
+.world-game .choice-cost {
+  color: #a57f41;
+  font-size: 9px;
+}
+.world-game .choice-number {
+  color: #b48c4e;
+  font-size: 10px;
+}
+.world-game .choice > svg {
+  color: #7e986c;
+  width: 14px;
+}
+.world-game .choice-bottom {
+  border-color: #d0bea14d;
+  font-size: 8px;
+  line-height: 1.5;
+  padding: 7px 11px;
+  background: #ebe0c452;
+  color: #8a8068;
+}
+.world-game .choice-bottom button {
+  font-size: 8px;
+  color: #987a46;
+}
+.world-game .choice:disabled {
+  opacity: 0.45;
+}
+.world-game .council-panel .recent-events {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-color: #ccbc9b;
+  display: none;
+}
+.world-game .council-panel .forecast {
+  background: #e0e4c7;
+  border-color: #b0ba88;
+  color: #5e755a;
+  font-size: 10px;
+  padding: 13px;
+}
+.world-game .forecast p:last-child {
+  color: #7a8267;
+  font-size: 9px;
+}
+.world-game .forecast-numbers strong {
+  color: #5f7c52;
+}
+.world-game .forecast-numbers {
+  font-size: 10px;
+  gap: 10px;
+}
+.world-game .council-panel .primary {
+  background: linear-gradient(#b4c88e, #91ac6d);
+  border: 1px solid #bdd49c;
+  border-bottom: 3px solid #64844e;
+  border-radius: 10px;
+  color: #294836;
+  padding: 12px 16px;
+  font-size: 12px;
+}
+.council-operations p {
+  font-size: 12px;
+  color: #777c67;
+  line-height: 1.8;
+}
+.council-operations .primary {
+  width: 100%;
+}
+.world-game .ending > h1 {
+  font-size: 35px;
+}
+.world-game .ending > p:not(.eyebrow) {
+  font-size: 12px;
+  color: #737662;
+}
+.world-game .ending-stats {
+  border-color: #cbbc9e;
+  padding: 16px 0;
+  margin: 20px 0;
+}
+.world-game .ending-stats strong {
+  color: #668550;
+  font-size: 25px;
+}
+.world-game .ending-stats span {
+  font-size: 8px;
+  color: #8d826a;
+}
+.world-game .ending blockquote {
+  color: #a07b41;
+  font-size: 14px;
+}
+.world-game .ending cite,
+.world-game .ending-voices p {
+  color: #86816c;
+}
+.world-game .ending-voices strong {
+  color: #556354;
+}
+.world-game .record-choice {
+  border-color: #d2c5a9;
+  font-size: 11px;
+}
+.world-game .record-choice small {
+  color: #8b846d;
+  font-size: 9px;
+}
+.world-game .ending-actions button {
+  color: #77815f;
+  border-color: #c0b693;
+  font-size: 10px;
+}
+.world-game .council-panel .text-button {
+  color: #78875a;
+}
+.building-inspector {
+  position: absolute;
+  bottom: 113px;
+  left: 98px;
+  width: 270px;
+  padding: 20px;
+  border: 1px solid #ffe8bd;
+  border-radius: 14px;
+  background: linear-gradient(#fff5de, #e8d5b0);
+  color: #425554;
+  box-shadow:
+    0 5px 0 #9c7c5355,
+    0 12px 25px #39291f33;
+  animation: world-panel-in 0.2s ease;
+}
+.building-inspector > .eyebrow {
+  font-size: 8px;
+  color: #9c8862;
+}
+.building-inspector h2 {
+  font-size: 23px;
+  line-height: 1.2;
+  margin: 0 10px 12px 0;
+}
+.building-inspector .close-small {
+  color: #9c8862;
+}
+.building-inspector .tag {
+  border-radius: 5px;
+  background: #d5e0b8;
+  color: #5c7651;
+  font-size: 7px;
+}
+.building-inspector .tag.amber {
+  background: #edcc92;
+  color: #a47836;
+}
+.building-inspector .tag.red {
+  background: #e9b3a0;
+  color: #a05d48;
+}
+.inspector-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px 10px;
+  padding: 18px 0;
+}
+.inspector-values span {
+  display: block;
+  font-size: 9px;
+  color: #93886c;
+  margin-bottom: 5px;
+}
+.inspector-values strong {
+  font: 600 17px "Space Grotesk";
+}
+.building-inspector .reason {
+  font-size: 10px;
+  color: #89826b;
+  border-color: #cabb98;
+  padding-top: 12px;
+  margin-bottom: 14px;
+}
+.building-inspector .text-button {
+  color: #718752;
+  font-size: 10px;
+}
+.inspector-aid {
+  display: flex;
+  margin-top: 15px;
+  width: 100%;
+  font-size: 10px;
+  border: 1px solid #b2b790;
+  background: #cbd4a6;
+  color: #51664b;
+  border-radius: 8px;
+  padding: 9px;
+}
+.colony-utility {
+  position: absolute;
+  bottom: 22px;
+  left: 22px;
+  display: flex;
+  gap: 7px;
+  z-index: 10;
+}
+.colony-utility button {
+  background: linear-gradient(#fff0d4, #dec299);
+  color: #5f6651;
+  border: 1px solid #ffe6b7;
+  border-bottom: 3px solid #a98655;
+  border-radius: 11px;
+  padding: 13px;
+  box-shadow: 0 4px 8px #3e2b282b;
+}
+.colony-utility button:first-child {
+  gap: 9px;
+}
+.colony-utility span {
+  font-size: 11px;
+  font-weight: 600;
+}
+.colony-utility strong {
+  font-size: 9px;
+  background: #ccae7b;
+  padding: 3px 5px;
+  border-radius: 5px;
+  color: #7a5e35;
+}
+.colony-utility button.active {
+  background: #f4d587;
+}
+.world-aid-panel {
+  position: absolute;
+  bottom: 85px;
+  left: 22px;
+  width: 300px;
+  padding: 19px;
+  border: 1px solid #ffebc7;
+  border-bottom: 3px solid #b3915e;
+  border-radius: 14px;
+  background: #f5e5c6;
+  color: #4e6259;
+  z-index: 15;
+  box-shadow: 0 10px 30px #37251d44;
+}
+.world-aid-panel > .eyebrow {
+  font-size: 8px;
+  color: #9c845d;
+}
+.world-aid-panel h3 {
+  font-size: 20px;
+  letter-spacing: -0.6px;
+  margin-bottom: 10px;
+}
+.world-aid-panel > p:not(.eyebrow) {
+  font-size: 10px;
+  color: #978567;
+}
+.world-aid-panel > button:not(.close-small) {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  margin-top: 8px;
+  border-radius: 9px;
+  border: 1px solid #c6b088;
+  background: #fff4dc;
+  padding: 12px;
+  color: #6e815d;
+}
+.world-aid-panel button > span {
+  font-size: 11px;
+  color: #566752;
+}
+.world-aid-panel button small {
+  display: block;
+  color: #9f8c67;
+  font-size: 9px;
+  margin-top: 5px;
+}
+.world-aid-panel .close-small {
+  color: #9f8c67;
+}
+.time-console {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px 12px;
+  background: linear-gradient(#344c55f5, #263b44f5);
+  border: 1px solid #91a7a666;
+  border-bottom: 3px solid #1d3036;
+  border-radius: 15px;
+  z-index: 11;
+  box-shadow: 0 8px 20px #35281e38;
+}
+.play-toggle {
+  background: linear-gradient(#d4dfaf, #aabf82);
+  border: 1px solid #d4e4b8;
+  border-bottom: 3px solid #758a5f;
+  color: #3c5746;
+  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+}
+.time-state {
+  min-width: 185px;
+}
+.time-state strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f5e7c7;
+}
+.time-state span {
+  display: block;
+  font-size: 9px;
+  color: #b1bfb0;
+  margin-top: 6px;
+}
+.speed-controls {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-left: 1px solid #ffffff21;
+  padding-left: 12px;
+}
+.speed-controls label {
+  font: 600 13px "Space Grotesk";
+  color: #e4d29d;
+  min-width: 19px;
+}
+.speed-controls input {
+  width: 70px;
+  accent-color: #c3d29a;
+  cursor: pointer;
+  height: 15px;
+}
+.speed-controls > button {
+  padding: 7px;
+  border: 0;
+  color: #b8c3a9;
+}
+.speed-controls > button.active {
+  background: #d3dfae;
+  color: #3e5547;
+  border-radius: 7px;
+}
+.step-button {
+  padding: 8px;
+  border: 1px solid #91a7a644;
+  border-radius: 8px;
+  color: #e2d9bb;
+}
+.world-record {
+  position: absolute;
+  right: 22px;
+  bottom: 35px;
+  border: 0;
+  padding: 5px;
+  font-size: 10px;
+  background: #2d4349b3;
+  color: #e0dfc8;
+  border-radius: 6px;
+  z-index: 10;
+}
+.world-hint {
+  position: absolute;
+  bottom: 98px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #fff4da;
+  font-size: 9px;
+  text-shadow: 0 2px 5px #4b3228;
+  opacity: 0.85;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.camera-tools {
+  position: absolute;
+  bottom: 111px;
+  left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 8;
+}
+.camera-tools button {
+  width: 39px;
+  height: 37px;
+  padding: 7px;
+  background: #f2e5c5ed;
+  border: 1px solid #fff0cb;
+  border-bottom: 2px solid #b4966b;
+  border-radius: 9px;
+  color: #63725e;
+  box-shadow: 0 3px 5px #48312227;
+}
+.compass {
+  position: absolute;
+  left: 30px;
+  bottom: 260px;
+  color: #fff4da;
+  text-align: center;
+  font-size: 10px;
+  text-shadow: 0 1px 3px #523e2b;
+  opacity: 0.8;
+  pointer-events: none;
+}
+.compass i {
+  display: block;
+  width: 10px;
+  height: 22px;
+  background: linear-gradient(145deg, #fff2c4 48%, #886c4a 50%);
+  clip-path: polygon(50% 0, 100% 100%, 50% 72%, 0 100%);
+  margin-top: 3px;
+}
+.world-tooltip {
+  position: absolute;
+  z-index: 7;
+  background: #263e47f0;
+  backdrop-filter: blur(8px);
+  border: 1px solid #c9d5b566;
+  padding: 13px 15px;
+  border-radius: 11px;
+  box-shadow: 0 7px 20px #412c2340;
+  width: 250px;
+  pointer-events: none;
+  color: #eee8d2;
+  animation: world-tooltip-in 0.12s ease;
+}
+.tooltip-kind {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #b9caa7;
+  font-size: 9px;
+  margin-bottom: 8px;
+}
+.world-tooltip > strong {
+  font: 500 17px "Space Grotesk";
+  letter-spacing: -0.4px;
+}
+.world-tooltip p {
+  font-size: 10px;
+  line-height: 1.65;
+  margin: 7px 0 0;
+  color: #c7cdbd;
+}
+.world-tooltip > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid #ffffff1a;
+  margin-top: 10px;
+  padding-top: 8px;
+  font-size: 9px;
+  color: #d0d6bd;
+}
+.world-error {
+  position: absolute;
+  top: 155px;
+  left: 100px;
+  max-width: 450px;
+  z-index: 20;
+  font-size: 11px;
+  box-shadow: 0 8px 25px #3b201f35;
+}
+.world-game .busy-indicator {
+  bottom: 100px;
+  background: #2d4348e8;
+  border-color: #c5d0a788;
+  font-size: 10px;
+}
+.world-game .modal-backdrop {
+  z-index: 30;
+}
+.world-game .survival-warning {
+  font-size: 10px;
+  color: #a4543d;
+  border-color: #d7aa8a;
+  background: #eaccb44d;
+  padding: 10px;
+  margin-top: 12px;
+}
+@keyframes world-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes world-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes world-tooltip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* First-person observation deck, followed by the playable colony. */
+.opening {
+  position: fixed;
+  inset: 0;
+  background: #14202a;
+  overflow: hidden;
+  color: #e7dfd1;
+}
+.opening-canvas {
+  position: absolute;
+  inset: 0;
+}
+.opening-canvas canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.opening header {
+  position: absolute;
+  top: 28px;
+  left: 32px;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  z-index: 5;
+  color: #d4d8d2;
+  text-shadow: 0 1px 4px #14202a;
+}
+.opening header > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Space Grotesk";
+  font-size: 15px;
+  letter-spacing: 2px;
+}
+.opening header > span:nth-child(2) {
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-left: auto;
+  color: #a9b9b8;
+}
+.opening header button {
+  border: 1px solid #b4c2bb44;
+  padding: 7px;
+  color: #b5c8c5;
+  background: #14252e99;
+}
+.window-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    ellipse at 50% 35%,
+    transparent 30%,
+    #101d2755 80%
+  );
+}
+.window-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12%;
+  background: linear-gradient(#182c36, #293e49);
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 86% 100%, 14% 100%, 0 80%);
+  box-shadow: 0 10px 40px #111b24;
+}
+.window-left,
+.window-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 13%;
+  background: linear-gradient(
+    90deg,
+    #12242e,
+    #364d58 80%,
+    #66818a 83%,
+    #182e37 86%
+  );
+  clip-path: polygon(0 0, 50% 0, 100% 100%, 0 100%);
+}
+.window-right {
+  right: 0;
+  transform: scaleX(-1);
+}
+.window-console {
+  position: absolute;
+  bottom: 0;
+  height: 15%;
+  left: 0;
+  right: 0;
+  background: linear-gradient(#3d515a, #182e3a);
+  clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
+  border-top: 5px solid #729093;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+}
+.window-console i {
+  display: block;
+  width: 28px;
+  height: 4px;
+  background: #88b9b7;
+  box-shadow: 0 0 12px #78c6c4aa;
+}
+.window-console i:nth-child(2) {
+  width: 60px;
+  background: #d4b27e;
+}
+.window-console span {
+  font: 8px monospace;
+  color: #829fa3;
+  letter-spacing: 3px;
+  margin-left: 20px;
+}
+.optical-readout {
+  position: absolute;
+  left: 50%;
+  top: 19%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
+  color: #9cbfc3;
+  text-shadow: 0 1px 5px #151e28;
+  z-index: 3;
+  font: 9px monospace;
+  letter-spacing: 1.4px;
+}
+.optical-readout small {
+  font-size: 7px;
+  color: #92a8ab;
+}
+.optical-readout .signal-lost {
+  color: #f4b481;
+}
+.optical-crosshair {
+  position: absolute;
+  top: 62px;
+  width: 140px;
+  height: 140px;
+  border: 1px solid #bad0cd33;
+  border-radius: 50%;
+  opacity: 0.4;
+}
+.optical-crosshair:after {
+  content: "+";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #b8c6c6;
+}
+.opening-caption {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 20%;
+  text-align: center;
+  z-index: 4;
+  text-shadow: 0 3px 20px #06121c;
+}
+.opening-caption .eyebrow {
+  color: #acc6c6;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+}
+.opening-caption h1 {
+  font: 400 clamp(24px, 3.6vw, 47px)/1.4 "Space Grotesk";
+  letter-spacing: -1.2px;
+  color: #f3e6d1;
+  animation: world-tooltip-in 1.2s ease;
+}
+.opening-caption > p:not(.eyebrow) {
+  color: #b6c6c7;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.opening-caption .primary {
+  border-radius: 9px;
+  padding: 13px 24px;
+  box-shadow: 0 5px 20px #06141d;
+}
+.opening footer {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  bottom: 35px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.opening footer > button {
+  border: 0;
+  font-size: 10px;
+  color: #a5bcbd;
+  padding: 8px;
+  background: #142c36aa;
+  border-radius: 5px;
+}
+.opening footer > span {
+  font: 8px monospace;
+  letter-spacing: 1.5px;
+  color: #8aa5ad;
+}
+.opening-progress {
+  position: absolute;
+  bottom: -15px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #69818b33;
+}
+.opening-progress > i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: #d5be91;
+  transition: width 0.2s linear;
+}
+.opening.phase-2 .window-console i {
+  background: #f2b07a;
+  box-shadow: 0 0 15px #f4b07d;
+}
+.opening.phase-3 .opening-caption .eyebrow {
+  color: #e0ab7b;
+}
+.opening-fallback {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 28%;
+  font: 24px "Space Grotesk";
+  text-align: center;
+}
+@media (max-width: 1200px) {
+  .colony-name {
+    display: none;
+  }
+  .hud-resources {
+    gap: 6px;
+  }
+  .vital-pill {
+    min-width: 108px;
+    padding: 9px 10px 11px 6px;
+  }
+  .vital-pill strong {
+    font-size: 19px;
+  }
+  .wallet {
+    min-width: 125px;
+  }
+  .world-game .council-panel {
+    width: 322px;
+    padding: 18px;
+  }
+  .time-console {
+    gap: 10px;
+  }
+  .time-state {
+    min-width: 155px;
+  }
+  .speed-controls input {
+    width: 52px;
+  }
+  .colony-utility span {
+    display: none;
+  }
+  .colony-utility button {
+    padding: 12px;
+  }
+  .world-record {
+    font-size: 9px;
+  }
+}
+@media (max-width: 900px) {
+  .hud-header {
+    top: 15px;
+    left: 15px;
+    right: 15px;
+  }
+  .hud-header .wordmark {
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+  .hud-resources {
+    top: 72px;
+    left: 15px;
+    right: 15px;
+    justify-content: center;
+  }
+  .vital-pill {
+    flex: 1;
+    min-width: 0;
+    max-width: 150px;
+  }
+  .vital-pill strong {
+    font-size: 18px;
+  }
+  .vital-pill .vital-icon {
+    width: 23px;
+  }
+  .vital-pill .vital-icon svg {
+    width: 18px;
+  }
+  .wallet {
+    max-width: 160px;
+  }
+  .hud-header .network {
+    top: 23px;
+    right: 16px;
+  }
+  .settlement-health {
+    top: 29px;
+    left: 205px;
+    font-size: 8px;
+    gap: 10px;
+  }
+  .settlement-health strong {
+    font-size: 11px;
+  }
+  .world-mission {
+    top: 145px;
+    font-size: 9px;
+    padding: 7px 12px;
+  }
+  .building-dock {
+    top: 190px;
+    left: 15px;
+    gap: 5px;
+  }
+  .building-dock button {
+    width: 47px;
+    height: 49px;
+    padding: 7px;
+    gap: 3px;
+    border-radius: 10px;
+  }
+  .building-dock button svg {
+    width: 17px;
+  }
+  .building-dock span {
+    font-size: 7px;
+  }
+  .council-tab {
+    top: 188px;
+    right: 15px;
+    font-size: 10px;
+    padding: 10px;
+    gap: 8px;
+    min-height: 42px;
+  }
+  .world-game .council-panel {
+    top: 242px;
+    right: 15px;
+    max-height: calc(100dvh - 350px);
+    width: 310px;
+  }
+  .building-inspector {
+    left: 76px;
+    width: 245px;
+    padding: 17px;
+  }
+  .world-hint {
+    display: none;
+  }
+  .camera-tools {
+    left: 17px;
+  }
+  .colony-utility {
+    left: 15px;
+    bottom: 19px;
+    gap: 5px;
+  }
+  .colony-utility button {
+    padding: 10px;
+  }
+  .colony-utility button:first-child {
+    gap: 6px;
+  }
+  .colony-utility strong {
+    font-size: 8px;
+    padding: 2px 3px;
+  }
+  .time-console {
+    bottom: 16px;
+    gap: 8px;
+    padding: 8px;
+    left: 53%;
+  }
+  .time-state {
+    min-width: 130px;
+  }
+  .time-state strong {
+    font-size: 10px;
+  }
+  .time-state span {
+    font-size: 8px;
+  }
+  .speed-controls {
+    padding-left: 7px;
+    gap: 5px;
+  }
+  .speed-controls input {
+    width: 40px;
+  }
+  .step-button {
+    display: none;
+  }
+  .world-record {
+    right: 17px;
+    bottom: 88px;
+    padding: 5px 7px;
+  }
+  .opening-caption {
+    left: 16%;
+    right: 16%;
+  }
+}
+@media (max-width: 600px) {
+  .hud-header .wordmark {
+    font-size: 14px;
+    padding: 10px 11px;
+    gap: 7px;
+    border-radius: 11px;
+  }
+  .hud-header .wordmark svg {
+    width: 16px;
+  }
+  .hud-header .network {
+    top: 24px;
+    font-size: 7px;
+    padding: 5px 8px;
+  }
+  .settlement-health {
+    top: 137px;
+    left: 17px;
+    font-size: 8px;
+  }
+  .settlement-health strong {
+    font-size: 11px;
+  }
+  .hud-resources {
+    top: 68px;
+    gap: 5px;
+  }
+  .vital-pill {
+    padding: 8px 7px 11px 5px;
+    gap: 4px;
+    border-radius: 9px;
+    min-height: 53px;
+  }
+  .vital-pill > div > span {
+    font-size: 7px;
+    letter-spacing: 0.2px;
+  }
+  .vital-pill strong {
+    font-size: 16px;
+  }
+  .vital-pill small {
+    font-size: 8px;
+  }
+  .vital-pill .vital-icon {
+    width: 20px;
+  }
+  .vital-pill .vital-icon svg {
+    width: 15px;
+  }
+  .vital-fill {
+    left: 29px;
+    right: 8px;
+    bottom: 4px;
+  }
+  .wallet {
+    max-width: 98px;
+  }
+  .wallet .vital-icon {
+    display: none;
+  }
+  .world-mission {
+    top: 164px;
+    font-size: 8px;
+    padding: 6px 9px;
+    max-width: 95%;
+    text-align: center;
+    white-space: normal;
+    width: max-content;
+  }
+  .building-dock {
+    left: 12px;
+    top: 204px;
+    gap: 6px;
+  }
+  .building-dock button {
+    width: 41px;
+    height: 44px;
+    padding: 6px;
+    border-radius: 9px;
+  }
+  .building-dock button svg {
+    width: 16px;
+    height: 16px;
+  }
+  .building-dock span {
+    font-size: 6px;
+  }
+  .compass {
+    display: none;
+  }
+  .camera-tools {
+    left: 13px;
+    bottom: 141px;
+    gap: 5px;
+  }
+  .camera-tools button {
+    width: 33px;
+    height: 32px;
+    padding: 6px;
+    border-radius: 8px;
+  }
+  .council-tab {
+    top: auto;
+    bottom: 96px;
+    right: 12px;
+    max-width: calc(100% - 72px);
+    font-size: 10px;
+    min-height: 40px;
+    padding: 9px 11px;
+  }
+  .council-tab strong {
+    font-size: 8px;
+  }
+  .council-tab svg {
+    width: 15px;
+  }
+  .world-game .council-panel {
+    top: auto;
+    bottom: 146px;
+    right: 12px;
+    width: min(310px, calc(100% - 70px));
+    max-height: 47dvh;
+    padding: 16px;
+    border-radius: 13px;
+  }
+  .world-game .council-panel h1 {
+    font-size: 22px;
+  }
+  .world-game .council-panel .story-text {
+    font-size: 11px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+  .world-game .council-panel .chapter-progress {
+    margin-bottom: 12px;
+  }
+  .world-game .council-panel .chapter-kicker {
+    font-size: 7px;
+    margin-bottom: 12px;
+  }
+  .world-game .speaker {
+    margin-bottom: 13px;
+  }
+  .world-game .choice {
+    padding: 10px;
+    gap: 8px;
+  }
+  .world-game .choice strong {
+    font-size: 11px;
+  }
+  .world-game .choice p {
+    font-size: 9px;
+  }
+  .world-game .choice-bottom {
+    font-size: 7px;
+    padding: 7px 10px;
+  }
+  .world-game .choice-cost {
+    font-size: 8px;
+  }
+  .world-game .choice-number {
+    font-size: 9px;
+  }
+  .world-game .decision-label {
+    font-size: 7px;
+  }
+  .world-game .decision-label span {
+    font-size: 7px;
+  }
+  .world-game .choices {
+    gap: 8px;
+  }
+  .colony-utility {
+    left: 12px;
+    bottom: 95px;
+    gap: 5px;
+  }
+  .colony-utility button {
+    padding: 8px;
+    border-radius: 9px;
+  }
+  .colony-utility button:not(:first-child) {
+    display: none;
+  }
+  .colony-utility button:first-child {
+    gap: 4px;
+  }
+  .colony-utility svg {
+    width: 16px;
+  }
+  .colony-utility strong {
+    font-size: 7px;
+  }
+  .time-console {
+    bottom: 14px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    gap: 10px;
+    border-radius: 13px;
+    padding: 8px 10px;
+  }
+  .play-toggle {
+    width: 39px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+  .time-state {
+    flex: 1;
+    min-width: 0;
+  }
+  .time-state strong {
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .time-state span {
+    font-size: 7px;
+  }
+  .speed-controls {
+    padding-left: 9px;
+    gap: 7px;
+  }
+  .speed-controls input {
+    width: 45px;
+  }
+  .speed-controls label {
+    font-size: 11px;
+    min-width: 14px;
+  }
+  .speed-controls > button {
+    padding: 5px;
+  }
+  .world-record {
+    bottom: 136px;
+    right: 14px;
+    font-size: 8px;
+    padding: 5px 7px;
+    background: #2b424ac9;
+  }
+  .world-game .busy-indicator {
+    bottom: 82px;
+    font-size: 9px;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+  .building-inspector {
+    left: 65px;
+    bottom: 146px;
+    width: calc(100% - 80px);
+    max-height: 46dvh;
+    overflow: auto;
+    z-index: 12;
+  }
+  .world-aid-panel {
+    left: 12px;
+    bottom: 146px;
+    width: calc(100% - 70px);
+    max-height: 47dvh;
+    overflow: auto;
+    padding: 16px;
+  }
+  .world-aid-panel h3 {
+    font-size: 19px;
+  }
+  .world-aid-panel button small {
+    font-size: 8px;
+  }
+  .world-tooltip {
+    width: 210px;
+    padding: 11px 12px;
+    z-index: 8;
+  }
+  .world-tooltip > strong {
+    font-size: 15px;
+  }
+  .world-tooltip p {
+    font-size: 9px;
+  }
+  .world-tooltip > div {
+    font-size: 8px;
+  }
+  .world-error {
+    left: 65px;
+    right: 12px;
+    top: 210px;
+    max-width: none;
+    font-size: 10px;
+  }
+  .opening header {
+    left: 20px;
+    right: 20px;
+    top: 22px;
+  }
+  .opening header > span:nth-child(2) {
+    display: none;
+  }
+  .opening header button {
+    margin-left: auto;
+  }
+  .opening header > span:first-child {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+  .window-left,
+  .window-right {
+    width: 10%;
+  }
+  .window-top {
+    height: 11%;
+  }
+  .window-console {
+    height: 16%;
+    gap: 8px;
+  }
+  .window-console span {
+    font-size: 6px;
+    letter-spacing: 1px;
+    margin-left: 5px;
+  }
+  .window-console i {
+    width: 15px;
+  }
+  .window-console i:nth-child(2) {
+    width: 25px;
+  }
+  .opening-caption {
+    left: 12%;
+    right: 12%;
+    bottom: 23%;
+  }
+  .opening-caption h1 {
+    font-size: 25px;
+    line-height: 1.45;
+  }
+  .opening-caption .eyebrow {
+    font-size: 8px;
+    line-height: 1.8;
+    letter-spacing: 1.3px;
+  }
+  .opening-caption > p:not(.eyebrow) {
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .opening footer {
+    left: 18px;
+    right: 18px;
+    bottom: 26px;
+    gap: 8px;
+  }
+  .opening footer > span {
+    font-size: 6px;
+    letter-spacing: 0.6px;
+  }
+  .opening footer > button {
+    font-size: 8px;
+    gap: 5px;
+  }
+  .optical-readout {
+    top: 18%;
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+  .optical-readout small {
+    font-size: 6px;
+  }
+  .optical-crosshair {
+    width: 90px;
+    height: 90px;
+    top: 55px;
+  }
+}
+.resident-card {
+  position: absolute;
+  left: 98px;
+  bottom: 113px;
+  width: 265px;
+  padding: 19px;
+  background: #2b434dec;
+  border: 1px solid #b1c0a388;
+  border-radius: 13px;
+  box-shadow: 0 8px 25px #432f2633;
+  color: #e9e5ce;
+  z-index: 9;
+  animation: world-panel-in 0.2s ease;
+}
+.resident-card .close-small {
+  color: #bbcab0;
+}
+.resident-card h3 {
+  font-size: 21px;
+  margin: 8px 0 11px;
+}
+.resident-card p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #bfccb8;
+}
+.resident-card small {
+  display: block;
+  border-top: 1px solid #b5c4aa33;
+  padding-top: 12px;
+  font-size: 9px;
+  line-height: 1.8;
+  color: #b7c7ae;
+}
+.world-layer.storm:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent, #bd945c1a, transparent);
+  animation: storm-dust 5s ease-in-out infinite alternate;
+}
+.world-hint {
+  animation: hint-fade 18s forwards;
+}
+@keyframes hint-fade {
+  0%,
+  70% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes storm-dust {
+  to {
+    opacity: 0.2;
+    transform: translateX(8%);
+  }
+}
+@media (max-width: 600px) {
+  .resident-card {
+    left: 65px;
+    bottom: 146px;
+    width: calc(100% - 80px);
+    max-height: 43dvh;
+    overflow: auto;
+  }
+}
+.optical-crosshair {
+  top: calc(26dvh - 70px);
+  transform: translateX(2vw);
+}
+@media (max-width: 600px) {
+  .optical-crosshair {
+    top: calc(26dvh - 45px);
+  }
+}
+.world-canvas{animation:world-arrive 1.2s ease-out}@keyframes world-arrive{from{opacity:0}to{opacity:1}}

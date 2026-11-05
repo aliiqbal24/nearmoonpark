@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import {
   ArrowRight,
   FastForward,
@@ -21,6 +21,10 @@ import {
   CircleHelp,
   Check,
   ExternalLink,
+  Users,
+  Coins,
+  MessageCircle,
+  MapPin,
 } from "lucide-react";
 import {
   Run,
@@ -32,6 +36,8 @@ import {
   demand,
   VERSION,
 } from "@/lib/model";
+import ColonyWorld from "./components/colony-world";
+const Opening = lazy(() => import("./components/opening"));
 import { simulate } from "@/lib/engine";
 import {
   BEATS,
@@ -55,13 +61,6 @@ import {
 type Saved = { record: RecordState; mode: "practice" | "near"; txs: string[] };
 const STORAGE = "last-signal-save-v1";
 const ICONS = [Leaf, Droplets, Wind, Package, Zap];
-const COORDS = [
-  [150, 110],
-  [110, 280],
-  [360, 140],
-  [530, 290],
-  [350, 365],
-];
 function download(name: string, value: unknown) {
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
@@ -78,7 +77,6 @@ export default function Game() {
     [config, setConfig] = useState<Config | null>(null),
     [ready, setReady] = useState(false);
   const [screen, setScreen] = useState<"title" | "intro" | "game">("title"),
-    [intro, setIntro] = useState(0),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [running, setRunning] = useState(false),
@@ -94,11 +92,27 @@ export default function Game() {
   const [newSeed, setNewSeed] = useState(42),
     [preferNear, setPreferNear] = useState(true),
     [feedback, setFeedback] = useState("");
+  const [councilOpen, setCouncilOpen] = useState(true),
+    [inspectOpen, setInspectOpen] = useState(false),
+    [focusToken, setFocusToken] = useState(0),
+    [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const inspect = (i: number) => {
+    if (i < 0) {
+      setInspectOpen(false);
+      return;
+    }
+    setSelected(i);
+    setInspectOpen(true);
+    setFocusToken((t) => t + 1);
+  };
   const dialogRef = useRef<HTMLElement>(null);
   const savedRef = useRef(saved);
   savedRef.current = saved;
   const run = saved?.record.run,
     chapter = run ? Math.min(7, Math.floor(run.sol / 3)) : 0;
+  useEffect(() => {
+    if (run?.pending || run?.ending) setCouncilOpen(true);
+  }, [run?.pending, run?.sol, run?.ending]);
   const commit = (value: Saved) => {
     setSaved(value);
     localStorage.setItem(STORAGE, JSON.stringify(value));
@@ -191,7 +205,6 @@ export default function Game() {
     setRunning(false);
     setForecast(null);
     setScreen("intro");
-    setIntro(0);
     try {
       let record: RecordState;
       if (mode === "near" && config) {
@@ -279,6 +292,7 @@ export default function Game() {
       }
       if (command.kind === "choice") {
         setRunning(true);
+        setCouncilOpen(false);
         setAid(false);
       }
     } catch (e) {
@@ -300,14 +314,11 @@ export default function Game() {
       document.hidden
     )
       return;
-    const timer = setTimeout(
-      () => {
-        void act({ kind: "advance" }, fast ? 3 : 1);
-      },
-      fast ? 500 : 6000,
-    );
+    const timer = setTimeout(() => {
+      void act({ kind: "advance" }, 1);
+    }, 6000 / playbackSpeed);
     return () => clearTimeout(timer);
-  }, [running, busy, run?.revision, fast, screen]);
+  }, [running, busy, run?.revision, playbackSpeed, screen]);
   useEffect(() => {
     const pause = () => {
       if (document.hidden) setRunning(false);
@@ -405,7 +416,7 @@ export default function Game() {
           <span className="brand-small">
             <Radio size={17} /> SIGNAL / 001
           </span>
-          <span>SCRAPPY PLAYTEST · v1</span>
+          <span>LIVE COLONY PLAYTEST</span>
         </nav>
         <section className="title-copy">
           <p className="eyebrow">EARTH IS GONE. WE ARE STILL HERE.</p>
@@ -417,8 +428,7 @@ export default function Game() {
           </h1>
           <p className="title-description">
             One colony. One last chance.
-            <br />
-            Build an economy that can keep humanity alive.
+            <br />A living colony. An economy in your hands.
           </p>
           <div className="title-actions">
             <button
@@ -491,68 +501,26 @@ export default function Game() {
         </footer>
       </main>
     );
-  if (screen === "intro") {
-    const slides = [
-      {
-        label: "EARTH UPLINK / FINAL PACKET",
-        title: "Eleven minutes too late.",
-        text: "The final transmission arrived eleven minutes after the asteroid hit. Earth was gone. Every city. Every ocean. Everyone who had ever told you to come home.",
-        quote: "“Cancel the return flight. Take care of each other.”",
-      },
-      {
-        label: "SUPPLY MANIFEST / UPDATED",
-        title: "There is no next ship.",
-        text: "120 people in the settlement. Twelve surveyors stranded on the northern ridge. A greenhouse, an ice pump, an oxygen plant, a workshop. Dust season in eighteen sols.",
-        quote: "RESUPPLY: CANCELLED",
-      },
-      {
-        label: "GOVERNOR / EMERGENCY AUTHORITY",
-        title: "Make a home.",
-        text: "Choose how the colony spends, builds, and shares. Institutions buy resources and pay wages on their own. Protect essential access and prepare for the storm. Survive 24 sols.",
-        quote: "Your first decision is waiting.",
-      },
-    ];
-    const s = slides[intro];
+  if (screen === "intro")
     return (
-      <main className="intro-screen">
-        <div className="intro-signal">
-          <Radio size={28} />
-          <span>LAST SIGNAL</span>
-        </div>
-        <section key={intro} className="intro-card">
-          <p className="eyebrow">{s.label}</p>
-          <h1>{s.title}</h1>
-          <p>{s.text}</p>
-          <blockquote>{s.quote}</blockquote>
-          <div className="intro-controls">
-            <span>0{intro + 1} / 03</span>
-            <button
-              className="primary"
-              disabled={busy && intro === 2}
-              onClick={() =>
-                intro < 2 ? setIntro(intro + 1) : setScreen("game")
-              }
-            >
-              {intro < 2 ? "Continue" : "Take command"}
-              <ArrowRight size={18} />
-            </button>
-          </div>
-        </section>
-        {busy && (
-          <p className="small muted" role="status">
-            Establishing your sponsored testnet colony…
-          </p>
-        )}
-        <button
-          className="text-button"
-          disabled={busy}
-          onClick={() => setScreen("game")}
-        >
-          Skip transmission
-        </button>
-      </main>
+      <Suspense
+        fallback={
+          <main className="opening">
+            <div className="world-loading">
+              Arriving at the observation deck…
+            </div>
+          </main>
+        }
+      >
+        <Opening
+          ready={!busy && !!saved}
+          onComplete={() => {
+            setScreen("game");
+            setCouncilOpen(true);
+          }}
+        />
+      </Suspense>
     );
-  }
   if (!run || !saved) return null;
   const stock = reserves(run),
     need = demand(run),
@@ -564,8 +532,16 @@ export default function Game() {
   const hasAid =
     run.aid_left > 0 && run.aid_chapter !== Math.floor(run.sol / 3);
   return (
-    <main className="game-shell">
-      <header className="game-header">
+    <main className="world-game">
+      <ColonyWorld
+        run={run}
+        speed={running && !run.pending && !run.ending ? playbackSpeed : 0.42}
+        selected={inspectOpen ? selected : -1}
+        focusToken={focusToken}
+        onSelect={inspect}
+      />
+      <div className="world-vignette" aria-hidden="true" />
+      <header className="hud-header">
         <button
           className="wordmark"
           onClick={() => {
@@ -573,13 +549,17 @@ export default function Game() {
             setScreen("title");
           }}
         >
-          <Radio size={19} />
+          <Radio size={20} />
           <span>
             LAST SIGNAL<span className="orange">.</span>
           </span>
         </button>
-        <div className="settlement-label">
-          ARES SETTLEMENT <span> / HUMANITY'S LAST HOME</span>
+        <div className="colony-name">
+          <span>ARES SETTLEMENT</span>
+          <strong>
+            SOL {String(Math.min(24, run.sol + 1)).padStart(2, "0")}{" "}
+            <small>/ 24</small>
+          </strong>
         </div>
         <button
           className={`network ${saved.mode}`}
@@ -589,20 +569,19 @@ export default function Game() {
           {status}
         </button>
       </header>
-      <div className="resource-bar">
-        <div className="sol-block">
-          <span className="eyebrow">MISSION TIME</span>
-          <strong>
-            SOL {String(run.sol + (!run.ending ? 1 : 0)).padStart(2, "0")}
-            <small> / 24</small>
-          </strong>
-        </div>
+      <div className="hud-resources">
         {[0, 1, 2].map((g) => {
-          const Icon = ICONS[g];
-          const days = stock[g] / need[g];
+          const Icon = ICONS[g],
+            days = stock[g] / need[g];
           return (
-            <div className={`resource ${days < 1 ? "danger" : ""}`} key={g}>
-              <Icon size={19} />
+            <div
+              className={`vital-pill ${days < 1 ? "danger" : ""}`}
+              key={g}
+              title={`${stock[g]} units of ${GOODS[g]}; ${need[g]} needed per normal sol`}
+            >
+              <span className={`vital-icon vital-${g}`}>
+                <Icon size={20} />
+              </span>
               <div>
                 <span>{GOODS[g]}</span>
                 <strong>
@@ -610,38 +589,18 @@ export default function Game() {
                   <small> sols</small>
                 </strong>
               </div>
-              <div className="mini-bar">
-                <i style={{ width: `${Math.min(100, days * 20)}%` }} />
+              <div className="vital-fill">
+                <i style={{ width: `${Math.min(100, days * 22)}%` }} />
               </div>
             </div>
           );
         })}
-        <div className="resource">
-          <Activity size={18} />
+        <div className="vital-pill wallet">
+          <span className="vital-icon">
+            <Coins size={20} />
+          </span>
           <div>
-            <span>wellbeing</span>
-            <strong>
-              {run.wellbeing}
-              <small> /100</small>
-            </strong>
-          </div>
-        </div>
-        <div className="resource people">
-          <div>
-            <span>people</span>
-            <strong>
-              {run.population}
-              <small>
-                {run.rescued > 0 && run.sol >= run.rescue_eta
-                  ? " + survey team"
-                  : ""}
-              </small>
-            </strong>
-          </div>
-        </div>
-        <div className="resource budget">
-          <div>
-            <span>public treasury</span>
+            <span>public funds</span>
             <strong>
               {run.actors[8].credits.toLocaleString()}
               <small> cr</small>
@@ -649,21 +608,28 @@ export default function Game() {
           </div>
         </div>
       </div>
-      <div className="mission-strip">
+      <div className="settlement-health">
         <span>
-          <i className={run.sol >= 18 ? "storm-dot" : "live-dot"} />
-          {run.sol < 18
-            ? `DUST FRONT EXPECTED · SOL 19 · ${18 - run.sol} SOLS TO PREPARE`
-            : run.sol <= 21
-              ? "DUST FRONT ACTIVE · SOLAR POWER REDUCED"
-              : "THE DUST IS LIFTING · BUILD A FUTURE"}
+          <Users size={14} />
+          <strong>{run.population}</strong> residents
         </span>
-        <button onClick={() => setPanel("help")}>
-          <CircleHelp size={14} /> Mission brief
-        </button>
+        <span>
+          <Activity size={14} />
+          <strong>{run.wellbeing}</strong> wellbeing
+        </span>
+      </div>
+      <div
+        className={`world-mission ${run.sol >= 18 && run.sol <= 21 ? "storm" : ""}`}
+      >
+        <span className={run.sol >= 18 ? "storm-dot" : "live-dot"} />
+        {run.sol < 18
+          ? `Prepare for dust season · ${18 - run.sol} sols remaining`
+          : run.sol <= 21
+            ? "Dust front overhead · protect essential services"
+            : "A new tomorrow · keep the colony thriving"}
       </div>
       {error && (
-        <div role="alert" className="error inline-error">
+        <div role="alert" className="world-error error">
           {error}
           {chainIssue && (
             <button disabled={busy} onClick={() => void reconnect()}>
@@ -675,308 +641,107 @@ export default function Game() {
           </button>
         </div>
       )}
-      <div className="game-grid">
-        <section className="colony-panel">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">COLONY OVERVIEW</p>
-              <h2>All we have is here.</h2>
-            </div>
-            <span className="map-label">37.2° S / 57.3° W</span>
-          </div>
-          <div
-            className={`colony-map ${run.sol >= 19 && run.sol <= 21 ? "dust" : ""}`}
-          >
-            <svg
-              viewBox="0 0 660 480"
-              role="img"
-              aria-label="Ares settlement map. Select an institution below to inspect it."
+      <nav className="building-dock" aria-label="Colony institutions">
+        {INSTITUTIONS.map((name, i) => {
+          const Icon = ICONS[[4, 1, 0, 2, 3][i]];
+          return (
+            <button
+              key={name}
+              className={inspectOpen && selected === i ? "active" : ""}
+              onClick={() => inspect(i)}
+              title={name}
+              aria-label={`Inspect ${name}`}
             >
-              <defs>
-                <pattern
-                  id="grid"
-                  width="40"
-                  height="40"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <path
-                    d="M40 0H0V40"
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeOpacity=".035"
-                  />
-                </pattern>
-                <radialGradient id="ground">
-                  <stop stopColor="#6d3b29" stopOpacity=".5" />
-                  <stop offset="1" stopColor="#1a201e" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-              <rect width="660" height="480" fill="url(#grid)" />
-              <ellipse
-                cx="330"
-                cy="250"
-                rx="320"
-                ry="220"
-                fill="url(#ground)"
-              />
-              <g
-                stroke="#7d7761"
-                strokeWidth="2"
-                fill="none"
-                strokeDasharray="5 7"
-                opacity=".45"
-              >
-                {COORDS.map(([x, y], i) => (
-                  <path key={i} d={`M330 245L${x} ${y}`} />
-                ))}
-              </g>
-              <g transform="translate(330 245)">
-                <ellipse rx="52" ry="25" fill="#1c2928" stroke="#97a49a" />
-                <path
-                  d="M-43 0Q0-75 43 0"
-                  fill="#7e998f"
-                  fillOpacity=".2"
-                  stroke="#97a49a"
-                />
-                <text
-                  y="51"
-                  textAnchor="middle"
-                  fill="#d6d9ce"
-                  fontSize="10"
-                  letterSpacing="2"
-                >
-                  HABITAT / {run.population}
-                </text>
-                <circle r="4" fill="#cde6a0" className="beacon" />
-              </g>
-              {COORDS.map(([x, y], i) => {
-                const a = run.actors[i];
-                return (
-                  <g
-                    key={i}
-                    transform={`translate(${x} ${y})`}
-                    className={`building ${selected === i ? "selected" : ""} ${a.shortfall > 0 ? "constrained" : ""}`}
-                    onClick={() => setSelected(i)}
-                  >
-                    <ellipse rx="54" ry="29" className="building-halo" />
-                    {i === 0 ? (
-                      <g fill="#456368" stroke="#8ca6a6">
-                        <path d="M-37-10l22-20 31 5-22 22zM3 5l22-20 31 5-22 22z" />
-                        <path d="M-16 0v19M24 16v16" />
-                      </g>
-                    ) : i === 2 ? (
-                      <g>
-                        <path
-                          d="M-46 12Q-45-53 0-53Q45-53 46 12Z"
-                          fill="#627a49"
-                          fillOpacity=".4"
-                          stroke="#bed28c"
-                        />
-                        <path
-                          d="M-29 12Q-25-41 0-53Q25-41 29 12M-44-7h88"
-                          fill="none"
-                          stroke="#bed28c"
-                          strokeOpacity=".5"
-                        />
-                        <path d="M-35 9h70" stroke="#9bbc69" strokeWidth="5" />
-                      </g>
-                    ) : (
-                      <g
-                        fill={i === 4 ? "#806346" : "#526760"}
-                        stroke="#b2b7a2"
-                      >
-                        <path d="M-35 8v-33l20-12 48 9v34l-20 12z" />
-                        <path d="M-35-25l48 10 20-13M13-15v33" fill="none" />
-                        <rect
-                          x="-25"
-                          y="-15"
-                          width="8"
-                          height="10"
-                          fill="#cfdaa8"
-                          stroke="none"
-                        />
-                      </g>
-                    )}
-                    <text
-                      y="47"
-                      textAnchor="middle"
-                      fill="#d6d9ce"
-                      fontSize="10"
-                    >
-                      {
-                        [
-                          "SOLAR ARRAY",
-                          "ICE WORKS",
-                          "GREENHOUSE",
-                          "OXYGEN PLANT",
-                          "WORKSHOP",
-                        ][i]
-                      }
-                    </text>
-                    <circle
-                      cx="45"
-                      cy="-30"
-                      r="4"
-                      fill={
-                        a.unpaid >= 2
-                          ? "#e37e65"
-                          : a.shortfall > 0
-                            ? "#e3ac63"
-                            : "#a8bf88"
-                      }
-                    />
-                  </g>
-                );
-              })}
-              {[0, 1, 2].map((i) => (
-                <circle
-                  key={i}
-                  cx={280 + i * 13}
-                  cy={290 + i * 8}
-                  r="2.5"
-                  fill="#d4bba0"
-                  className="colonist"
-                />
-              ))}
-              <text
-                x="22"
-                y="450"
-                fill="#8f998c"
-                fontSize="10"
-                letterSpacing="2"
-              >
-                N ↑
-              </text>
-              <text
-                x="638"
-                y="450"
-                textAnchor="end"
-                fill="#8f998c"
-                fontSize="9"
-              >
-                SELECT A BUILDING TO INSPECT
-              </text>
-            </svg>
-            <div className="map-legend">
-              <span>
-                <i /> operational
-              </span>
-              <span>
-                <i className="amber" /> constrained
-              </span>
-            </div>
-          </div>
-          <div className="building-tabs">
-            {INSTITUTIONS.map((n, i) => {
-              const Icon = ICONS[[4, 1, 0, 2, 3][i]];
-              return (
-                <button
-                  key={n}
-                  className={selected === i ? "active" : ""}
-                  onClick={() => setSelected(i)}
-                  aria-pressed={selected === i}
-                >
-                  <Icon size={15} />
-                  {["Power", "Water", "Food", "Oxygen", "Parts"][i]}
-                </button>
-              );
-            })}
-          </div>
-          <div className="institution-card">
-            <div className="institution-title">
-              <div>
-                <p className="eyebrow">
-                  NPC INSTITUTION / AUTONOMOUS OPERATIONS
-                </p>
-                <h3>{actor.name}</h3>
-              </div>
-              <span
-                className={
-                  actor.unpaid >= 2
-                    ? "tag red"
-                    : actor.shortfall
-                      ? "tag amber"
-                      : "tag"
-                }
-              >
-                {actor.unpaid >= 2
-                  ? "DISTRESSED"
+              <Icon size={20} />
+              <span>{["Power", "Water", "Food", "Oxygen", "Parts"][i]}</span>
+              {run.actors[i].shortfall > 0 && <i className="problem-dot" />}
+            </button>
+          );
+        })}
+      </nav>
+      <div className="world-overlays">
+        {inspectOpen && (
+          <aside className="building-inspector">
+            <button
+              className="close-small"
+              aria-label="Close building inspector"
+              onClick={() => setInspectOpen(false)}
+            >
+              <X size={16} />
+            </button>
+            <p className="eyebrow">COLONY INSTITUTION</p>
+            <h2>{actor.name}</h2>
+            <span
+              className={
+                actor.unpaid >= 2
+                  ? "tag red"
                   : actor.shortfall
-                    ? "POWER LIMITED"
-                    : "OPERATING"}
-              </span>
-            </div>
-            <div className="institution-stats">
+                    ? "tag amber"
+                    : "tag"
+              }
+            >
+              {actor.unpaid >= 2
+                ? "PAYROLL DISTRESS"
+                : actor.shortfall
+                  ? "POWER LIMITED"
+                  : "OPERATING"}
+            </span>
+            <div className="inspector-values">
               <div>
-                <span>treasury</span>
-                <strong>{actor.credits} cr</strong>
-              </div>
-              <div>
-                <span>equipment</span>
+                <span>Condition</span>
                 <strong>{actor.condition}%</strong>
               </div>
               <div>
-                <span>last output</span>
-                <strong>{actor.output} units</strong>
+                <span>Treasury</span>
+                <strong>{actor.credits} cr</strong>
               </div>
               <div>
-                <span>posted price</span>
+                <span>Last output</span>
+                <strong>{actor.output}</strong>
+              </div>
+              <div>
+                <span>Price / unit</span>
                 <strong>{actor.price} cr</strong>
               </div>
             </div>
             <p className="reason">{actor.reason}</p>
             <button className="text-button" onClick={() => setPanel("economy")}>
-              Inspect inventory & trades <ChevronRight size={14} />
+              Inspect inventory & trades
+              <ChevronRight size={14} />
             </button>
-          </div>
-          <div className="colony-tools">
             <button
+              className="inspector-aid"
+              disabled={!hasAid || busy || !!run.ending}
               onClick={() => {
                 setAid(!aid);
                 setRunning(false);
               }}
-              disabled={!!run.ending || busy || !hasAid}
             >
-              <Shield size={16} /> Colony aid <span>{run.aid_left}/3</span>
+              <Wrench size={14} />
+              Help this institution
             </button>
-            <button onClick={() => setPanel("why")}>
-              <Activity size={16} /> Why did this happen?
-            </button>
-          </div>
-          {aid && hasAid && (
-            <div className="aid-panel">
-              <p className="eyebrow">ONE USE THIS CHAPTER · THREE TOTAL</p>
-              <p className="small">
-                Target: {actor.name}. Aid affects the next uncommitted sol.
-              </p>
-              <button
-                disabled={busy || run.emergency.every((x) => x === 0)}
-                onClick={() =>
-                  void act({ kind: "aid", option: 0, target: selected })
-                }
-              >
-                <Package size={15} /> Release an emergency ration cache
-              </button>
-              <button
-                disabled={busy || run.actors[4].inventory[3] < 5}
-                onClick={() =>
-                  void act({ kind: "aid", option: 1, target: selected })
-                }
-              >
-                <Wrench size={15} /> Repair {actor.name} · 5 parts
-              </button>
-              <button
-                disabled={busy || selected === 0 || run.battery < 40}
-                onClick={() =>
-                  void act({ kind: "aid", option: 2, target: selected })
-                }
-              >
-                <Zap size={15} /> Portable power · 40 battery energy
-              </button>
-            </div>
-          )}
-        </section>
-        <aside className="story-panel">
+          </aside>
+        )}
+        <button
+          className={`council-tab ${run.pending ? "waiting" : ""}`}
+          onClick={() => setCouncilOpen(!councilOpen)}
+          aria-expanded={councilOpen}
+        >
+          <MessageCircle size={18} />
+          <span>
+            {run.ending
+              ? "Colony outcome"
+              : run.pending
+                ? "Your decision is needed"
+                : "Colony council"}
+          </span>
+          <strong>{chapter + 1}/8</strong>
+          {councilOpen ? <X size={16} /> : <ChevronRight size={16} />}
+        </button>
+        <aside
+          className={`story-panel council-panel ${councilOpen ? "open" : ""}`}
+          aria-hidden={!councilOpen}
+        >
           {ending ? (
             <section className="ending">
               <p className="eyebrow">{ending.subtitle}</p>
@@ -1125,59 +890,18 @@ export default function Game() {
                   </div>
                 </>
               ) : (
-                <div className="operations">
-                  <div className="operations-status">
-                    <i className={running ? "live-dot" : ""} />
-                    <span>
-                      {busy
-                        ? "Confirming on NEAR…"
-                        : running
-                          ? "Colony is operating"
-                          : "Colony paused"}
-                    </span>
-                    <strong>
-                      {3 - (run.sol % 3)} sol
-                      {3 - (run.sol % 3) !== 1 ? "s" : ""} to next decision
-                    </strong>
-                  </div>
+                <div className="council-operations">
                   <p>
-                    The institutions are buying inputs, paying wages, and
-                    producing essentials. Inspect the colony or deploy aid.
-                    Advance whenever you are ready.
+                    The colony is following your order. Watch the supply routes,
+                    inspect a building, or provide limited aid.
                   </p>
-                  <div className="playback-controls">
-                    <button
-                      className="primary"
-                      disabled={busy || chainIssue}
-                      onClick={() => setRunning(!running)}
-                    >
-                      {running ? <Pause size={16} /> : <Play size={16} />}{" "}
-                      {running ? "Pause" : "Continue"}
-                    </button>
-                    <button
-                      className={fast ? "active" : ""}
-                      onClick={() => {
-                        setFast(!fast);
-                        setRunning(true);
-                      }}
-                      aria-pressed={fast}
-                    >
-                      <FastForward size={18} /> Fast
-                    </button>
-                    <button
-                      disabled={busy || chainIssue}
-                      onClick={() =>
-                        void act({ kind: "advance" }, fast ? 3 : 1)
-                      }
-                    >
-                      Next {fast ? "chapter" : "sol"}
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                  <p className="small muted">
-                    Fast-forward always pauses for decisions. Nothing progresses
-                    while this tab is closed.
-                  </p>
+                  <button
+                    className="primary"
+                    onClick={() => setCouncilOpen(false)}
+                  >
+                    Watch the colony
+                    <ArrowRight size={16} />
+                  </button>
                 </div>
               )}
               {forecast && (
@@ -1229,27 +953,153 @@ export default function Game() {
           )}
         </aside>
       </div>
-      <footer className="game-footer">
-        <span>
-          ALL SYSTEMS ACCOUNTED FOR{" "}
-          <span className="muted">
-            {" "}
-            / {run.version} · SEED {run.seed}
-          </span>
-        </span>
-        <div>
-          <button onClick={() => setPanel("log")}>Mission record</button>
+      <div className="colony-utility">
+        <button
+          className={aid ? "active" : ""}
+          onClick={() => {
+            setAid(!aid);
+            setRunning(false);
+          }}
+          disabled={!!run.ending || busy || !hasAid}
+        >
+          <Shield size={19} />
+          <span>Colony aid</span>
+          <strong>{run.aid_left}/3</strong>
+        </button>
+        <button
+          onClick={() => setPanel("why")}
+          title="Trace economic consequences"
+          aria-label="Why did this happen?"
+        >
+          <Activity size={19} />
+        </button>
+        <button
+          onClick={() => setPanel("help")}
+          title="Mission brief"
+          aria-label="How to play"
+        >
+          <CircleHelp size={19} />
+        </button>
+      </div>
+      {aid && hasAid && (
+        <div className="world-aid-panel">
           <button
-            onClick={() => {
-              setRunning(false);
-              setPanel("help");
-            }}
+            className="close-small"
+            aria-label="Close colony aid"
+            onClick={() => setAid(false)}
           >
-            How to play
+            <X size={15} />
           </button>
-          <span className="hash">{run.hash.slice(0, 12)}</span>
+          <p className="eyebrow">COLONY AID · ONE USE THIS CHAPTER</p>
+          <h3>A little help, where it matters.</h3>
+          <p>Selected: {actor.name}. Supplies are finite.</p>
+          <button
+            disabled={busy || run.emergency.every((n) => n === 0)}
+            onClick={() =>
+              void act({ kind: "aid", option: 0, target: selected })
+            }
+          >
+            <Package size={16} />
+            <span>
+              Release emergency supplies
+              <small>One sol of essentials from the reserve</small>
+            </span>
+          </button>
+          <button
+            disabled={busy || run.actors[4].inventory[3] < 5}
+            onClick={() =>
+              void act({ kind: "aid", option: 1, target: selected })
+            }
+          >
+            <Wrench size={16} />
+            <span>
+              Repair {actor.name}
+              <small>5 parts · +20 condition</small>
+            </span>
+          </button>
+          <button
+            disabled={busy || selected === 0 || run.battery < 40}
+            onClick={() =>
+              void act({ kind: "aid", option: 2, target: selected })
+            }
+          >
+            <Zap size={16} />
+            <span>
+              Deploy portable power<small>40 stored battery energy</small>
+            </span>
+          </button>
         </div>
-      </footer>
+      )}
+      <div className="time-console">
+        <button
+          className="play-toggle"
+          disabled={busy || run.pending || !!run.ending || chainIssue}
+          onClick={() => setRunning(!running)}
+          aria-label={running ? "Pause colony" : "Run colony"}
+        >
+          {running ? <Pause size={20} /> : <Play size={20} />}
+        </button>
+        <div className="time-state">
+          <strong>
+            {run.ending
+              ? "Campaign complete"
+              : run.pending
+                ? "Awaiting your decision"
+                : busy
+                  ? "Confirming this sol…"
+                  : running
+                    ? "Colony is operating"
+                    : "Colony paused"}
+          </strong>
+          <span>
+            {run.pending
+              ? "Explore freely. Choose when you are ready."
+              : `Sol ${run.sol} confirmed · ${3 - (run.sol % 3)} to next decision`}
+          </span>
+        </div>
+        <div className="speed-controls">
+          <label htmlFor="simulation-speed">{playbackSpeed}×</label>
+          <input
+            id="simulation-speed"
+            aria-label="Simulation speed"
+            type="range"
+            min="1"
+            max="4"
+            step="1"
+            value={playbackSpeed}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              setPlaybackSpeed(n);
+              setFast(n > 1);
+            }}
+          />
+          <button
+            className={fast ? "active" : ""}
+            onClick={() => {
+              const next = fast ? 1 : 4;
+              setPlaybackSpeed(next);
+              setFast(!fast);
+              if (!run.pending) setRunning(true);
+            }}
+            aria-pressed={fast}
+            aria-label="Fast"
+          >
+            <FastForward size={19} />
+          </button>
+        </div>
+        <button
+          className="step-button"
+          disabled={busy || run.pending || !!run.ending || chainIssue}
+          onClick={() => void act({ kind: "advance" }, 1)}
+          aria-label="Advance one sol"
+        >
+          <ArrowRight size={19} />
+        </button>
+      </div>
+      <button className="world-record" onClick={() => setPanel("log")}>
+        Mission record
+        <ExternalLink size={12} />
+      </button>
       {busy && (
         <div className="busy-indicator" role="status">
           <i className="live-dot" />
