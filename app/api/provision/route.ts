@@ -1,0 +1,164 @@
+import { env } from "cloudflare:workers";
+import {
+  Account,
+  JsonRpcProvider,
+  KeyPairSigner,
+  PublicKey,
+  actions,
+} from "near-api-js";
+export const dynamic = "force-dynamic";
+// Sponsor nonce serialization in each isolate, plus RPC retries across isolates.
+let queue: Promise<unknown> = Promise.resolve();
+export async function POST(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== new URL(request.url).origin)
+    return Response.json({ error: "Origin mismatch" }, { status: 403 });
+  const e = env as unknown as {
+    DB?: D1Database;
+    NEAR_SPONSOR_ID?: string;
+    NEAR_SPONSOR_KEY?: string;
+    NEAR_CONTRACT_ID?: string;
+  };
+  if (!e.DB || !e.NEAR_SPONSOR_KEY || !e.NEAR_SPONSOR_ID || !e.NEAR_CONTRACT_ID)
+    return Response.json(
+      {
+        error:
+          "NEAR sponsorship is not configured. Practice mode is available.",
+      },
+      { status: 503 },
+    );
+  let body;
+  try {
+    body = (await request.json()) as {
+      recoveryPublicKey: string;
+      sessionPublicKey: string;
+    };
+    if (
+      !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,50}$/.test(body.recoveryPublicKey) ||
+      !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,50}$/.test(body.sessionPublicKey)
+    )
+      throw Error();
+    PublicKey.fromString(body.recoveryPublicKey);
+    PublicKey.fromString(body.sessionPublicKey);
+  } catch {
+    return Response.json({ error: "Invalid public keys" }, { status: 400 });
+  }
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(body.recoveryPublicKey),
+  );
+  const id = Array.from(new Uint8Array(digest))
+    .map((x) => x.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 20);
+  const db = e.DB,
+    accountId = `p${id}.${e.NEAR_SPONSOR_ID}`,
+    ip = request.headers.get("cf-connecting-ip") || "local";
+  const work = async () => {
+    const old = await db
+      .prepare("SELECT * FROM provisioning WHERE id = ?")
+      .bind(id)
+      .first<{ session_key: string; status: string }>();
+    if (old && old.session_key !== body.sessionPublicKey)
+      return Response.json(
+        { error: "Recovery key already registered with another session." },
+        { status: 409 },
+      );
+    if (old?.status === "ready") return Response.json({ accountId });
+    if (!old) {
+      const rows = await db
+        .prepare("SELECT COUNT(*) AS n FROM provisioning WHERE created_at > ?")
+        .bind(Date.now() - 86400000)
+        .first<{ n: number }>();
+      const perIp = await db
+        .prepare(
+          "SELECT COUNT(*) AS n FROM provisioning WHERE created_at > ? AND ip = ?",
+        )
+        .bind(Date.now() - 3600000, ip)
+        .first<{ n: number }>();
+      if ((rows?.n || 0) >= 100 || (perIp?.n || 0) >= 8)
+        return Response.json(
+          {
+            error:
+              "Guest sponsorship limit reached. Try again later or play practice.",
+          },
+          { status: 429 },
+        );
+      await db
+        .prepare(
+          "INSERT OR IGNORE INTO provisioning (id,account_id,session_key,status,ip,created_at) VALUES (?,?,?,'pending',?,?)",
+        )
+        .bind(id, accountId, body.sessionPublicKey, ip, Date.now())
+        .run();
+    }
+    const p = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+    const sponsor = new Account(
+      e.NEAR_SPONSOR_ID!,
+      p,
+      KeyPairSigner.fromSecretKey(e.NEAR_SPONSOR_KEY! as `ed25519:${string}`),
+    );
+    const state = await sponsor.getState();
+    if (state.balance.available < 1000000000000000000000000n)
+      return Response.json(
+        {
+          error:
+            "The testnet sponsorship reserve needs replenishing. Your practice game is available.",
+        },
+        { status: 503 },
+      );
+    let exists = false;
+    try {
+      await p.viewAccount({ accountId });
+      exists = true;
+    } catch (error) {
+      if (
+        !String(error).includes("does not exist") &&
+        !String(error).includes("UNKNOWN_ACCOUNT")
+      )
+        throw error;
+    }
+    if (!exists)
+      await sponsor.signAndSendTransaction({
+        receiverId: accountId,
+        actions: [
+          actions.createAccount(),
+          actions.transfer(500000000000000000000000n),
+          actions.addFullAccessKey(
+            PublicKey.fromString(body.recoveryPublicKey),
+          ),
+          actions.addFunctionCallAccessKey(
+            PublicKey.fromString(body.sessionPublicKey),
+            e.NEAR_CONTRACT_ID!,
+            ["create_run", "step"],
+            400000000000000000000000n,
+          ),
+        ],
+        waitUntil: "FINAL",
+      });
+    await sponsor.callFunction({
+      contractId: e.NEAR_CONTRACT_ID!,
+      methodName: "register_player",
+      args: { account_id: accountId },
+      waitUntil: "FINAL",
+    });
+    await db
+      .prepare("UPDATE provisioning SET status='ready' WHERE id=?")
+      .bind(id)
+      .run();
+    return Response.json({ accountId });
+  };
+  const task = queue.then(work);
+  queue = task.catch(() => {});
+  try {
+    return await task;
+  } catch (error) {
+    console.error("Provisioning failed", String(error).slice(0, 400));
+    return Response.json(
+      {
+        error:
+          "Sponsorship could not finish. Retry to resume the same account.",
+      },
+      { status: 503 },
+    );
+  }
+}

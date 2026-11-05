@@ -1,0 +1,7 @@
+{
+  "scenario": "last-signal-v1",
+  "rust": "1.98.1",
+  "contractSha256": "79c15fbca9b6d3ada405257c009ea5a9c398bfa1da2795c9624034cd5a137ab3",
+  "engineSha256": "616e8e64a5c19c2f1d7b5a1517a2ecfda1c0eaf8e13bf896f49759d97f700831",
+  "nearCodeHash": "9CHMSJrCWiW9MB9nMynqR9LCDpox6wm4jjpAbe7QAqYN"
+}

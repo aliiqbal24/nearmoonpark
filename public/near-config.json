@@ -1,0 +1,7 @@
+{
+  "contractId": "last-signal-mw38ywv0.testnet",
+  "rpcUrl": "https://test.rpc.fastnear.com",
+  "fallbackRpcUrl": "https://rpc.testnet.near.org",
+  "codeHash": "9CHMSJrCWiW9MB9nMynqR9LCDpox6wm4jjpAbe7QAqYN",
+  "network": "testnet"
+}

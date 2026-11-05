@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vinext/
+.wrangler/
+.sites-runtime/
+.sites-publish/
+.env*
+!.env.example
+.dev.vars*
+target/
+outputs/
+*.tsbuildinfo
+.near-local/
+test-results/
+playwright-report/

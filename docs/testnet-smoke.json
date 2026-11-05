@@ -1,0 +1,4374 @@
+{
+  "contract": "last-signal-mw38ywv0.testnet",
+  "player": "smokemw39u9rg.last-signal-mw38ywv0.testnet",
+  "state": {
+    "owner": "smokemw39u9rg.last-signal-mw38ywv0.testnet",
+    "run": {
+      "version": "last-signal-v1",
+      "seed": 42,
+      "sol": 24,
+      "revision": 8,
+      "population": 132,
+      "wellbeing": 100,
+      "fatigue": 0,
+      "actors": [
+        {
+          "name": "Power utility",
+          "credits": 2883,
+          "inventory": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "condition": 100,
+          "price": 1,
+          "output": 490,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "490 units in stock; target 490. Price 1 → 1 credits. Condition 100%; 0 unpaid payrolls."
+        },
+        {
+          "name": "Ice works",
+          "credits": 1751,
+          "inventory": [
+            0,
+            842,
+            0,
+            0,
+            0
+          ],
+          "condition": 94,
+          "price": 3,
+          "output": 98,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "842 units in stock; target 210. Price 3 → 3 credits. Condition 94%; 0 unpaid payrolls."
+        },
+        {
+          "name": "Greenhouse",
+          "credits": 1071,
+          "inventory": [
+            403,
+            13,
+            0,
+            0,
+            0
+          ],
+          "condition": 100,
+          "price": 6,
+          "output": 58,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "403 units in stock; target 116. Price 6 → 6 credits. Condition 100%; 0 unpaid payrolls."
+        },
+        {
+          "name": "Atmospheric plant",
+          "credits": 1858,
+          "inventory": [
+            0,
+            0,
+            340,
+            0,
+            0
+          ],
+          "condition": 100,
+          "price": 4,
+          "output": 64,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "340 units in stock; target 128. Price 4 → 4 credits. Condition 100%; 0 unpaid payrolls."
+        },
+        {
+          "name": "Fabrication workshop",
+          "credits": 1879,
+          "inventory": [
+            0,
+            0,
+            0,
+            35,
+            0
+          ],
+          "condition": 100,
+          "price": 21,
+          "output": 12,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "35 units in stock; target 24. Price 21 → 21 credits. Condition 100%; 0 unpaid payrolls."
+        },
+        {
+          "name": "Established households",
+          "credits": 523,
+          "inventory": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "condition": 100,
+          "price": 0,
+          "output": 0,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "Awaiting the first operating sol."
+        },
+        {
+          "name": "Working families",
+          "credits": 197,
+          "inventory": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "condition": 100,
+          "price": 0,
+          "output": 0,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "Awaiting the first operating sol."
+        },
+        {
+          "name": "New arrivals",
+          "credits": 572,
+          "inventory": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "condition": 100,
+          "price": 0,
+          "output": 0,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "Awaiting the first operating sol."
+        },
+        {
+          "name": "Public treasury",
+          "credits": 896,
+          "inventory": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "condition": 100,
+          "price": 0,
+          "output": 0,
+          "shortfall": 0,
+          "unpaid": 0,
+          "reason": "Awaiting the first operating sol."
+        }
+      ],
+      "policy": 1,
+      "priority": 0,
+      "project": 0,
+      "project_left": 0,
+      "upgrades": [
+        true,
+        false,
+        false
+      ],
+      "aid_left": 3,
+      "aid_chapter": -1,
+      "emergency": [
+        80,
+        120,
+        96
+      ],
+      "battery": 0,
+      "rescued": 12,
+      "rescue_eta": 17,
+      "life_debt": 0,
+      "hardship": 1,
+      "storm_policy": 2,
+      "final_policy": 0,
+      "reduced": false,
+      "pending": false,
+      "ending": "A New Dawn",
+      "decisions": [
+        {
+          "chapter": 0,
+          "option": 0,
+          "sol": 0,
+          "event": 2
+        },
+        {
+          "chapter": 1,
+          "option": 1,
+          "sol": 3,
+          "event": 6
+        },
+        {
+          "chapter": 2,
+          "option": 0,
+          "sol": 6,
+          "event": 11
+        },
+        {
+          "chapter": 3,
+          "option": 0,
+          "sol": 9,
+          "event": 18
+        },
+        {
+          "chapter": 4,
+          "option": 0,
+          "sol": 12,
+          "event": 23
+        },
+        {
+          "chapter": 5,
+          "option": 0,
+          "sol": 15,
+          "event": 27
+        },
+        {
+          "chapter": 6,
+          "option": 2,
+          "sol": 18,
+          "event": 32
+        },
+        {
+          "chapter": 7,
+          "option": 0,
+          "sol": 21,
+          "event": 43
+        }
+      ],
+      "trades": [],
+      "events": [
+        {
+          "id": 1,
+          "sol": 0,
+          "kind": "story",
+          "actor": 8,
+          "text": "Earth is gone. 120 people remain in the settlement. Twelve surveyors are stranded at the northern ridge. Dust season arrives on sol 19.",
+          "causes": []
+        },
+        {
+          "id": 2,
+          "sol": 0,
+          "kind": "decision",
+          "actor": 8,
+          "text": "Chapter 1: option 1 committed.",
+          "causes": []
+        },
+        {
+          "id": 3,
+          "sol": 1,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 2320 credits.",
+          "causes": [
+            2
+          ]
+        },
+        {
+          "id": 4,
+          "sol": 2,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 2072 credits.",
+          "causes": [
+            2
+          ]
+        },
+        {
+          "id": 5,
+          "sol": 3,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1865 credits.",
+          "causes": [
+            2
+          ]
+        },
+        {
+          "id": 6,
+          "sol": 3,
+          "kind": "decision",
+          "actor": 8,
+          "text": "Chapter 2: option 2 committed.",
+          "causes": []
+        },
+        {
+          "id": 7,
+          "sol": 4,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1814 credits.",
+          "causes": [
+            6
+          ]
+        },
+        {
+          "id": 8,
+          "sol": 5,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1790 credits.",
+          "causes": [
+            6
+          ]
+        },
+        {
+          "id": 9,
+          "sol": 6,
+          "kind": "harvest",
+          "actor": 2,
+          "text": "A weak harvest reduced greenhouse output by 10%.",
+          "causes": []
+        },
+        {
+          "id": 10,
+          "sol": 6,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1784 credits.",
+          "causes": [
+            6
+          ]
+        },
+        {
+          "id": 11,
+          "sol": 6,
+          "kind": "decision",
+          "actor": 8,
+          "text": "Chapter 3: option 1 committed.",
+          "causes": []
+        },
+        {
+          "id": 12,
+          "sol": 7,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1409 credits.",
+          "causes": [
+            11
+          ]
+        },
+        {
+          "id": 13,
+          "sol": 8,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1427 credits.",
+          "causes": [
+            11
+          ]
+        },
+        {
+          "id": 14,
+          "sol": 9,
+          "kind": "weather",
+          "actor": 0,
+          "text": "Dust reduces solar generation to 85% of normal.",
+          "causes": [
+            11
+          ]
+        },
+        {
+          "id": 15,
+          "sol": 9,
+          "kind": "project",
+          "actor": 4,
+          "text": "Water recycling is online. Essential water demand falls 20%.",
+          "causes": [
+            14
+          ]
+        },
+        {
+          "id": 16,
+          "sol": 9,
+          "kind": "shortage",
+          "actor": 4,
+          "text": "Fabrication workshop received 82 of 105 requested power. Production is constrained.",
+          "causes": [
+            14
+          ]
+        },
+        {
+          "id": 17,
+          "sol": 9,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1444 credits.",
+          "causes": [
+            14
+          ]
+        },
+        {
+          "id": 18,
+          "sol": 9,
+          "kind": "decision",
+          "actor": 8,
+          "text": "Chapter 4: option 1 committed.",
+          "causes": []
+        },
+        {
+          "id": 19,
+          "sol": 10,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1066 credits.",
+          "causes": [
+            18
+          ]
+        },
+        {
+          "id": 20,
+          "sol": 11,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1094 credits.",
+          "causes": [
+            18
+          ]
+        },
+        {
+          "id": 21,
+          "sol": 12,
+          "kind": "fault",
+          "actor": 1,
+          "text": "The ice pump seal is failing. Delayed repairs now reduce water output.",
+          "causes": [
+            16
+          ]
+        },
+        {
+          "id": 22,
+          "sol": 12,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1127 credits.",
+          "causes": [
+            18
+          ]
+        },
+        {
+          "id": 23,
+          "sol": 12,
+          "kind": "decision",
+          "actor": 8,
+          "text": "Chapter 5: option 1 committed.",
+          "causes": []
+        },
+        {
+          "id": 24,
+          "sol": 13,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1075 credits.",
+          "causes": [
+            23
+          ]
+        },
+        {
+          "id": 25,
+          "sol": 14,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1117 credits.",
+          "causes": [
+            23
+          ]
+        },
+        {
+          "id": 26,
+          "sol": 15,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1162 credits.",
+          "causes": [
+            23
+          ]
+        },
+        {
+          "id": 27,
+          "sol": 15,
+          "kind": "decision",
+          "actor": 8,
+          "text": "Chapter 6: option 1 committed.",
+          "causes": []
+        },
+        {
+          "id": 28,
+          "sol": 16,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 993 credits.",
+          "causes": [
+            27
+          ]
+        },
+        {
+          "id": 29,
+          "sol": 17,
+          "kind": "rescue",
+          "actor": 8,
+          "text": "12 surveyors returned. The settlement is now home to 132 people.",
+          "causes": [
+            27
+          ]
+        },
+        {
+          "id": 30,
+          "sol": 17,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1064 credits.",
+          "causes": [
+            27
+          ]
+        },
+        {
+          "id": 31,
+          "sol": 18,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1134 credits.",
+          "causes": [
+            27
+          ]
+        },
+        {
+          "id": 32,
+          "sol": 18,
+          "kind": "decision",
+          "actor": 8,
+          "text": "Chapter 7: option 3 committed.",
+          "causes": []
+        },
+        {
+          "id": 33,
+          "sol": 19,
+          "kind": "weather",
+          "actor": 0,
+          "text": "Dust reduces solar generation to 55% of normal.",
+          "causes": [
+            32
+          ]
+        },
+        {
+          "id": 34,
+          "sol": 19,
+          "kind": "shortage",
+          "actor": 4,
+          "text": "Fabrication workshop received 54 of 105 requested power. Production is constrained.",
+          "causes": [
+            33
+          ]
+        },
+        {
+          "id": 35,
+          "sol": 19,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1204 credits.",
+          "causes": [
+            33
+          ]
+        },
+        {
+          "id": 36,
+          "sol": 20,
+          "kind": "weather",
+          "actor": 0,
+          "text": "Dust reduces solar generation to 55% of normal.",
+          "causes": [
+            32
+          ]
+        },
+        {
+          "id": 37,
+          "sol": 20,
+          "kind": "shortage",
+          "actor": 4,
+          "text": "Fabrication workshop received 54 of 105 requested power. Production is constrained.",
+          "causes": [
+            36
+          ]
+        },
+        {
+          "id": 38,
+          "sol": 20,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1273 credits.",
+          "causes": [
+            36
+          ]
+        },
+        {
+          "id": 39,
+          "sol": 21,
+          "kind": "weather",
+          "actor": 0,
+          "text": "Dust reduces solar generation to 55% of normal.",
+          "causes": [
+            32
+          ]
+        },
+        {
+          "id": 40,
+          "sol": 21,
+          "kind": "shortage",
+          "actor": 4,
+          "text": "Fabrication workshop received 19 of 105 requested power. Production is constrained.",
+          "causes": [
+            39
+          ]
+        },
+        {
+          "id": 41,
+          "sol": 21,
+          "kind": "households",
+          "actor": 7,
+          "text": "Households missed 2 units of essentials. Physical stock and affordability both matter.",
+          "causes": [
+            21
+          ]
+        },
+        {
+          "id": 42,
+          "sol": 21,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1343 credits.",
+          "causes": [
+            39
+          ]
+        },
+        {
+          "id": 43,
+          "sol": 21,
+          "kind": "decision",
+          "actor": 8,
+          "text": "Chapter 8: option 1 committed.",
+          "causes": []
+        },
+        {
+          "id": 44,
+          "sol": 22,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1194 credits.",
+          "causes": [
+            43
+          ]
+        },
+        {
+          "id": 45,
+          "sol": 23,
+          "kind": "harvest",
+          "actor": 2,
+          "text": "A weak harvest reduced greenhouse output by 10%.",
+          "causes": []
+        },
+        {
+          "id": 46,
+          "sol": 23,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 1045 credits.",
+          "causes": [
+            43
+          ]
+        },
+        {
+          "id": 47,
+          "sol": 24,
+          "kind": "market",
+          "actor": 8,
+          "text": "Settled payroll, input purchases, essential distribution and maintenance. Treasury: 896 credits.",
+          "causes": [
+            43
+          ]
+        }
+      ],
+      "days": [
+        {
+          "sol": 1,
+          "reserves": [
+            129,
+            234,
+            103
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 77,
+          "population": 120,
+          "treasury": 2320,
+          "hash": "92a3bfc461ce807580cd90d7a9f692a13f036111d5dada9959501d02f15dd4b8",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 8,
+              "to": 2,
+              "good": 0,
+              "qty": 13,
+              "paid": 104
+            },
+            {
+              "from": 8,
+              "to": 1,
+              "good": 1,
+              "qty": 20,
+              "paid": 80
+            },
+            {
+              "from": 8,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 80
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 9,
+              "paid": 72
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 8,
+              "paid": 64
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 10,
+              "paid": 40
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 11,
+              "paid": 66
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 9,
+              "paid": 54
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 48
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 48
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 48
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 48
+            }
+          ]
+        },
+        {
+          "sol": 2,
+          "reserves": [
+            138,
+            248,
+            110
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 79,
+          "population": 120,
+          "treasury": 2072,
+          "hash": "d40832892870d7d7ecf4da0a60305bddde46ba18f85d8dc272da1450d36d2b24",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 12,
+              "paid": 48
+            },
+            {
+              "from": 8,
+              "to": 2,
+              "good": 0,
+              "qty": 13,
+              "paid": 78
+            },
+            {
+              "from": 8,
+              "to": 1,
+              "good": 1,
+              "qty": 20,
+              "paid": 80
+            },
+            {
+              "from": 8,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 9,
+              "paid": 54
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 8,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 10,
+              "paid": 40
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 11,
+              "paid": 66
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 9,
+              "paid": 54
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 3,
+          "reserves": [
+            147,
+            262,
+            117
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 81,
+          "population": 120,
+          "treasury": 1865,
+          "hash": "d9190139c2fc9744d71d8bfad0d86407cb500b53b281ce4a885f3d87b4c6db80",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 8,
+              "to": 2,
+              "good": 0,
+              "qty": 13,
+              "paid": 78
+            },
+            {
+              "from": 8,
+              "to": 1,
+              "good": 1,
+              "qty": 20,
+              "paid": 60
+            },
+            {
+              "from": 8,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 9,
+              "paid": 54
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 8,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 14,
+              "paid": 42
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 10,
+              "paid": 30
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 11,
+              "paid": 66
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 9,
+              "paid": 54
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 4,
+          "reserves": [
+            156,
+            276,
+            124
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 83,
+          "population": 120,
+          "treasury": 1814,
+          "hash": "707fe9d6bbfc6f6aa143649cdc5244c19e89e0e7fa31209cbd440a4f25dc30b1",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 24,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 21,
+              "paid": 63
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 15,
+              "paid": 45
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 114
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 78
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 5,
+          "reserves": [
+            165,
+            290,
+            131
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 85,
+          "population": 120,
+          "treasury": 1790,
+          "hash": "0f14927d021bd0e9cf4ac5047d5d6144bc4eb0c5bc0e543ae49520400ca0be31",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 24,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 21,
+              "paid": 63
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 15,
+              "paid": 45
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 114
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 78
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 6,
+          "reserves": [
+            169,
+            304,
+            138
+          ],
+          "production": [
+            44,
+            90,
+            55
+          ],
+          "wellbeing": 87,
+          "population": 120,
+          "treasury": 1784,
+          "hash": "e05eae58ab6c331f1b1e330cf85ad02c9f970458d5c022712a95c5c896e5a46e",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 24,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 21,
+              "paid": 63
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 15,
+              "paid": 45
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 95
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 80
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 65
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 7,
+          "reserves": [
+            178,
+            318,
+            145
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 89,
+          "population": 120,
+          "treasury": 1409,
+          "hash": "2f10f261cb9e5403fb6bf3a73e8c9a5ed57a1d83f678ba60af1951e3835dff2a",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 24,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 21,
+              "paid": 63
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 15,
+              "paid": 45
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 8,
+          "reserves": [
+            187,
+            332,
+            152
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 91,
+          "population": 120,
+          "treasury": 1427,
+          "hash": "7fa8b892ed12536672f4587df5bdee276a73a24fa79800e265de7a6c9bc02a23",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 24,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 21,
+              "paid": 63
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 15,
+              "paid": 45
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 9,
+          "reserves": [
+            196,
+            363,
+            159
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 93,
+          "population": 120,
+          "treasury": 1444,
+          "hash": "91379677cce6c57712cc06b8d3a7fa5f8e3827bf4a6edb4026d0d27f3b9ccd21",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 82,
+              "paid": 82
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 6,
+              "paid": 18
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 19,
+              "paid": 57
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 10,
+          "reserves": [
+            205,
+            394,
+            166
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 95,
+          "population": 120,
+          "treasury": 1066,
+          "hash": "04226bdce9246ab9e1c21290deb6fb23eeea6494a94bc7da80948b5bb921490a",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 11,
+              "paid": 33
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 19,
+              "paid": 57
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 11,
+          "reserves": [
+            214,
+            425,
+            173
+          ],
+          "production": [
+            49,
+            90,
+            55
+          ],
+          "wellbeing": 97,
+          "population": 120,
+          "treasury": 1094,
+          "hash": "44d821358aa461cb7172981ea92ce28cdf138fbce70bf4c205c314cb43470302",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 11,
+              "paid": 33
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 19,
+              "paid": 57
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 12,
+          "reserves": [
+            223,
+            443,
+            180
+          ],
+          "production": [
+            49,
+            77,
+            55
+          ],
+          "wellbeing": 99,
+          "population": 120,
+          "treasury": 1127,
+          "hash": "5e94ff07924f7efb90aeab3390852571faeb9503a8158b85f72b023dbb41fdfc",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 11,
+              "paid": 33
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 19,
+              "paid": 57
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 13,
+          "reserves": [
+            241,
+            480,
+            196
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 120,
+          "treasury": 1075,
+          "hash": "1349440fb613aca9309335897e5605799ebe943ef745d3665ac529235f248706",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 11,
+              "paid": 33
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 19,
+              "paid": 57
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 14,
+          "reserves": [
+            259,
+            517,
+            212
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 120,
+          "treasury": 1117,
+          "hash": "00fe3c5360e9a925b2f747882f3a46ec37d4a2f8286ffd957c88fc3e60bd6015",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 19,
+              "paid": 57
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 15,
+          "reserves": [
+            277,
+            554,
+            228
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 120,
+          "treasury": 1162,
+          "hash": "752d9e45efcccbf6a35431c8c66df1e91f7a4f6df59c460ac8db1116227cff13",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 19,
+              "paid": 57
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 16,
+          "reserves": [
+            295,
+            591,
+            244
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 120,
+          "treasury": 993,
+          "hash": "fda2b3aec418e6460d3a7f6dd1360e957b2aa33f980880014fdecba4f05dfed1",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 16,
+              "paid": 96
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 19,
+              "paid": 57
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 16,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 19,
+              "paid": 76
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 16,
+              "paid": 64
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 13,
+              "paid": 52
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 17,
+          "reserves": [
+            309,
+            624,
+            256
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 132,
+          "treasury": 1064,
+          "hash": "c71383fe0ba07eabe978dbd8fe3bef4800a78a3e7edf5875be852e4862b010d9",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 17,
+              "paid": 102
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 15,
+              "paid": 90
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 20,
+              "paid": 60
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 18,
+              "paid": 54
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 14,
+              "paid": 42
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 20,
+              "paid": 80
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 18,
+              "paid": 72
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 18,
+          "reserves": [
+            323,
+            657,
+            268
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 132,
+          "treasury": 1134,
+          "hash": "a459cec70cb99a30a4005687d041f6ce8d5075455ac9e413a78e355c014ff844",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 17,
+              "paid": 102
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 15,
+              "paid": 90
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 20,
+              "paid": 60
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 18,
+              "paid": 54
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 14,
+              "paid": 42
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 20,
+              "paid": 80
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 18,
+              "paid": 72
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 19,
+          "reserves": [
+            337,
+            690,
+            280
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 132,
+          "treasury": 1204,
+          "hash": "e04f97cfe217295873f7a6265b7eb417dca15aa58e361ded400901d659bd12b3",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 54,
+              "paid": 54
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 17,
+              "paid": 102
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 15,
+              "paid": 90
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 20,
+              "paid": 60
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 18,
+              "paid": 54
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 14,
+              "paid": 42
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 20,
+              "paid": 80
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 18,
+              "paid": 72
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 20,
+          "reserves": [
+            351,
+            723,
+            292
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 132,
+          "treasury": 1273,
+          "hash": "f12aaf2f9e6823f8e8ebcd836d2b7d0bec9574d7443ada246c7b62086077de27",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 54,
+              "paid": 54
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 17,
+              "paid": 102
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 15,
+              "paid": 90
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 20,
+              "paid": 60
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 18,
+              "paid": 54
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 14,
+              "paid": 42
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 20,
+              "paid": 80
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 18,
+              "paid": 72
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 21,
+          "reserves": [
+            367,
+            756,
+            304
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 98,
+          "population": 132,
+          "treasury": 1343,
+          "hash": "71d2ac1b30adca09be3f0951e9f77a6a4efa937df803d868bb0da7e8f426643a",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 19,
+              "paid": 19
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 17,
+              "paid": 102
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 13,
+              "paid": 78
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 20,
+              "paid": 60
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 18,
+              "paid": 54
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 14,
+              "paid": 42
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 20,
+              "paid": 80
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 18,
+              "paid": 72
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 22,
+          "reserves": [
+            381,
+            789,
+            316
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 132,
+          "treasury": 1194,
+          "hash": "317619d58f4c6ec11e6a9a64c1391d84fc3e44a76be4cf3aa790410c7b84163c",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 8,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 8,
+              "to": 1,
+              "good": 1,
+              "qty": 22,
+              "paid": 66
+            },
+            {
+              "from": 8,
+              "to": 3,
+              "good": 2,
+              "qty": 17,
+              "paid": 68
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 8,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 12,
+              "paid": 36
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 10,
+              "paid": 30
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 8,
+              "paid": 24
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 12,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 9,
+              "paid": 36
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 23,
+          "reserves": [
+            389,
+            822,
+            328
+          ],
+          "production": [
+            52,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 132,
+          "treasury": 1045,
+          "hash": "720efad8d26c0c3096b624c93df1c11a733ba19f774fc27914f8296967b7ef75",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 8,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 8,
+              "to": 1,
+              "good": 1,
+              "qty": 22,
+              "paid": 66
+            },
+            {
+              "from": 8,
+              "to": 3,
+              "good": 2,
+              "qty": 17,
+              "paid": 68
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 8,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 12,
+              "paid": 36
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 10,
+              "paid": 30
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 8,
+              "paid": 24
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 12,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 9,
+              "paid": 36
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        },
+        {
+          "sol": 24,
+          "reserves": [
+            403,
+            855,
+            340
+          ],
+          "production": [
+            58,
+            98,
+            64
+          ],
+          "wellbeing": 100,
+          "population": 132,
+          "treasury": 896,
+          "hash": "749602689283a3e5306e001affc61bfa1dcdeac9c22dcb8c33051cff96679d8e",
+          "trades": [
+            {
+              "from": 2,
+              "to": 0,
+              "good": 4,
+              "qty": 110,
+              "paid": 110
+            },
+            {
+              "from": 1,
+              "to": 0,
+              "good": 4,
+              "qty": 80,
+              "paid": 80
+            },
+            {
+              "from": 3,
+              "to": 0,
+              "good": 4,
+              "qty": 85,
+              "paid": 85
+            },
+            {
+              "from": 4,
+              "to": 0,
+              "good": 4,
+              "qty": 105,
+              "paid": 105
+            },
+            {
+              "from": 2,
+              "to": 1,
+              "good": 1,
+              "qty": 13,
+              "paid": 39
+            },
+            {
+              "from": 8,
+              "to": 2,
+              "good": 0,
+              "qty": 14,
+              "paid": 84
+            },
+            {
+              "from": 8,
+              "to": 1,
+              "good": 1,
+              "qty": 22,
+              "paid": 66
+            },
+            {
+              "from": 8,
+              "to": 3,
+              "good": 2,
+              "qty": 17,
+              "paid": 68
+            },
+            {
+              "from": 5,
+              "to": 2,
+              "good": 0,
+              "qty": 12,
+              "paid": 72
+            },
+            {
+              "from": 6,
+              "to": 2,
+              "good": 0,
+              "qty": 10,
+              "paid": 60
+            },
+            {
+              "from": 7,
+              "to": 2,
+              "good": 0,
+              "qty": 8,
+              "paid": 48
+            },
+            {
+              "from": 5,
+              "to": 1,
+              "good": 1,
+              "qty": 12,
+              "paid": 36
+            },
+            {
+              "from": 6,
+              "to": 1,
+              "good": 1,
+              "qty": 10,
+              "paid": 30
+            },
+            {
+              "from": 7,
+              "to": 1,
+              "good": 1,
+              "qty": 8,
+              "paid": 24
+            },
+            {
+              "from": 5,
+              "to": 3,
+              "good": 2,
+              "qty": 14,
+              "paid": 56
+            },
+            {
+              "from": 6,
+              "to": 3,
+              "good": 2,
+              "qty": 12,
+              "paid": 48
+            },
+            {
+              "from": 7,
+              "to": 3,
+              "good": 2,
+              "qty": 9,
+              "paid": 36
+            },
+            {
+              "from": 0,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 1,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 2,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            },
+            {
+              "from": 3,
+              "to": 4,
+              "good": 3,
+              "qty": 2,
+              "paid": 42
+            }
+          ]
+        }
+      ],
+      "last_shortage": [
+        0,
+        21,
+        0,
+        0,
+        40
+      ],
+      "hash": "f79cb9cb9957d52a0466f24e86440ec574ffa3903b665d60c66c17b0644d325d"
+    },
+    "run_id": "3"
+  },
+  "transactions": [
+    {
+      "hash": "9oyozARs1mzEALvrZA8WoaHsqZZRCwvUQe9JnF3d9yej",
+      "sol": 3,
+      "gas": [
+        11982233775189,
+        223182562500
+      ]
+    },
+    {
+      "hash": "4MQDz9Ljtq9NmKAXZvQ4cwSZGEJKSRD1aasQdui6qyUS",
+      "sol": 6,
+      "gas": [
+        20803062653599,
+        223182562500
+      ]
+    },
+    {
+      "hash": "7Pcajd1ZfdTPzrDKaepzHmv4Zc9u56Uvvir2cM9ReFKa",
+      "sol": 9,
+      "gas": [
+        29621128153957,
+        223182562500
+      ]
+    },
+    {
+      "hash": "9RAmtXmdUWWz3p7c8cJ1LkdNpyUmdM9wsYhStPP3g1Jj",
+      "sol": 12,
+      "gas": [
+        38179657105129,
+        223182562500
+      ]
+    },
+    {
+      "hash": "8pSq316ibwqqHrwiTWMHPjqtV9U3jQhodzkqmRUNfdUH",
+      "sol": 15,
+      "gas": [
+        46455820139779,
+        223182562500
+      ]
+    },
+    {
+      "hash": "72eWAfTaWR4phQffQQLdGCnZBsmDCrLjjXsHdGS6Az47",
+      "sol": 18,
+      "gas": [
+        54893424622690,
+        223182562500
+      ]
+    },
+    {
+      "hash": "84arw7v54pz2rVWAoVPL2FKku48VmA5fGSMFpvNr8CKw",
+      "sol": 21,
+      "gas": [
+        64630469787262,
+        223182562500
+      ]
+    },
+    {
+      "hash": "7uMCtD2efa83W2M4c2B8NdbbmFdVtDj9t9VAtDUhKV2h",
+      "sol": 24,
+      "gas": [
+        101368280666608,
+        223182562500
+      ]
+    }
+  ]
+}
