@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers";
 import {
   Account,
   JsonRpcProvider,
+  FailoverRpcProvider,
   KeyPairSigner,
   PublicKey,
   actions,
@@ -91,7 +92,10 @@ export async function POST(request: Request) {
         .bind(id, accountId, body.sessionPublicKey, ip, Date.now())
         .run();
     }
-    const p = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" });
+    const p = new FailoverRpcProvider([
+      new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" }),
+      new JsonRpcProvider({ url: "https://rpc.testnet.near.org" }),
+    ]);
     const sponsor = new Account(
       e.NEAR_SPONSOR_ID!,
       p,
@@ -111,11 +115,14 @@ export async function POST(request: Request) {
       await p.viewAccount({ accountId });
       exists = true;
     } catch (error) {
-      if (
-        !String(error).includes("does not exist") &&
-        !String(error).includes("UNKNOWN_ACCOUNT")
-      )
-        throw error;
+      const missing = (value: unknown): boolean => {
+        const failures = (value as { errors?: unknown[] })?.errors;
+        if (failures?.length) return failures.some(missing);
+        return /does not exist|UNKNOWN_ACCOUNT|AccountDoesNotExist/.test(
+          String(value),
+        );
+      };
+      if (!missing(error)) throw error;
     }
     if (!exists)
       await sponsor.signAndSendTransaction({

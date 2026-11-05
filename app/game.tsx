@@ -358,8 +358,25 @@ export default function Game() {
         throw Error(
           "This recovery file does not match the current testnet game.",
         );
-      localStorage.setItem("last-signal-credentials", JSON.stringify(c));
-      setError("Recovery loaded. Resume your colony.");
+      if (c.runId) {
+        const record = await readRun(c.runId, config!);
+        if (record.owner !== c.accountId)
+          throw Error("Recovery account does not own this colony.");
+        localStorage.setItem("last-signal-credentials", JSON.stringify(c));
+        commit({
+          record,
+          mode: "near",
+          txs: Array.isArray(c.txs)
+            ? c.txs.filter((t: unknown) => typeof t === "string")
+            : [],
+        });
+        setScreen("game");
+        setPanel("none");
+        setError("");
+      } else {
+        localStorage.setItem("last-signal-credentials", JSON.stringify(c));
+        setError("Account recovery loaded. Start or resume a colony.");
+      }
     } catch (e) {
       setError(String(e));
     }
@@ -446,6 +463,19 @@ export default function Game() {
               ? "A testnet account is created in this browser. Export recovery in the game to keep access."
               : "Practice uses the same Rust simulation locally. It creates no blockchain transactions."}
           </p>
+          {config && (
+            <label className="recovery-import">
+              Restore a colony from its private recovery file
+              <input
+                type="file"
+                accept="application/json"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void importRecovery(f);
+                }}
+              />
+            </label>
+          )}
           {error && (
             <div role="alert" className="error">
               {error}
@@ -1414,13 +1444,14 @@ export default function Game() {
                   {saved.mode === "near" && (
                     <button
                       onClick={() =>
-                        download(
-                          "last-signal-recovery-private.json",
-                          JSON.parse(
+                        download("last-signal-recovery-private.json", {
+                          ...JSON.parse(
                             localStorage.getItem("last-signal-credentials") ||
                               "null",
                           ),
-                        )
+                          runId: saved.record.run_id,
+                          txs: saved.txs,
+                        })
                       }
                     >
                       Export private recovery

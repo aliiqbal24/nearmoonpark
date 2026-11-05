@@ -31,6 +31,7 @@ export async function provision(config: Config): Promise<Credentials> {
   }
   const keys = JSON.parse(pending);
   const r = await fetch("/api/provision", {
+    signal: AbortSignal.timeout(45000),
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -58,7 +59,10 @@ async function client(c: Credentials, config: Config) {
   const m = await api();
   return new m.Account(
     c.accountId,
-    new m.JsonRpcProvider({ url: config.rpcUrl }),
+    new m.FailoverRpcProvider([
+      new m.JsonRpcProvider({ url: config.rpcUrl }),
+      new m.JsonRpcProvider({ url: config.fallbackRpcUrl }),
+    ]),
     m.KeyPairSigner.fromSecretKey(c.secretKey as `ed25519:${string}`),
   );
 }

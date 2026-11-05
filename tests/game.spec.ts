@@ -82,7 +82,10 @@ test("small screen, keyboard and no horizontal overflow", async ({ page }) => {
   ).toBe(true);
 });
 
-test("NEAR guest provisioning and a real signed decision", async ({ page }) => {
+test("NEAR guest provisioning and a real signed decision", async ({
+  page,
+  browser,
+}) => {
   test.skip(!process.env.RUN_NEAR, "Opt in to testnet-sponsored verification.");
   test.setTimeout(240000);
   await page.goto("/");
@@ -90,7 +93,7 @@ test("NEAR guest provisioning and a real signed decision", async ({ page }) => {
   await page.getByRole("button", { name: "Take command", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Skip transmission" }),
-  ).toBeVisible({ timeout: 120000 });
+  ).toBeEnabled({ timeout: 120000 });
   await page.getByRole("button", { name: "Skip transmission" }).click();
   await expect(
     page.getByRole("button", { name: "NEAR TESTNET", exact: true }),
@@ -113,4 +116,28 @@ test("NEAR guest provisioning and a real signed decision", async ({ page }) => {
     path: "outputs/near-transaction.png",
     fullPage: true,
   });
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export private recovery" }).click();
+  const download = await downloading;
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream!) chunks.push(chunk);
+  const recovery = Buffer.concat(chunks);
+  const clean = await browser.newContext();
+  const restored = await clean.newPage();
+  await restored.goto(process.env.GAME_URL || "http://localhost:5173");
+  await restored
+    .getByLabel("Restore a colony from its private recovery file")
+    .setInputFiles({
+      name: "recovery.json",
+      mimeType: "application/json",
+      buffer: recovery,
+    });
+  await expect(
+    restored.getByRole("button", { name: "NEAR TESTNET", exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(
+    restored.getByRole("heading", { name: "A colony in motion." }),
+  ).toBeVisible();
+  await clean.close();
 });
