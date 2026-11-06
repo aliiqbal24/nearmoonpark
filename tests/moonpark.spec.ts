@@ -135,14 +135,21 @@ test("overlap is rejected without spending and construction survives reload", as
   );
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Build path", exact: true }).click();
-  const tile = project(page, 20.2, 20.2);
+  const tile = project(page, 20.2, 19.2);
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(
+        localStorage.getItem("moonpark-current")!,
+      ).state.run.paths.includes(19 * 32 + 20),
+    ),
+  ).toBe(false);
   await page.mouse.click(tile.x, tile.y);
   await expect
     .poll(() =>
       page.evaluate(() =>
         JSON.parse(
           localStorage.getItem("moonpark-current")!,
-        ).state.run.paths.includes(20 * 32 + 20),
+        ).state.run.paths.includes(19 * 32 + 20),
       ),
     )
     .toBe(true);
@@ -153,7 +160,7 @@ test("overlap is rejected without spending and construction survives reload", as
       page.evaluate(() =>
         JSON.parse(
           localStorage.getItem("moonpark-current")!,
-        ).state.run.paths.includes(20 * 32 + 20),
+        ).state.run.paths.includes(19 * 32 + 20),
       ),
     )
     .toBe(false);

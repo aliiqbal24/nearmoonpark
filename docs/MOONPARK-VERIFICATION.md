@@ -19,6 +19,8 @@ The actual prize challenge remains closed. Verification identities and anonymous
 
 [Browser testnet evidence](moon-browser-smoke.json) records a complete round against the final twenty-tick contract build. The browser provisioned its restricted-key account, constructed and connected a coaster, ran at 4×, reloaded and resumed mid-round, and finished in approximately 2½ minutes. The confirmed final state exactly matched the client engine, with no pending operations or browser errors.
 
+All five browser checks also passed against the public hosted site, including its D1-backed sponsorship endpoint and a separate complete NEAR round. That hosted round finished with 493 transfers and 5,868 points in approximately three minutes, with successful reload/resume and no browser errors. Its public run identifier and state hash are included in the same evidence file. The path test additionally verifies purchasing a previously absent tile before erasing it.
+
 ## Browser and deployment
 
 Playwright covers the opening/skip flow, construction and smart connection, ticket/launch controls, path creation/removal, the coaster camera, economy ledger, full-round closing, save/resume, persistent canvas, invalid overlap without spending, mobile layout and the top-five conditional pledge. Four routine browser tests and the opt-in full NEAR browser campaign pass. Unauthenticated ranked provisioning and profile edits are rejected. A delayed account-setup test exposed and verified the fix for the intro camera overriding the park view. TypeScript and a production Worker/browser build are checked separately. Local practice does not pretend to settle on NEAR.

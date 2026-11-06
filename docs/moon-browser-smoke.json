@@ -25,5 +25,25 @@
     "mid-round reload and resume",
     "canonical completion identical to local engine"
   ],
-  "browserTestPassed": true
+  "browserTestPassed": true,
+  "hostedVerification": {
+    "url": "https://last-signal-mars.ajiqbal1.chatgpt.site",
+    "runId": "5",
+    "owner": "m613a5461300b962f3c92.moonpark-mw4vwziy.testnet",
+    "finished": true,
+    "ranked": false,
+    "score": {
+      "guests": 4446,
+      "finance": 641,
+      "variety": 781,
+      "total": 5868,
+      "happy": 48,
+      "equity_gain": 38500,
+      "unique": 150,
+      "satisfaction": 7114
+    },
+    "tradeCount": 493,
+    "hash": "1232670a1ea3d399047d28d0853ae6d21ef5c1adb28a49bf7907e8f2dfc12e34",
+    "codeHash": "6GfxGwT89EnH5BAAd3eE6ZwEkwZswgktcbnJMSavd3KH"
+  }
 }
