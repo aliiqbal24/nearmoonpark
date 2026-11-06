@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LAST SIGNAL — Humanity’s Last Home",
+  title: "MOONPARK — A NEAR Future",
   description:
-    "Earth is gone. Govern humanity’s last Martian settlement in a ten-minute economic survival game on NEAR.",
+    "Build the Moon’s best day out. A lively nine-minute theme park tycoon with rocket arrivals, mass-driver coasters and an economy on NEAR.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

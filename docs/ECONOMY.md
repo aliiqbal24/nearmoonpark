@@ -1,3 +1,5 @@
+> These notes describe the retained Mars prototype at `/legacy`. Current Moonpark rules and verification are in [MOONPARK.md](MOONPARK.md) and [MOONPARK-VERIFICATION.md](MOONPARK-VERIFICATION.md).
+
 # Simulation v1
 
 One turn is one Martian sol. All quantities are fictional gameplay units; money and material quantities are integers. Prices have no relationship to NEAR's market price.

@@ -14,7 +14,7 @@ test("a full colony: story, aid, decisions, market, ending, refresh and replay",
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/legacy");
   await expect(
     page.getByRole("heading", { name: /LAST SIGNAL/ }),
   ).toBeVisible();
@@ -81,7 +81,7 @@ test("a full colony: story, aid, decisions, market, ending, refresh and replay",
 });
 test("small screen, keyboard and no horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/legacy");
   await page.getByRole("checkbox").uncheck();
   await page.getByRole("button", { name: "Take command", exact: true }).click();
   await page.getByRole("button", { name: "Skip transmission" }).click();
@@ -100,7 +100,7 @@ test("NEAR guest provisioning and a real signed decision", async ({
 }) => {
   test.skip(!process.env.RUN_NEAR, "Opt in to testnet-sponsored verification.");
   test.setTimeout(240000);
-  await page.goto("/");
+  await page.goto("/legacy");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Take command", exact: true }).click();
   await expect(
@@ -158,7 +158,7 @@ test("the village stays interactive: camera, residents, speed and opening", asyn
   page,
 }) => {
   test.setTimeout(90000);
-  await page.goto("/");
+  await page.goto("/legacy");
   await page.getByRole("checkbox").uncheck();
   await page.getByRole("button", { name: "Take command", exact: true }).click();
   await expect(page.locator(".opening-canvas canvas")).toBeVisible();

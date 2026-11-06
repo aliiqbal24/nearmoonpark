@@ -20,14 +20,20 @@ declare global {
 }
 
 declare namespace VinextRouteTypes {
-  type PageRoute = "/";
+  type PageRoute = "/" | "/legacy" | "/privacy" | "/terms";
   type LayoutRoute = "/";
-  type RouteHandlerRoute = "/api/provision";
-  type AppRoute = "/" | "/api/provision";
+  type RouteHandlerRoute = "/api/auth/[...all]" | "/api/moon/profile" | "/api/moon/provision" | "/api/provision";
+  type AppRoute = "/" | "/api/auth/[...all]" | "/api/moon/profile" | "/api/moon/provision" | "/api/provision" | "/legacy" | "/privacy" | "/terms";
 
   interface ParamMap {
     "/": {};
+    "/api/auth/[...all]": { all: string[]; };
+    "/api/moon/profile": {};
+    "/api/moon/provision": {};
     "/api/provision": {};
+    "/legacy": {};
+    "/privacy": {};
+    "/terms": {};
   }
 
   interface LayoutSlotMap {

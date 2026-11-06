@@ -1,0 +1,402 @@
+export const VERSION = "moonpark-v1";
+export const END = 540;
+export const GOLD_SCORE = 7000;
+export const WIDTH = 32;
+export const HEIGHT = 24;
+export const CUTOFF = "2026-11-18T23:59:00Z";
+export type Kind =
+  | "bounce"
+  | "wheel"
+  | "rover"
+  | "coaster"
+  | "food"
+  | "drink"
+  | "depot"
+  | "solar";
+export type Blueprint = {
+  kind: Kind;
+  name: string;
+  cost: number;
+  w: number;
+  h: number;
+  seats: number;
+  cycle: number;
+  price: number;
+  power: number;
+  color: string;
+  description: string;
+};
+export const CATALOG: Blueprint[] = [
+  {
+    kind: "bounce",
+    name: "Lunar Bounce",
+    cost: 30000,
+    w: 3,
+    h: 3,
+    seats: 6,
+    cycle: 20,
+    price: 400,
+    power: 1,
+    color: "#a486ff",
+    description: "One small leap. Six very happy astronauts.",
+  },
+  {
+    kind: "wheel",
+    name: "Earthrise Wheel",
+    cost: 60000,
+    w: 4,
+    h: 4,
+    seats: 8,
+    cycle: 40,
+    price: 600,
+    power: 2,
+    color: "#f8cf76",
+    description: "The best view of home in the solar system.",
+  },
+  {
+    kind: "rover",
+    name: "Rover Rally",
+    cost: 80000,
+    w: 5,
+    h: 4,
+    seats: 6,
+    cycle: 30,
+    price: 700,
+    power: 2,
+    color: "#ff9d7f",
+    description: "A little moon dust. A lot of questionable driving.",
+  },
+  {
+    kind: "coaster",
+    name: "Mass-Driver Coaster",
+    cost: 120000,
+    w: 6,
+    h: 8,
+    seats: 8,
+    cycle: 30,
+    price: 1000,
+    power: 3,
+    color: "#8eddd3",
+    description: "Industrial launch technology. Recreational screaming.",
+  },
+  {
+    kind: "food",
+    name: "Moon Pie Kitchen",
+    cost: 15000,
+    w: 2,
+    h: 2,
+    seats: 1,
+    cycle: 3,
+    price: 500,
+    power: 1,
+    color: "#f2ad6b",
+    description: "Omar buys his own ingredients and runs the kitchen.",
+  },
+  {
+    kind: "drink",
+    name: "Crater Coolers",
+    cost: 15000,
+    w: 2,
+    h: 2,
+    seats: 1,
+    cycle: 3,
+    price: 400,
+    power: 1,
+    color: "#7ad7f1",
+    description: "Mina sets prices from stock and demand.",
+  },
+  {
+    kind: "depot",
+    name: "Lunar Care Depot",
+    cost: 25000,
+    w: 3,
+    h: 2,
+    seats: 0,
+    cycle: 5,
+    price: 1000,
+    power: 1,
+    color: "#ea91ba",
+    description: "Nia's robots automatically service connected rides.",
+  },
+  {
+    kind: "solar",
+    name: "Solar Canopy",
+    cost: 30000,
+    w: 3,
+    h: 3,
+    seats: 0,
+    cycle: 0,
+    price: 0,
+    power: 0,
+    color: "#91b9ff",
+    description: "Four extra units of clean power.",
+  },
+];
+export const blueprint = (kind: string) =>
+  CATALOG.find((x) => x.kind === kind)!;
+export const isRide = (kind: string) =>
+  ["bounce", "wheel", "rover", "coaster"].includes(kind);
+export const isTenant = (kind: string) =>
+  ["food", "drink", "depot"].includes(kind);
+export const resaleValue = (b: Building) =>
+  Math.floor(
+    (b.invested *
+      70 *
+      (isRide(b.kind) ? Math.max(0, Math.min(100, b.condition)) : 100)) /
+      10000,
+  );
+export type Building = {
+  id: number;
+  kind: Kind;
+  x: number;
+  z: number;
+  rotation: number;
+  variant: number;
+  price: number;
+  invested: number;
+  level: number;
+  launch: number;
+  enabled: boolean;
+  sold: boolean;
+  ready_at: number;
+  connected: boolean;
+  powered: boolean;
+  condition: number;
+  queue: number[];
+  riders: number[];
+  cycle_left: number;
+  served: number;
+  revenue: number;
+  cash: number;
+  stock: number;
+  rent: number;
+  delivery_qty: number;
+  delivery_at: number;
+  recent: number;
+  reason: string;
+  insolvent: boolean;
+};
+export type Guest = {
+  id: number;
+  group: number;
+  arrival: number;
+  cash: number;
+  satisfaction: number;
+  hunger: number;
+  thirst: number;
+  cell: number;
+  route: number[];
+  status: string;
+  target: number | null;
+  timer: number;
+  rides: string[];
+  visits: number;
+  thought: string;
+};
+export type Trade = {
+  tick: number;
+  from: string;
+  to: string;
+  amount: number;
+  good: string;
+  qty: number;
+};
+export type Score = {
+  guests: number;
+  finance: number;
+  variety: number;
+  total: number;
+  happy: number;
+  equity_gain: number;
+  unique: number;
+  satisfaction: number;
+};
+export type Run = {
+  version: string;
+  tick: number;
+  revision: number;
+  cash: number;
+  opening_equity: number;
+  supplier_cash: number;
+  builder_cash: number;
+  money_supply: number;
+  supplies: number[];
+  consumed: number[];
+  paths: number[];
+  buildings: Building[];
+  guests: Guest[];
+  trades: Trade[];
+  trade_count: number;
+  events: { tick: number; text: string }[];
+  actions: number;
+  finished: boolean;
+  score: Score;
+  hash: string;
+};
+export type Command = {
+  kind:
+    | "build"
+    | "path"
+    | "erase_path"
+    | "connect"
+    | "price"
+    | "launch"
+    | "upgrade"
+    | "toggle"
+    | "rent"
+    | "invest"
+    | "sell";
+  building?: number;
+  item?: Kind;
+  x?: number;
+  z?: number;
+  rotation?: number;
+  variant?: number;
+  value?: number;
+};
+export type Entry = {
+  player_id: string;
+  display_name: string;
+  run_id: string;
+  owner: string;
+  score: Score;
+  completed_at: string;
+};
+export type RecordState = {
+  run_id: string;
+  owner: string;
+  player_id: string;
+  display_name: string;
+  ranked: boolean;
+  started_at: string;
+  deadline: string;
+  last_request: string;
+  run: Run;
+};
+export type Placement = {
+  kind: Kind | "path" | "erase";
+  rotation: number;
+  variant: number;
+};
+export type Detail = {
+  kind: "building" | "guest";
+  id: number;
+  x: number;
+  y: number;
+};
+export const money = (n: number) =>
+  (n / 100).toLocaleString("en-US", { maximumFractionDigits: n % 100 ? 2 : 0 });
+export const clock = (n: number) =>
+  `${Math.floor(Math.max(0, n) / 60)}:${String(Math.floor(Math.max(0, n) % 60)).padStart(2, "0")}`;
+export function footprint(b: Pick<Building, "kind" | "variant" | "rotation">) {
+  const a = blueprint(b.kind);
+  let w = a.w,
+    h = a.h;
+  if (b.kind === "coaster" && b.variant === 1) {
+    w = 8;
+    h = 6;
+  }
+  return b.rotation % 2 ? { w: h, h: w } : { w, h };
+}
+export function entrance(
+  b: Pick<Building, "kind" | "variant" | "rotation" | "x" | "z">,
+) {
+  const { w, h } = footprint(b);
+  return b.rotation % 4 === 0
+    ? { x: b.x + Math.floor(w / 2), z: b.z + h }
+    : b.rotation % 4 === 1
+      ? { x: b.x - 1, z: b.z + Math.floor(h / 2) }
+      : b.rotation % 4 === 2
+        ? { x: b.x + Math.floor(w / 2), z: b.z - 1 }
+        : { x: b.x + w, z: b.z + Math.floor(h / 2) };
+}
+export const guestName = (id: number) =>
+  [
+    "Ari",
+    "Noor",
+    "Jun",
+    "Lena",
+    "Samir",
+    "Eva",
+    "Kai",
+    "Amara",
+    "Leo",
+    "Mina",
+    "Omar",
+    "Ada",
+    "Niko",
+    "Zoe",
+    "Isla",
+    "Idris",
+  ][id % 16] +
+  " " +
+  ["Chen", "Park", "Ortiz", "Laurent", "Reed", "Sato"][Math.floor(id / 16) % 6];
+function gridRoute(
+  run: Run,
+  from: number,
+  to: number,
+  build: boolean,
+): number[] {
+  const paths = new Set(run.paths),
+    occupied = new Set<number>();
+  if (build)
+    for (const b of run.buildings) {
+      if (b.sold) continue;
+      const f = footprint(b);
+      for (let z = b.z; z < b.z + f.h; z++)
+        for (let x = b.x; x < b.x + f.w; x++) occupied.add(z * WIDTH + x);
+    }
+  if (
+    from < 0 ||
+    to < 0 ||
+    from >= WIDTH * HEIGHT ||
+    to >= WIDTH * HEIGHT ||
+    (build && occupied.has(from))
+  )
+    return [];
+  const prev = new Int16Array(WIDTH * HEIGHT).fill(-1),
+    distance = new Uint16Array(WIDTH * HEIGHT).fill(65535),
+    queue = [from];
+  prev[from] = from;
+  distance[from] = 0;
+  while (queue.length) {
+    const c = queue.shift()!;
+    if (c === to) {
+      const out = [to];
+      let n = to;
+      while (n !== from) {
+        n = prev[n];
+        out.push(n);
+      }
+      return out.reverse();
+    }
+    const x = c % WIDTH,
+      z = Math.floor(c / WIDTH);
+    for (const n of [
+      x > 0 ? c - 1 : -1,
+      x + 1 < WIDTH ? c + 1 : -1,
+      z > 0 ? c - WIDTH : -1,
+      z + 1 < HEIGHT ? c + WIDTH : -1,
+    ]) {
+      if (n < 0 || (build ? occupied.has(n) : !paths.has(n))) continue;
+      const cost = build && paths.has(n) ? 0 : 1,
+        next = distance[c] + cost;
+      if (next < distance[n]) {
+        distance[n] = next;
+        prev[n] = c;
+        if (cost === 0) queue.unshift(n);
+        else queue.push(n);
+      }
+    }
+  }
+  return [];
+}
+export function connectionCost(run: Run, b: Building): number | null {
+  const e = entrance(b),
+    route = gridRoute(run, e.z * WIDTH + e.x, 23 * WIDTH + 15, true);
+  if (!route.length) return null;
+  return route.filter((c) => !run.paths.includes(c)).length * 200;
+}
+export function walkingRoute(run: Run, from: number, to: number): number[] {
+  return gridRoute(run, from, to, false);
+}

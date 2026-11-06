@@ -1,0 +1,29 @@
+{
+  "contractId": "moonpark-mw4vwziy.testnet",
+  "codeHash": "6GfxGwT89EnH5BAAd3eE6ZwEkwZswgktcbnJMSavd3KH",
+  "runId": "4",
+  "owner": "mc8a3f0362be39c3023f5.moonpark-mw4vwziy.testnet",
+  "ranked": false,
+  "tick": 540,
+  "revision": 30,
+  "hash": "1232670a1ea3d399047d28d0853ae6d21ef5c1adb28a49bf7907e8f2dfc12e34",
+  "score": {
+    "guests": 4446,
+    "finance": 641,
+    "variety": 781,
+    "total": 5868,
+    "happy": 48,
+    "equity_gain": 38500,
+    "unique": 150,
+    "satisfaction": 7114
+  },
+  "tradeCount": 493,
+  "flow": [
+    "sponsored browser-generated restricted key",
+    "coaster construction and connection",
+    "4x speed",
+    "mid-round reload and resume",
+    "canonical completion identical to local engine"
+  ],
+  "browserTestPassed": true
+}

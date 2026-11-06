@@ -1,91 +1,84 @@
-# LAST SIGNAL
+# MOONPARK — A NEAR Future
 
-Earth is gone. Govern humanity's last Martian settlement through 24 sols and eight decisions. NPC institutions buy inputs, produce essentials, pay wages, adjust prices, and defer repairs when their money or materials run out. Your policies determine who can afford to survive.
+Build the Moon's best day out. Rockets bring visitors with finite budgets; your rides and independent concessionaires turn their arrival into a little lunar economy.
 
-A complete scrappy game for NEAR HACKATHON, Games With Real Economies. All story, economics, recovery actions, endings, and replay are implemented. The game now has a persistent 3D colony with original procedural buildings, moving residents and rovers, hover inspection, and a first-person opening. Gameplay still precedes the final asset polish.
+**Play:** https://last-signal-mars.ajiqbal1.chatgpt.site
 
-## Play
+One player designs the park. Everyone else is an NPC. A skippable 40-second opening leads into a nine-minute challenge, with 1×, 2× and 4× controls. Build rides and paths, tune prices and launches, support small businesses, and compete on a contract-calculated score.
 
-Hosted: https://last-signal-mars.ajiqbal1.chatgpt.site
+This is the complete gameplay prototype. Final models, character art, music and cinematic production follow human playtesting. The conditional giveaway is public now; the eligible prize challenge stays closed until gameplay is frozen and Google sign-in is configured. No prize is funded or escrowed.
 
-Select **Take command**, watch or skip the opening, and choose your first allocation policy. Drag the colony to pan, scroll to zoom, hover over residents, or select a building to inspect it. Use **Fast** or the 1–4× time slider to accelerate both the colony and its visible activity. A complete run targets 8–10 minutes, or 3–5 using fast-forward; reading speed and testnet latency affect this.
+## Try it
 
-- Eight choices govern allocation, access to essentials, construction, working capital, maintenance, rescue, storm response, and recovery.
-- Five autonomous NPC institutions, three household groups, a public treasury, six resource/accounting types.
-- Three finite aid uses, at most one per chapter. Select a building before repairs or portable power.
-- Four reachable endings. Finish and replay the same seed to compare strategies.
-- Inspect actual trades, inventories, NPC pricing explanations, cause links, decisions, and transaction receipts.
-- Recovery and mission-record exports are separate. The private recovery export contains credentials; keep it private. The playtest export contains no credentials.
+1. Choose **Open your park** for instant local practice, or **Play on NEAR** for sponsored testnet play. Watch or skip the opening.
+2. Choose **Mass-Driver Coaster**, place it on empty land, then select **Connect entrance**. The yellow tile marks its entrance. R rotates the blueprint; the second layout changes its footprint.
+3. See guests walk to the ride, queue, pay and ride. Change tickets or launch settings. Hover or select a visitor to see their budget, preferences and thoughts.
+4. Add **Crater Coolers** and an **Earthrise Wheel**. Tenants set their own prices, pay for supplies and send visible delivery rovers along your paths. A solar canopy adds power; the maintenance depot preserves ride condition and value.
+5. Open the ledger to inspect actual transfers and confirmed NEAR transaction links. Ride the coaster with its camera. Use fast-forward to reach closing time sooner.
+6. Inspect the score breakdown, explore your completed park, export its public record or replay. A pending NEAR result is labelled until verified.
 
-NEAR testnet is the default. A sponsored guest account is created from browser-generated public keys, with no extension or payment. Account creation runs alongside the opening story. Practice mode uses the exact same Rust simulation in browser WebAssembly and is labeled **LOCAL PRACTICE** throughout; it never claims to make transactions.
+The top-five panel explains ranked sign-in and the conditional prize promise. Anonymous playtesting is not prize eligible. Local practice never claims to make NEAR transactions.
 
 ## Run locally
 
-Node >=22.22.2, npm, Git, and a modern browser are required. The checked-in `public/engine/sim.wasm` makes practice immediately runnable without Rust.
+Requirements: Node 22.22.2+, npm and a browser with WebGL. The checked-in browser WASM makes practice runnable without Rust.
 
 ```sh
 npm ci
-npm run dev -- --port 5173
+npm run dev
 ```
 
-Open http://localhost:5173. Uncheck NEAR on the title screen for practice. Local Workers load ignored `.dev.vars` when present.
+Open http://localhost:5173. The initial park is usable without secrets, Google configuration or an external API key.
 
-To compile or test contracts, install stable Rust, add `~/.cargo/bin` to PATH, and install the wasm target:
+For contract development, install Rust with the wasm32-unknown-unknown target. This project was built with Rust 1.98.1. Cargo.lock pins the dependency graph.
 
 ```sh
 rustup target add wasm32-unknown-unknown
 npm run build:engine
-cargo build --release -p last-signal-sim --example replay
-npm run test:parity
 npm run test:economy
 npm run test:contract
+npm run test:parity
+npm run test:sandbox
 npm run typecheck
 ```
 
-Start the app, then run `npm run test:game`. Playwright uses `/usr/bin/chromium` by default; set `CHROMIUM_PATH` or install Chromium for your environment. To explicitly verify sponsored guest entry and a real testnet-signed choice, run `RUN_NEAR=1 npx playwright test -g 'NEAR guest'`. This spends only sponsored testnet NEAR.
+With the dev server running, `npm run test:game` runs the Moonpark browser tests. Playwright uses `/usr/bin/chromium`; override `CHROMIUM_PATH` for another installation. `npm run build` builds the hosted Worker and browser assets.
 
-## Deploy your own testnet instance
+`MOON_CHAIN_UI=1 npm run test:game` also runs the full sponsored testnet browser campaign, including mid-round reload and canonical completion. It requires configured sponsorship and spends testnet funds.
 
-`npm run deploy:testnet` creates one faucet-funded **testnet** deployer, deploys the compiled contract, writes its public configuration, and writes ignored `.dev.vars`. Private keys go only in `.near-local/` and `.dev.vars`, both ignored. The command never accesses mainnet. Replenish testnet reserves before inviting substantial traffic.
+## What NEAR does
 
-Build once with `npm run build`. Apply the generated D1 migration locally:
+The Rust simulation compiles to native code, browser WebAssembly and a NEAR contract. The browser submits **commands**, never replacement states or a claimed score. The contract validates construction, paths, costs, visitor spending, inventories, merchant pricing, revenue shares, investments, maintenance, simulation timing and scoring.
+
+NPC treasuries are **contract-managed balances**, with deterministic policies and finite stock. They are not independently controlled NEAR accounts. Lunar credits are virtual game currency. No LLM, oracle, trading token, NEAR Intents or claimed NEP-245 compatibility is involved. The organizers allow an original NEAR contract fitting the track; named integrations are suggestions rather than mandatory dependencies.
+
+The client predicts smoothly using the same engine and settles bounded batches. Transactions use `EXECUTED` confirmation: game execution is finalized without waiting for gas-refund receipts. Keys are limited to `create_run` and `apply_actions`, with a finite gas allowance and zero attached deposits. Recovery keys stay in the browser; the sponsor receives public keys only. Low-budget sponsored accounts are replaced before a new round, retaining the same signed-in leaderboard identity.
+
+The contract derives scores from its own final state. Each signed-in identity has one best entry, even across different sponsored accounts. The live top five continues after the November 18 cutoff; separate eligible records preserve prize standings. See [implementation notes](docs/MOONPARK.md) and the [verification record](docs/MOONPARK-VERIFICATION.md).
+
+## Testnet and Google setup
+
+`npm run deploy:testnet` creates a faucet-funded testnet contract and writes public configuration plus ignored local secrets. It preserves the earlier Mars contract. Development-only `node scripts/game/moon-deploy.mjs --upgrade` refuses to upgrade an opened prize challenge.
+
+Keep `.near-local/` and `.dev.vars` private. Configure the Moonpark environment keys from `.env.example` as hosted secrets. Initial guest funding is 1.5 testnet NEAR; sponsorship has IP/global limits and a finite reserve. Replenish that reserve before inviting substantial traffic.
+
+After a production build, apply generated migrations to the local preview database:
 
 ```sh
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_red_rockslide.sql
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_blue_lorna_dane.sql
 ```
 
-Configure the three variables in `.env.example` as hosted secrets. D1 stores guest provisioning and sponsorship limits; it never supplies game outcomes. The Sites hosting manifest binds D1 as `DB`. Public hosting is needed for anonymous judge entry.
+Apply each migration once. Sites applies pending hosted migrations during deployment. D1 holds authentication and sponsorship records, not game outcomes.
 
-`node scripts/game/deploy.mjs --upgrade` is a development-only redeployment to the existing account. For a frozen published scenario, use a new deployment and retain the prior contract rather than changing rules for existing runs. `npm run test:chain` creates a separate test player and records a complete eight-decision testnet run in `docs/testnet-smoke.json`.
+Google OAuth is the external setup dependency. [Exact setup instructions](docs/GOOGLE-AUTH.md) include the callback URL and required secrets. No fake sign-in or development bypass is enabled in production. Practice and sponsored guest NEAR play remain available while Google is unconfigured.
 
-## What NEAR enforces
+`npm run test:chain` spends sponsored testnet funds on a separate, non-prize verification run and writes public transaction evidence to `docs/moon-testnet-smoke.json`.
 
-The Rust contract validates ownership, revision, allowed actions, costs, aid limits, market transfers, production recipes, wages, maintenance, consumption, casualties, and endings. The browser submits **commands**, never arbitrary replacement states. Every playthrough is isolated. A bounded history includes transactions between institutional balances and hashes of the simulation state.
+## Submission and provenance
 
-The shared `last-signal-sim` Rust crate compiles to native code, browser WASM, and the contract. Native/WASM parity is checked byte-for-byte. Pricing lives in `crates/sim/src/pricing.rs`. No real money, trading token, or external oracle is needed.
+Built for NEAR HACKATHON, Games With Real Economies. Original gameplay, simulation, interface, procedural models, camera sequence and synthesized placeholder audio. The supplied Sites/Vinext starter and declared dependencies provide infrastructure. The Earth texture comes from the Three.js examples; see [visual credits](docs/VISUALS.md).
 
-NPC treasuries are **contract-managed balances** with deterministic behavioral policies. They are not separately controlled NEAR wallets and do not use generative AI. The implementation does not claim NEP-245 compatibility, NEAR Intents, or independent NPC custody. Those are optional suggestions in the Games example prompt; an original NEAR contract that fits the track is eligible.
+The previous Mars game remains at `/legacy`, with its source, contract and documentation retained. Its README is [archived separately](docs/MARS-PROTOTYPE.md).
 
-The browser holds a recovery key and a restricted gameplay key. Only `create_run` and `step` are authorized for the latter, with a bounded gas allowance. Gameplay attaches no NEAR. The sponsor holds no player private keys. Accounts are testnet-only and pre-funded for gas/storage. Clearing browser storage loses access unless the private recovery file was exported. Up to eight runs per admitted guest account and the eight most recent local runs are retained in the browser archive. NEAR run histories remain onchain.
-
-## Judge walkthrough
-
-1. Start seed 42 and protect the greenhouse. Choose Fast. See NPC wages and real input trades in **Inspect inventory & trades**.
-2. Choose household-budget support. See credits move to households and get spent on essentials.
-3. Build water recycling or expand the workshop. The project completes after its specified duration.
-4. Make the payroll and maintenance decisions. Inspect equipment condition and the workshop parts inventory.
-5. Rescue the survey team. Their arrival changes population, demand, wellbeing, and the story.
-6. Face the storm. Open **Why did this happen?** to inspect power shortages and linked maintenance effects.
-7. Finish, inspect the ending and actual transaction links, and replay the same seed.
-
-Example strong strategy (zero-based option indices): `[0,1,0,0,0,0,2,0]`. Another: `[1,1,2,0,0,0,2,0]`. These require no aid. Broadly relying on market access without maintenance produces a weaker society. Exact balance and claims are in `docs/ECONOMY.md` and `docs/VERIFICATION.md`.
-
-## Submission status
-
-This repository was started from an empty workspace during the eligible build window. The Sites Vinext starter, React, near-sdk, near-api-js, serde, sha2, Lucide, and Playwright are dependencies/boilerplate; gameplay and simulation are new. MIT license.
-
-This is the full scrappy playtest version. Final artwork/audio, human gameplay approval, a public source repository, the public X demo post, and the organizer's final submission remain separate milestones. No social post or hackathon submission has been sent by this app.
-
-For a full isolated local blockchain integration test, run `npm run test:sandbox` after building the contract. The `near-sandbox` library downloads a version-pinned local node on first use. The test deploys the real WASM, verifies admission/idempotency/ownership, plays all 24 sols, and checks stale-revision rejection without using public RPCs.
-
-The village interface and opening are documented in `docs/VISUALS.md`. The world remains visible during choices; deeper economic records stay in optional panels.
+MIT license. A public source repository, final asset/audio upgrade, the human-published X demo and final hackathon submission are release milestones after gameplay review. No social post or hackathon submission has been sent.

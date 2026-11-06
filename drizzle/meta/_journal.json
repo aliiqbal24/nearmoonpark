@@ -8,6 +8,13 @@
       "when": 1793865134550,
       "tag": "0000_red_rockslide",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793964116550,
+      "tag": "0001_blue_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

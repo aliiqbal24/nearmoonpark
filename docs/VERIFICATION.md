@@ -1,3 +1,5 @@
+> These notes describe the retained Mars prototype at `/legacy`. Current Moonpark rules and verification are in [MOONPARK.md](MOONPARK.md) and [MOONPARK-VERIFICATION.md](MOONPARK-VERIFICATION.md).
+
 # Verification record
 
 ## Automated coverage

@@ -1,41 +1,43 @@
-# Submission preparation
+# Moonpark submission preparation
 
-Track: Games With Real Economies (`games`). Working title: LAST SIGNAL.
+Track: **Games With Real Economies** (`games`). Title: **MOONPARK — A NEAR Future**.
 
 ## Description draft
 
-Earth is gone. You govern humanity's last Martian settlement in a short choice-driven survival game. Five NPC institutions have finite treasuries and inventories: they buy power and water, pay wages, set prices from stock levels, and defer maintenance when they cannot afford parts. Public rations, targeted aid, construction, rescue, and storm preparation create delayed economic consequences.
+Build the Moon's best day out. Rockets deliver tourists with finite wallets. You build mass-driver coasters, tune tickets and launch speeds, connect paths and support independent lunar concessionaires. Guests walk, queue, spend and form opinions; businesses buy stock, adapt prices, deliver supplies and struggle when cash runs short. Make a thriving little lunar economy in one nine-minute opening day.
 
-NEAR enforces the whole economy in a Rust contract, including ownership, costs, trades, production, deprivation, and endings. Browser previews use the same Rust engine compiled to WebAssembly. A sponsored guest account removes wallet extensions and gas prompts. Inspect real trades, follow causal history, and replay the same scenario with a different policy.
+NEAR enforces the economic simulation and calculates the score. A shared Rust engine runs in browser WebAssembly for smooth prediction and inside the contract for authoritative settlement. Sponsored testnet accounts and restricted session keys remove wallet extensions and gas prompts. Inspect actual transfers and confirmed transactions, ride the mass driver, then compare the top five.
 
-NPC treasuries are contract-managed balances. No claims of NEP-245 tokens, Intents, live AI dialogue, or independent NPC wallet custody.
+NPC treasuries are contract-managed virtual balances. No independent NPC wallet custody, NEAR Intents, NEP-245 tokens or live AI dialogue is claimed. The conditional creator-funded giveaway is disclosed as unfunded and dependent on a hackathon win; prize eligibility opens only after gameplay review, rules freeze and verified sign-in.
 
 ## Demo sequence
 
-1. Open on the first choice: Earth is gone, 120 residents remain.
-2. Protect the greenhouse and accelerate to a later power shortage.
-3. Show an actual input trade and household purchase.
-4. Trace a shortage into deferred maintenance.
-5. Deploy limited aid; show the actual inventory cost.
-6. Rescue the surveyors; show changed population/demand and their return.
-7. Survive the dust front, inspect the ending, and show a confirmed transaction.
-8. Compare another run under the same seed.
+1. Start with the rocket arrival and the lunar park reveal; cut to the founder's first opening day.
+2. Place the mass-driver blueprint and connect its entrance. Guests walk over and queue.
+3. Show the front-seat camera, then adjust launch speed and ticket price to demonstrate throughput, wear and affordability.
+4. Add a drink concession. Follow a real stock purchase, delivery rover, customer sale and revenue-share transfer in the ledger.
+5. Increase time to 4×. Show condition/power pressure and a useful response: maintenance or solar capacity.
+6. Close the day, inspect the contract-calculated score and open its confirmed NEAR transaction.
+7. Show the signed-in top five and the exact conditional pledge once ranked setup is verified.
 
-## X post draft
+Keep the demonstration focused on the park and a visible consequence of a decision. Explain the shared-engine proof briefly after showing the game.
 
-Earth is gone. Could you keep humanity's last Mars colony alive?
+## Draft public post
 
-We built LAST SIGNAL at NEAR HACKATHON: a short survival game where NPC businesses have finite money, families need affordable essentials, and your decisions reshape an economy enforced on NEAR.
+The Moon needs a day off.
+
+We built MOONPARK for NEAR HACKATHON: a lunar theme park with mass-driver coasters, rocket arrivals and NPC businesses running on finite cash and stock. One opening day. An economy and score enforced on NEAR.
 
 Play: https://last-signal-mars.ajiqbal1.chatgpt.site
-[Add public repository link and attach final demo video.]
 
-Which would you protect first: the greenhouse or the workshop?
+[Add the public source repository and final demo video.]
 
 @NEARProtocol #NEARHackathon
 
-## Remaining human-facing milestones
+## Release milestones
 
-Gameplay acceptance; final art/audio pass; verify the organizer's live rules; choose final public repository; publish demo post; supply team/contact/payout details; review the exact final submission payload. Nothing has been posted to social networks or submitted to the hackathon.
+Human gameplay review; Google OAuth client setup and full ranked-flow verification; final artwork, sound and cinematic finishing; frozen prize rules/build and explicit challenge opening; public source repository; recorded demo; owner-published public post; team/contact/payout details; exact submission review. No social post or hackathon submission has been sent.
 
-Deadline: November 14, 2026, 23:59 UTC. Keep the hosted build and public source available through judging. The official submission requires the public repository and public demo-post links.
+The recorded organizer deadline is November 14, 2026 at 23:59 UTC. Recheck the live rules before submission and keep the hosted game and public source available through judging. The giveaway cutoff is separately November 18, 2026 at 23:59 UTC.
+
+The earlier Martian game's preparation is archived in `MARS-SUBMISSION.md`.

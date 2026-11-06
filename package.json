@@ -1,5 +1,5 @@
 {
-  "name": "last-signal",
+  "name": "moonpark",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -13,20 +13,22 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "typecheck": "tsc --noEmit --incremental false",
-    "test:game": "playwright test",
-    "test:economy": "cargo test --release -p last-signal-sim",
-    "test:contract": "cargo test -p last-signal-contract --lib",
-    "build:engine": "node scripts/game/build-engine.mjs",
-    "test:parity": "node scripts/game/parity.mjs",
-    "deploy:testnet": "node scripts/game/deploy.mjs",
-    "test:chain": "node scripts/game/chain-smoke.mjs",
-    "test:sandbox": "node scripts/game/sandbox.mjs"
+    "test:game": "playwright test tests/moonpark.spec.ts",
+    "test:economy": "cargo test --locked --release -p moonpark-sim",
+    "test:contract": "cargo test --locked -p moonpark-contract --lib",
+    "build:engine": "node scripts/game/moon-build.mjs",
+    "test:parity": "cargo build --locked --release -p moonpark-sim --example moon_replay && node scripts/game/moon-parity.mjs",
+    "deploy:testnet": "node scripts/game/moon-deploy.mjs",
+    "test:chain": "node scripts/game/moon-chain-smoke.mjs",
+    "test:sandbox": "node scripts/game/moon-sandbox.mjs",
+    "test:legacy": "playwright test tests/game.spec.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.7.1",
     "@noble/curves": "^2.4.0",
     "@shadcn/react": "^0.3.0",
+    "better-auth": "1.7.18",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "^1.1.1",
