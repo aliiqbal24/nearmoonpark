@@ -1,7 +1,14 @@
 import { simulate } from "./engine";
-import { create, settle, view, type Config, type Credentials } from "./near";
-import type { Run, RecordState, Command } from "./model";
-import { VERSION } from "./model";
+import {
+  create,
+  settle,
+  view,
+  ownershipAction,
+  type Config,
+  type Credentials,
+} from "./near";
+import type { Run, RecordState, Command, Concession } from "./model";
+import { VERSION, END } from "./model";
 type Op = { commands: Command[]; ticks: number; id: string };
 export type Snapshot = {
   run: Run;
@@ -37,7 +44,7 @@ export class ParkSession {
       pending: 0,
       error: null,
       txs: [],
-      deadline: deadline ?? Date.now() + 540000,
+      deadline: deadline ?? Date.now() + (END + 15) * 1000,
       receipts: {},
     };
     this.desired = run.tick;
@@ -147,9 +154,9 @@ export class ParkSession {
   }
   async update(dt: number, speed: number) {
     if (this.disposed || this.state.run.finished) return;
-    this.desired = Math.min(540, this.desired + dt * speed);
+    this.desired = Math.min(END, this.desired + dt * speed);
     const closing = Date.now() >= this.state.deadline;
-    if (closing) this.desired = 540;
+    if (closing) this.desired = END;
     return this.enqueue(async () => {
       if (this.disposed || this.state.run.finished) return;
       const lag =
@@ -323,6 +330,67 @@ export class ParkSession {
       null,
       2,
     );
+  }
+  get ownerId() {
+    return this.credentials?.accountId ?? null;
+  }
+  private ownedCredentials() {
+    if (!this.credentials) return [];
+    const all = new Map([[this.credentials.accountId, this.credentials]]);
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith("moonpark-retired-keys:")) continue;
+      try {
+        const c = JSON.parse(localStorage.getItem(key)!) as Credentials;
+        if (
+          c.identity === this.credentials.identity &&
+          c.contractId === this.credentials.contractId &&
+          c.secretKey &&
+          c.recoveryKey
+        )
+          all.set(c.accountId, c);
+      } catch {}
+    }
+    return [...all.values()];
+  }
+  get ownerIds() {
+    return this.ownedCredentials().map((c) => c.accountId);
+  }
+  async ownership(
+    method: "claim_business_reward" | "claim_prize" | "nft_transfer",
+    args: Record<string, unknown>,
+  ) {
+    if (!this.credentials || !this.config)
+      throw Error("Open your NEAR park first.");
+    let owner =
+      typeof args.account_id === "string"
+        ? args.account_id
+        : this.credentials.accountId;
+    if (method !== "claim_prize") {
+      const asset = await view<Concession>(this.config, "get_business_share", {
+        token_id: args.token_id,
+      });
+      if (!asset?.closed)
+        throw Error("Finish and confirm this concession’s opening day first.");
+      owner = asset.owner_id;
+    }
+    const signer = this.ownedCredentials().find((c) => c.accountId === owner);
+    if (!signer)
+      throw Error("This browser does not hold the current owner’s key.");
+    if (
+      owner === this.credentials.accountId &&
+      (!this.state.record?.run.finished || this.state.pending)
+    )
+      throw Error("Finish and confirm your current opening day first.");
+    const tx = await ownershipAction(
+      signer,
+      this.config,
+      method,
+      method === "claim_prize" ? {} : args,
+    );
+    this.state.txs = [...this.state.txs, tx].slice(-120);
+    this.emit();
+    return tx;
   }
   dispose() {
     this.disposed = true;

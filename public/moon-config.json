@@ -1,7 +1,8 @@
 {
-  "contractId": "moonpark-mw5r8aye.testnet",
+  "contractId": "economy.moonpark-mw5uef63.testnet",
   "rpcUrl": "https://test.rpc.fastnear.com",
   "fallbackRpcUrl": "https://rpc.testnet.near.org",
-  "codeHash": "9MjNFtSTL5gxJJGX4WfYo59UaiRMsZHfXGwpgm5xpcQ2",
-  "network": "testnet"
+  "codeHash": "2aWWsedhvw8pCVUFuTf4yCN4YfTc2CBZfrU7oFXthpy5",
+  "network": "testnet",
+  "immutable": true
 }

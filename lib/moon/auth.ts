@@ -3,13 +3,25 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getDb } from "@/db";
 import { user, session, account, verification } from "@/db/schema";
+import { getChatGPTUser } from "@/app/chatgpt-auth";
 export type AuthEnv = {
   DB?: D1Database;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
+  MOON_CHATGPT_AUTH?: string;
 };
+export function platformAuthEnabled(request: Request) {
+  const e = env as unknown as AuthEnv,
+    u = new URL(request.url);
+  return (
+    process.env.NODE_ENV === "production" &&
+    e.MOON_CHATGPT_AUTH === "1" &&
+    u.origin === e.BETTER_AUTH_URL &&
+    u.hostname.endsWith(".chatgpt.site")
+  );
+}
 export function getAuth(request: Request) {
   const e = env as unknown as AuthEnv;
   if (
@@ -41,6 +53,26 @@ export function getAuth(request: Request) {
   });
 }
 export async function identity(request: Request) {
+  const e = env as unknown as AuthEnv;
+  if (platformAuthEnabled(request) && e.DB) {
+    const platform = await getChatGPTUser();
+    if (platform) {
+      const id = `chatgpt:${platform.userId}`;
+      const now = Date.now();
+      await e.DB.prepare(
+        "INSERT OR IGNORE INTO moon_user(id,name,email,email_verified,created_at,updated_at) VALUES(?,?,?,1,?,?)",
+      )
+        .bind(
+          id,
+          "Moon Explorer",
+          `${platform.userId}@identity.moonpark.invalid`,
+          now,
+          now,
+        )
+        .run();
+      return { user: { id, name: "Moon Explorer", email: platform.email } };
+    }
+  }
   const auth = getAuth(request);
   return auth ? auth.api.getSession({ headers: request.headers }) : null;
 }

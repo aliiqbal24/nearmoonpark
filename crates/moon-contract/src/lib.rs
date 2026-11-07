@@ -4,7 +4,12 @@ use near_sdk::{
     collections::{LookupMap, UnorderedMap},
     env, near, AccountId, PanicOnDefault,
 };
+mod ownership;
+use near_contract_standards::non_fungible_token::NonFungibleToken;
+use ownership::{BusinessShare, PrizeClaim};
 pub const CUTOFF: u64 = 1_795_046_340_000_000_000;
+// Bounded confirmation/handoff grace; it never adds simulation ticks or income.
+pub const CONFIRMATION_GRACE: u64 = 15;
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Entry {
@@ -29,6 +34,15 @@ pub struct Moonpark {
     prize_top: Vec<String>,
     next: u64,
     launch_at: u64,
+    tokens: NonFungibleToken,
+    shares: LookupMap<String, BusinessShare>,
+    transfer_locks: LookupMap<String, bool>,
+    business_fund: u128,
+    business_obligations: u128,
+    prize_fund: u128,
+    prize_obligations: u128,
+    prize_tier: String,
+    prize_claims: LookupMap<AccountId, PrizeClaim>,
 }
 #[near]
 impl Moonpark {
@@ -46,6 +60,21 @@ impl Moonpark {
             prize_top: vec![],
             next: 0,
             launch_at: 0,
+            tokens: NonFungibleToken::new(
+                b"no".to_vec(),
+                env::current_account_id(),
+                Some(b"nm".to_vec()),
+                Some(b"ne".to_vec()),
+                Some(b"na".to_vec()),
+            ),
+            shares: LookupMap::new(b"ns".to_vec()),
+            transfer_locks: LookupMap::new(b"nl".to_vec()),
+            business_fund: 0,
+            business_obligations: 0,
+            prize_fund: 0,
+            prize_obligations: 0,
+            prize_tier: "pending".into(),
+            prize_claims: LookupMap::new(b"pc".to_vec()),
         }
     }
     pub fn register_player(
@@ -77,6 +106,7 @@ impl Moonpark {
             &serde_json::json!({"player_id":player_id,"display_name":display_name,"ranked":ranked})
                 .to_string(),
         );
+        self.assert_collateral();
     }
     pub fn open_challenge(&mut self) {
         assert_eq!(env::predecessor_account_id(), self.sponsor, "Sponsor only");
@@ -125,9 +155,10 @@ impl Moonpark {
         let ranked = player["ranked"].as_bool().unwrap() && self.launch_at > 0;
         let now = env::block_timestamp();
         let run = Run::new();
-        let record = serde_json::json!({"run_id":id,"owner":owner,"player_id":player["player_id"],"display_name":name,"ranked":ranked,"started_at":now.to_string(),"deadline":(now+END as u64*1_000_000_000).to_string(),"last_request":"","run":run});
+        let record = serde_json::json!({"run_id":id,"owner":owner,"player_id":player["player_id"],"display_name":name,"ranked":ranked,"started_at":now.to_string(),"deadline":(now+(END as u64+CONFIRMATION_GRACE)*1_000_000_000).to_string(),"last_request":"","run":run});
         self.runs.insert(&id, &record.to_string());
         self.requests.insert(&req, &id);
+        self.assert_collateral();
         record
     }
     pub fn apply_actions(
@@ -156,7 +187,8 @@ impl Moonpark {
         let now = env::block_timestamp();
         let started: u64 = record["started_at"].as_str().unwrap().parse().unwrap();
         assert!(
-            commands.is_empty() || now <= started + END as u64 * 1_000_000_000,
+            commands.is_empty()
+                || now <= record["deadline"].as_str().unwrap().parse::<u64>().unwrap(),
             "Opening day time limit reached"
         );
         let allowed = (((now.saturating_sub(started)) as u128 * 4 / 1_000_000_000 + 10)
@@ -169,6 +201,9 @@ impl Moonpark {
         run.apply(&commands, ticks)
             .unwrap_or_else(|e| env::panic_str(&e));
         for (i, p) in run.partnerships.iter().enumerate() {
+            if previous_deals[i] == "offered" && p.status != "offered" {
+                self.issue_share(&run_id, p, &env::predecessor_account_id());
+            }
             if p.status == "completed" && previous_deals[i] != "completed" {
                 env::log_str(&format!(
                     "EVENT_JSON:{}",
@@ -176,9 +211,12 @@ impl Moonpark {
                 ));
             }
         }
+        if run.finished {
+            self.close_business_reserves(&run_id, &run);
+        }
         record["last_request"] = request_id.into();
         record["run"] = serde_json::to_value(&run).unwrap();
-        if run.finished && record["ranked"].as_bool().unwrap() {
+        if run.finished {
             let entry = Entry {
                 player_id: record["player_id"].as_str().unwrap().into(),
                 display_name: record["display_name"].as_str().unwrap().into(),
@@ -187,9 +225,10 @@ impl Moonpark {
                 score: run.score.clone(),
                 completed_at: now.to_string(),
             };
-            self.record_score(entry, now <= CUTOFF);
+            self.record_score(entry, record["ranked"].as_bool().unwrap() && now <= CUTOFF);
         }
         self.runs.insert(&run_id, &record.to_string());
+        self.assert_collateral();
         env::log_str(&format!(
             "EVENT_JSON:{}",
             serde_json::json!({"standard":"moonpark","version":"1.0.0","event":"settled","data":[{"run_id":run_id,"revision":run.revision,"tick":run.tick,"hash":run.hash,"trade_count":run.trade_count,"finished":run.finished,"score":run.score.total}]})
@@ -207,7 +246,7 @@ impl Moonpark {
         serde_json::json!({"entries":self.top.iter().map(|id|serde_json::from_str::<Entry>(&self.best.get(id).unwrap()).unwrap()).collect::<Vec<_>>(),"challenge_id":VERSION,"open":self.launch_at>0})
     }
     pub fn get_prize_snapshot(&self) -> serde_json::Value {
-        serde_json::json!({"entries":self.prize_top.iter().map(|id|serde_json::from_str::<Entry>(&self.prize_best.get(id).unwrap()).unwrap()).collect::<Vec<_>>(),"cutoff":CUTOFF.to_string(),"closed":env::block_timestamp()>CUTOFF,"funding":"conditional_unfunded","track_prizes_usd":[400,300,200,100],"grand_prizes_usd":[2000,1500,1000,500]})
+        serde_json::json!({"entries":self.prize_top.iter().map(|id|serde_json::from_str::<Entry>(&self.prize_best.get(id).unwrap()).unwrap()).collect::<Vec<_>>(),"cutoff":CUTOFF.to_string(),"closed":env::block_timestamp()>CUTOFF,"funding":if self.prize_fund>0 {"testnet_escrow"}else{"conditional_unfunded"},"escrow_yocto":self.prize_fund.to_string(),"award_tier":self.prize_tier,"currency":"testnet NEAR","usd_pledge_funded":false,"track_prizes_usd":[400,300,200,100],"grand_prizes_usd":[2000,1500,1000,500]})
     }
     pub fn get_best(&self, player_id: String, prize: bool) -> Option<Entry> {
         let value = if prize {
@@ -226,7 +265,7 @@ impl Moonpark {
             .collect()
     }
     pub fn get_challenge(&self) -> serde_json::Value {
-        serde_json::json!({"id":VERSION,"seconds":END,"width":32,"height":24,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":60000,"partnerships":3,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"contract-managed","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":"conditional_unfunded"})
+        serde_json::json!({"id":VERSION,"seconds":END-moonpark_sim::LANDING,"approach_seconds":moonpark_sim::LANDING,"simulation_ticks":END,"width":32,"height":24,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":60000,"partnerships":3,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"contract-managed","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":if self.prize_fund>0 {"testnet_escrow"}else{"conditional_unfunded"},"concession_standard":"NEP-171","game_currency":"virtual lunar credits","reward_currency":"testnet NEAR"})
     }
 }
 fn better(a: &Entry, b: &Entry) -> bool {

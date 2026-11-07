@@ -11,7 +11,11 @@ const { Sandbox, DEFAULT_ACCOUNT_ID, DEFAULT_PRIVATE_KEY } = await import(
 const { Account, JsonRpcProvider, KeyPair, KeyPairSigner } = await import(
   "near-api-js"
 );
-const sandbox = await Sandbox.start({});
+// Keep the cutoff jump inside one epoch; advancing thousands of validator epochs
+// would test node maintenance rather than the contract's prize deadline.
+const sandbox = await Sandbox.start({
+  config: { additionalGenesis: { epoch_length: 10000000 } },
+});
 try {
   const p = new JsonRpcProvider({ url: sandbox.rpcUrl }),
     root = new Account(
@@ -38,15 +42,18 @@ try {
       ),
     ),
   );
-  const call = (a, methodName, args) =>
+  const call = (a, methodName, args, deposit = 0n) =>
     a.callFunction({
       contractId: contract.accountId,
       methodName,
       args,
+      deposit,
       gas: 250000000000000n,
       waitUntil: "FINAL",
     });
   await call(root, "new", { sponsor: root.accountId });
+  await call(root, "fund_business_rewards", {}, 1000000000000000000000000n);
+  await call(root, "fund_prizes", {}, 500000000000000000000000n);
   await call(root, "register_player", {
     account_id: alice.accountId,
     player_id: "opaque-alice",
@@ -54,13 +61,13 @@ try {
   });
   await call(root, "open_challenge", {});
   let state = await call(alice, "create_run", {
-    challenge_id: "moonpark-v2",
+    challenge_id: "moonpark-v3",
     request_id: "sandbox",
   });
   assert.deepEqual(
     state,
     await call(alice, "create_run", {
-      challenge_id: "moonpark-v2",
+      challenge_id: "moonpark-v3",
       request_id: "sandbox",
     }),
   );
@@ -82,12 +89,37 @@ try {
     rows = [];
   let maxGas = 0n,
     totalGas = 0n;
-  const engine=new WebAssembly.Instance(await WebAssembly.compile(await readFile("public/engine/moon.wasm")),{}).exports;
-  const simulate=(run,commands,ticks)=>{const bytes=new TextEncoder().encode(JSON.stringify({op:"step",run,commands,ticks})),p=engine.sim_alloc(bytes.length);new Uint8Array(engine.memory.buffer,p,bytes.length).set(bytes);const out=engine.sim_call(p,bytes.length);engine.sim_free(p,bytes.length);const ptr=Number(out>>32n),len=Number(out&0xffffffffn);const result=JSON.parse(new TextDecoder().decode(new Uint8Array(engine.memory.buffer,ptr,len)));engine.sim_free(ptr,len);if(result.error)throw Error(result.error);return result.run;};
+  const engine = new WebAssembly.Instance(
+    await WebAssembly.compile(await readFile("public/engine/moon.wasm")),
+    {},
+  ).exports;
+  const simulate = (run, commands, ticks) => {
+    const bytes = new TextEncoder().encode(
+        JSON.stringify({ op: "step", run, commands, ticks }),
+      ),
+      p = engine.sim_alloc(bytes.length);
+    new Uint8Array(engine.memory.buffer, p, bytes.length).set(bytes);
+    const out = engine.sim_call(p, bytes.length);
+    engine.sim_free(p, bytes.length);
+    const ptr = Number(out >> 32n),
+      len = Number(out & 0xffffffffn);
+    const result = JSON.parse(
+      new TextDecoder().decode(new Uint8Array(engine.memory.buffer, ptr, len)),
+    );
+    engine.sim_free(ptr, len);
+    if (result.error) throw Error(result.error);
+    return result.run;
+  };
   for (let i = 0; i < replay.frames.length; i++) {
-    const f = {...replay.frames[i]};
-    if(i+1<replay.frames.length&&replay.frames[i+1].commands.length===0){f.ticks=20;i++;}
-    const expected=simulate(state.run,f.commands,f.ticks);
+    const f = { ...replay.frames[i] };
+    if (
+      i + 1 < replay.frames.length &&
+      replay.frames[i + 1].commands.length === 0
+    ) {
+      f.ticks = 20;
+      i++;
+    }
+    const expected = simulate(state.run, f.commands, f.ticks);
     let header = (await p.viewBlock({ finality: "final" })).header;
     while (
       ((BigInt(header.timestamp_nanosec) - BigInt(state.started_at)) * 4n) /
@@ -141,13 +173,17 @@ try {
       hash: state.run.hash,
     });
     if (i % 12 === 0)
-      console.log(`Sandbox: ${state.run.tick}/540, ${Number(gas) / 1e12} TGas`);
+      console.log(`Sandbox: ${state.run.tick}/550, ${Number(gas) / 1e12} TGas`);
   }
   assert.equal(state.run.finished, true);
-  assert.ok(state.run.partnerships.every(p=>p.status==="completed"));
-  const deals=await p.callFunction({contractId:contract.accountId,method:"get_partnerships",args:{run_id:state.run_id}});
-  assert.equal(deals.reserved_funding,0);
-  assert.equal(deals.available_funding,0);
+  assert.ok(state.run.partnerships.every((p) => p.status === "completed"));
+  const deals = await p.callFunction({
+    contractId: contract.accountId,
+    method: "get_partnerships",
+    args: { run_id: state.run_id },
+  });
+  assert.equal(deals.reserved_funding, 0);
+  assert.equal(deals.available_funding, 0);
   const board = await p.callFunction({
     contractId: contract.accountId,
     method: "get_leaderboard",
@@ -155,6 +191,122 @@ try {
   });
   assert.equal(board.entries[0].score.total, state.run.score.total);
   assert.equal(board.entries[0].player_id, "opaque-alice");
+  const concessions = await p.callFunction({
+    contractId: contract.accountId,
+    method: "get_concessions",
+    args: { run_id: state.run_id },
+  });
+  assert.equal(concessions.length, 3);
+  assert.ok(
+    concessions.every(
+      (c) => c.owner_id === alice.accountId && BigInt(c.reserved_yocto) > 0n,
+    ),
+  );
+  const token = concessions[0].token_id;
+  const expectedReward = BigInt(concessions[0].claimable_yocto);
+  assert.ok(expectedReward > 0n);
+  await call(
+    alice,
+    "nft_transfer",
+    { token_id: token, receiver_id: bob.accountId },
+    1n,
+  );
+  await assert.rejects(() =>
+    call(alice, "claim_business_reward", { token_id: token }),
+  );
+  const beforeBob = (await bob.getState()).balance.total;
+  assert.equal(
+    await call(bob, "claim_business_reward", { token_id: token }),
+    true,
+  );
+  const afterBob = (await bob.getState()).balance.total;
+  assert.ok(
+    afterBob > beforeBob,
+    "Actual testnet-style transfer must exceed gas cost",
+  );
+  const paid = await p.callFunction({
+    contractId: contract.accountId,
+    method: "get_business_share",
+    args: { token_id: token },
+  });
+  assert.equal(paid.owner_id, bob.accountId);
+  assert.equal(paid.paid_yocto, expectedReward.toString());
+  assert.equal(paid.claimable_yocto, "0");
+  await assert.rejects(() =>
+    call(bob, "claim_business_reward", { token_id: token }),
+  );
+  await assert.rejects(() =>
+    call(bob, "on_business_reward", {
+      token_id: token,
+      recipient: bob.accountId,
+      amount: "1",
+    }),
+  );
+  const cutoff = 1795046340000000000n;
+  let finalHeader = (await p.viewBlock({ finality: "final" })).header;
+  for (
+    let attempt = 0;
+    BigInt(finalHeader.timestamp_nanosec) <= cutoff && attempt < 4;
+    attempt++
+  ) {
+    // Use a conservative 100ms lower bound for Sandbox block intervals. Finality needs a few blocks
+    // after fast-forward before its new timestamp appears in final queries.
+    const jump =
+      Number((cutoff - BigInt(finalHeader.timestamp_nanosec)) / 100000000n) +
+      1000;
+    const beforeHeight = finalHeader.height;
+    const response = await fetch(sandbox.rpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "prize-cutoff",
+        method: "sandbox_fast_forward",
+        params: { delta_height: jump },
+      }),
+    });
+    const result = await response.json();
+    if (result.error) throw Error(JSON.stringify(result.error));
+    for (let poll = 0; poll < 40; poll++) {
+      finalHeader = (await p.viewBlock({ finality: "final" })).header;
+      if (finalHeader.height >= beforeHeight + jump) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    console.log(
+      JSON.stringify({
+        cutoffJump: jump,
+        height: finalHeader.height,
+        chainTime: new Date(
+          Number(BigInt(finalHeader.timestamp_nanosec) / 1000000n),
+        ).toISOString(),
+      }),
+    );
+  }
+  assert.ok(BigInt(finalHeader.timestamp_nanosec) > cutoff);
+  await call(root, "activate_prizes", { tier: "track" });
+  const prize = await p.callFunction({
+    contractId: contract.accountId,
+    method: "get_prize_claim",
+    args: { account_id: alice.accountId },
+  });
+  assert.equal(prize.claimable_yocto, "500000000000000000000000");
+  assert.equal(await call(alice, "claim_prize", {}), true);
+  await assert.rejects(() => call(alice, "claim_prize", {}));
+  const collectedPrize = await p.callFunction({
+    contractId: contract.accountId,
+    method: "get_prize_claim",
+    args: { account_id: alice.accountId },
+  });
+  assert.equal(collectedPrize.paid_yocto, "500000000000000000000000");
+  assert.equal(collectedPrize.claimable_yocto, "0");
+  const ownershipProof = {
+    concessions,
+    transfer: { token_id: token, from: alice.accountId, to: bob.accountId },
+    collectedBusinessReward: paid,
+    collectedPrize,
+    privateCallbackRejected: true,
+    duplicateClaimsRejected: true,
+  };
   await assert.rejects(() =>
     call(alice, "apply_actions", {
       run_id: state.run_id,
@@ -174,6 +326,7 @@ try {
         frames: rows,
         score: state.run.score,
         leaderboard: board,
+        ownershipProof,
       },
       null,
       2,

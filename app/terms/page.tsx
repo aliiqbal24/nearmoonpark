@@ -19,17 +19,20 @@ export default function Terms() {
         four eligible players receive US$400, US$300, US$200 and US$100. If
         Moonpark wins the overall grand prize, those amounts become US$2,000,
         US$1,500, US$1,000 and US$500 instead. The larger pool replaces the
-        smaller. No qualifying win means no payout. Funds are not escrowed.
+        smaller. No qualifying win means no USD payout. The USD pledge is not
+        currently funded or escrowed. A separate funded testnet escrow
+        demonstrates the contract's ranking and payout mechanism; testnet tokens
+        have no cash value and do not fund this USD pledge.
       </p>
       <p>
         Prize-eligible runs must belong to the published, opened Moonpark
         challenge and be completed onchain by November 18, 2026 at 23:59 UTC.
-        Internal playtests, offline practice and unsigned guest runs are not
-        eligible. One best score per signed-in player is ranked; one prize per
-        eligible person. Automated play, duplicate-person entries, identity
-        abuse and exploited runs are ineligible. Winners are reviewed before
-        manual payment. The creator will request proof of account ownership and
-        arrange payment after the qualifying hackathon award is received.
+        Internal playtests, offline practice and guest runs are not eligible.
+        One best score per signed-in player is ranked; one prize per eligible
+        person. Automated play, duplicate-person entries, identity abuse and
+        exploited runs are ineligible. Winners are reviewed before manual
+        payment. The creator will request proof of account ownership and arrange
+        payment after the qualifying hackathon award is received.
       </p>
       <p>
         The live top five continues after the cutoff. Separate eligible records
@@ -39,9 +42,27 @@ export default function Terms() {
         challenge and cannot overwrite existing prize records.
       </p>
       <p>
-        The first prototype is a development playtest. Its giveaway pledge is
-        public from day one; the official eligible challenge opens only after
-        gameplay is frozen and ranked sign-in is operational.
+        This release uses NEAR testnet. Signed-in runs become provisionally
+        eligible after the published challenge opens. The immutable economy
+        contract has no access keys or upgrade method. Its testnet prize pool is
+        allocated after the cutoff and the creator's qualifying-award
+        attestation, in frozen rank order with weights 40/30/20/10. If fewer
+        than four accounts qualify, those weights are normalized among them.
+        Claims pay only the allocated winner account and cannot be redirected by
+        the sponsor. The separate USD commitment remains subject to the human
+        eligibility review and mainnet payment described above.
+      </p>
+      <p>
+        Backing a merchant creates a NEP-171 concession certificate. It carries
+        the claim to a funded, capped testnet reward calculated from that
+        business's opening-day revenue share: 0.0001 testnet NEAR per earned
+        lunar credit, up to the amount reserved when issued (at most 0.02
+        testnet NEAR). Backing can be lower if the finite pool is depleted.
+        Unused reserves return to the merchant reward pool at closing. The
+        current certificate owner can collect unclaimed rewards; a transfer
+        passes that right to the new owner. Park operation, game credits and the
+        ranked score remain with the original player. No future income or cash
+        redemption is promised.
       </p>
       <a href="/">Return to Moonpark</a>
     </main>

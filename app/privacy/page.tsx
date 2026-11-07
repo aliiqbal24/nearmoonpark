@@ -10,17 +10,19 @@ export default function Privacy() {
     >
       <h1>Moonpark privacy</h1>
       <p>
-        Practice does not require sign-in. Ranked play uses Google to establish
-        a stable player identity. We store your account name, email, session and
-        chosen public player name in our application database. Your email is not
-        published on NEAR or the leaderboard.
+        Practice and guest NEAR play do not require sign-in. Ranked play on this
+        site uses ChatGPT sign-in to establish a stable player identity. We
+        store a site-scoped identity and your chosen public player name. We do
+        not publish your email on NEAR or the leaderboard. A separately
+        configured Google sign-in deployment may also store the name, email and
+        session supplied by that provider.
       </p>
       <p>
-        Ranked runs and game transactions are public blockchain records. We link
-        them to a random public player identifier. Browser-generated gameplay
-        and recovery keys stay in your browser. Local game saves contain these
-        private credentials; do not share browser storage or private recovery
-        exports.
+        NEAR runs, concession ownership, reward claims and transfers are public
+        blockchain records. We link them to a random public player identifier.
+        Browser-generated gameplay and recovery keys stay in your browser. Local
+        game saves contain these private credentials; do not share browser
+        storage or private recovery exports.
       </p>
       <p>
         Account sponsorship records public keys, account identifiers and

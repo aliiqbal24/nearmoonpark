@@ -38,6 +38,7 @@ import {
   nextPartnership,
 } from "./components/moon-experience";
 import MoonWorld from "./components/moon-world";
+import { NearEconomy, NearMark } from "./components/near-economy";
 import {
   Dialog,
   Inspector,
@@ -61,6 +62,8 @@ import { MoonAudio } from "@/lib/moon/audio";
 import {
   CATALOG,
   VERSION,
+  END,
+  LANDING,
   blueprint,
   footprint,
   isRide,
@@ -73,6 +76,7 @@ import {
   type Detail,
   type Entry,
   type Kind,
+  type PrizeStatus,
 } from "@/lib/moon/model";
 import type { MoonWorld as World } from "@/lib/moon/world";
 import "./moonpark.css";
@@ -90,7 +94,13 @@ const ICONS = {
 type Player = { player_id: string; display_name: string };
 type Screen = "title" | "intro" | "playing" | "results";
 type Panel =
-  "leaderboard" | "ledger" | "help" | "score" | "partnerships" | null;
+  | "leaderboard"
+  | "ledger"
+  | "help"
+  | "score"
+  | "partnerships"
+  | "near"
+  | null;
 function download(value: unknown, name: string) {
   const u = URL.createObjectURL(
     new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
@@ -124,6 +134,11 @@ export default function Game() {
     [prizeEntries, setPrizeEntries] = useState<Entry[]>([]),
     [challengeOpen, setChallengeOpen] = useState(false),
     [authConfigured, setAuthConfigured] = useState(false),
+    [authLinks, setAuthLinks] = useState<{
+      signInUrl?: string;
+      signOutUrl?: string;
+    }>({}),
+    [prizeStatus, setPrizeStatus] = useState<PrizeStatus | null>(null),
     [player, setPlayer] = useState<Player | null>(null),
     [wallLeft, setWallLeft] = useState(540);
   const [cfg, setCfg] = useState<Config | null>(null),
@@ -178,23 +193,30 @@ export default function Game() {
       if (c)
         void Promise.all([
           leaderboard(c),
-          view<{ entries: Entry[] }>(c, "get_prize_snapshot"),
+          view<PrizeStatus>(c, "get_prize_snapshot"),
         ])
           .then(([l, p]) => {
             setEntries(l.entries);
             setChallengeOpen(l.open);
             setPrizeEntries(p.entries);
+            setPrizeStatus(p);
           })
           .catch(() => {});
     });
     void fetch("/api/moon/profile")
       .then(
         (r) =>
-          r.json() as Promise<{ configured: boolean; player: Player | null }>,
+          r.json() as Promise<{
+            configured: boolean;
+            player: Player | null;
+            signInUrl?: string;
+            signOutUrl?: string;
+          }>,
       )
       .then((v) => {
         setAuthConfigured(v.configured);
         setPlayer(v.player);
+        setAuthLinks({ signInUrl: v.signInUrl, signOutUrl: v.signOutUrl });
         if (new URLSearchParams(location.search).has("ranked"))
           setPanel("leaderboard");
       })
@@ -213,7 +235,7 @@ export default function Game() {
     return () => clearTimeout(t);
   }, [toast]);
   useEffect(() => {
-    if (screen !== "playing") return;
+    if (screen !== "playing" || introLeaving) return;
     let last = Date.now();
     const timer = setInterval(() => {
       const now = Date.now(),
@@ -226,7 +248,7 @@ export default function Game() {
       }
     }, 200);
     return () => clearInterval(timer);
-  }, [screen, speed]);
+  }, [screen, speed, introLeaving]);
   useEffect(() => {
     if (screen !== "intro" || !videoFailed) return;
     const start = performance.now(),
@@ -285,13 +307,14 @@ export default function Game() {
       if (cfg)
         void Promise.all([
           leaderboard(cfg),
-          view<{ entries: Entry[] }>(cfg, "get_prize_snapshot"),
+          view<PrizeStatus>(cfg, "get_prize_snapshot"),
         ])
           .then(([l, p]) => {
             if (active) {
               setEntries(l.entries);
               setChallengeOpen(l.open);
               setPrizeEntries(p.entries);
+              setPrizeStatus(p);
             }
           })
           .catch(() => {});
@@ -636,8 +659,8 @@ export default function Game() {
         <div className="mp-title">
           <div className="mp-title-content">
             <div className="mp-title-top">
-              <span className="mp-near">N</span>
-              <span>AN OPTIMISTIC LITTLE MOON ECONOMY</span>
+              <NearMark word />
+              <span>A LIVING ECONOMY ON NEAR</span>
             </div>
             <p className="mp-eyebrow">WELCOME TO YOUR NEXT GREAT IDEA</p>
             <h1>
@@ -654,13 +677,13 @@ export default function Game() {
             <p className="mp-title-description">
               Launch a coaster. Welcome the rockets.
               <br />
-              Build a little place worth travelling 384,400 km for.
+              Back independent businesses. Own a share of their success.
             </p>
             <div className="mp-title-actions">
               <button
                 className="mp-primary"
-                disabled={!initial || launching}
-                onClick={() => start("practice")}
+                disabled={!initial || !cfg || launching}
+                onClick={() => start("near", !!player && challengeOpen)}
               >
                 <Play size={18} />
                 {initial ? "Open your park" : "Preparing your lunar plot…"}
@@ -669,10 +692,10 @@ export default function Game() {
               <button
                 className="mp-secondary"
                 disabled={!initial || launching}
-                onClick={() => start("near")}
+                onClick={() => start("practice")}
               >
-                <ShieldCheck size={17} />
-                Play on NEAR
+                <Play size={17} />
+                Practice offline
               </button>
               {resumeAvailable && (
                 <button
@@ -702,9 +725,14 @@ export default function Game() {
               <button onClick={() => setPanel("help")}>How to play</button>
             </div>
             <span className="mp-title-built">
-              BUILT ON NEAR <i /> GAMEPLAY PLAYTEST · ORIGINAL ASSETS IN
-              PROGRESS
+              NEAR ACCOUNT & GAS INCLUDED <i /> TESTNET · NO CASH VALUE
             </span>
+            <button
+              className="mp-title-economy"
+              onClick={() => setPanel("near")}
+            >
+              <NearMark /> How NEAR drives your park <ArrowUpRight size={13} />
+            </button>
           </div>
           <div className="mp-title-caption">
             <span>YOUR FUTURE PARK</span>
@@ -809,9 +837,17 @@ export default function Game() {
             <div className="mp-time">
               <span>
                 <span className="mp-live-dot" />{" "}
-                {run.finished ? "PARK CLOSED" : "OPENING DAY"}
+                {run.finished
+                  ? "PARK CLOSED"
+                  : run.tick < LANDING
+                    ? "FIRST LANDING"
+                    : "OPENING DAY"}
               </span>
-              <strong>{clock(Math.min(540 - run.tick, wallLeft))}</strong>
+              <strong data-testid="opening-day-clock">
+                {clock(
+                  run.tick < LANDING ? 540 : Math.min(END - run.tick, wallLeft),
+                )}
+              </strong>
               <div className="mp-speeds">
                 {[1, 2, 4].map((n) => (
                   <button
@@ -832,7 +868,12 @@ export default function Game() {
               {power.used}/{power.cap} power
             </span>
             <ShuttleStatus run={run} />
-            <span className="mp-chain">
+            <button
+              className="mp-chain"
+              aria-label="View NEAR economy"
+              onClick={() => setPanel("near")}
+            >
+              <NearMark />
               <span
                 className={`mp-live-dot ${snapshot?.mode === "near" ? "chain" : "practice"}`}
               />
@@ -841,9 +882,9 @@ export default function Game() {
                   ? `NEAR · ${snapshot.pending} saving`
                   : snapshot.record?.ranked
                     ? "NEAR · RANKED"
-                    : "NEAR · PLAYTEST"
+                    : "NEAR · LIVE ECONOMY"
                 : "LOCAL PRACTICE"}
-            </span>
+            </button>
           </div>
           {screen === "playing" &&
             !selection &&
@@ -1109,6 +1150,7 @@ export default function Game() {
                 onReplay={() => start(snapshot.mode, snapshot.record?.ranked)}
                 onExplore={() => setShowResults(false)}
                 onLeaders={() => setPanel("leaderboard")}
+                onOwnership={() => setPanel("near")}
                 onExport={() =>
                   download(
                     {
@@ -1136,19 +1178,33 @@ export default function Game() {
       {panel && (
         <Dialog
           title={
-            panel === "partnerships"
-              ? "Build a future together"
-              : panel === "leaderboard"
-                ? "The Moon's finest five"
-                : panel === "ledger"
-                  ? "Follow the lunar credits"
-                  : panel === "score"
-                    ? "A great park earns its stars"
-                    : "Your first day on the Moon"
+            panel === "near"
+              ? "Your economy. Secured by NEAR."
+              : panel === "partnerships"
+                ? "Build a future together"
+                : panel === "leaderboard"
+                  ? "The Moon's finest five"
+                  : panel === "ledger"
+                    ? "Follow the lunar credits"
+                    : panel === "score"
+                      ? "A great park earns its stars"
+                      : "Your first day on the Moon"
           }
           onClose={closePanel}
         >
-          {panel === "partnerships" && snapshot ? (
+          {panel === "near" ? (
+            <NearEconomy
+              state={snapshot}
+              cfg={cfg}
+              owner={session.current?.ownerId ?? null}
+              owners={session.current?.ownerIds ?? []}
+              onPlay={() => start("near", !!player && challengeOpen)}
+              onAction={async (method, args) => {
+                if (!session.current) throw Error("Open a NEAR park first.");
+                return session.current.ownership(method, args);
+              }}
+            />
+          ) : panel === "partnerships" && snapshot ? (
             <PartnershipDesk state={snapshot} action={(c) => void action(c)} />
           ) : panel === "leaderboard" ? (
             <Leaderboard
@@ -1157,6 +1213,8 @@ export default function Game() {
               prizeEntries={prizeEntries}
               open={challengeOpen}
               configured={authConfigured}
+              authLinks={authLinks}
+              prizeStatus={prizeStatus}
               player={player}
               onSignIn={() => void signIn()}
               onRanked={() => start("near", true)}
@@ -1213,7 +1271,8 @@ export default function Game() {
                   <strong>Build a reason to visit.</strong> Pick a ride, place
                   its blueprint and connect its entrance. Guests arrive by
                   shuttle every 40 simulation seconds. Watch them disembark and
-                  catch their ride home.
+                  catch their ride home. Your nine-minute opening-day clock
+                  begins at the first landing.
                 </li>
                 <li>
                   <strong>Watch what people do.</strong> Queues, thirst, budgets
@@ -1245,11 +1304,10 @@ export default function Game() {
                 <div>
                   <strong>Small businesses. Big dreams.</strong>
                   <p>
-                    Back your neighbours, keep their promises and watch a real
-                    little economy grow. The opening film, visitor shuttles and
-                    merchant partnerships are now part of the complete game;
-                    character and ride artwork can keep evolving after
-                    playtesting.
+                    Back a merchant with park credits to own a fixed 20% sales
+                    share. NEAR issues your transferable concession and settles
+                    its rewards. Click the NEAR badge to see your ownership,
+                    funded testnet rewards and the competition escrow.
                   </p>
                 </div>
               </div>

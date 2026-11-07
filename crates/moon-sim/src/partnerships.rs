@@ -19,6 +19,8 @@ pub struct Partnership {
     pub progress: u16,
     pub deadline: u16,
     pub settled_at: Option<u16>,
+    pub share_percent: u8,
+    pub earned: i64,
 }
 pub fn offers() -> Vec<Partnership> {
     [
@@ -45,6 +47,8 @@ pub fn offers() -> Vec<Partnership> {
             progress: 0,
             deadline: 0,
             settled_at: None,
+            share_percent: 20,
+            earned: 0,
         },
     )
     .collect()
@@ -74,6 +78,7 @@ impl Run {
         self.cash -= p.investment;
         self.buildings[b].cash += p.investment;
         self.buildings[b].insolvent = false;
+        self.buildings[b].rent = p.share_percent;
         self.grant_cash -= p.reward;
         self.grant_escrow += p.reward;
         let deal = &mut self.partnerships[index];

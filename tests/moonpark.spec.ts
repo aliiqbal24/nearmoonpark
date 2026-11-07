@@ -14,7 +14,7 @@ function project(page: Page, x: number, z: number, y = 0.1) {
 async function open(page: Page) {
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Open your park", exact: true })
+    .getByRole("button", { name: "Practice offline", exact: true })
     .click();
   await expect(page.getByRole("button", { name: "Skip intro" })).toBeVisible();
   await page.getByRole("button", { name: "Skip intro" }).click();
@@ -210,7 +210,9 @@ test("sponsored NEAR round confirms through the complete browser flow", async ({
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await page.getByRole("button", { name: "Play on NEAR", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Open your park", exact: true })
+    .click();
   await page.getByRole("button", { name: "Skip intro" }).click();
   await expect(
     page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
@@ -293,6 +295,61 @@ test("sponsored NEAR round confirms through the complete browser flow", async ({
   expect(result.error).toBeNull();
   expect(errors).toEqual([]);
   await page.screenshot({ path: "outputs/moon-near-browser-result.png" });
+  await page.getByRole("button", { name: "Your NEAR business shares" }).click();
+  const share = page
+    .locator(".mp-owned-share")
+    .filter({ hasText: "Omar’s concession" });
+  await expect(share).toBeVisible({ timeout: 30000 });
+  await expect(
+    share.getByRole("button", { name: "Collect reward" }),
+  ).toBeEnabled();
+  await share.getByRole("button", { name: "Collect reward" }).click();
+  await expect(
+    share.getByRole("button", { name: "Collected", exact: true }),
+  ).toBeVisible({ timeout: 45000 });
+  await expect(
+    page.getByRole("link", { name: /Confirmed on NEAR/ }),
+  ).toBeVisible();
+  await page.screenshot({ path: "outputs/moon-concession-collected.png" });
+  await page.getByRole("button", { name: "Close panel" }).click();
+  await page
+    .getByRole("button", { name: /Build a better opening day/ })
+    .click();
+  await page.getByRole("button", { name: "Skip intro" }).click();
+  await expect(
+    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+  ).toBeVisible({ timeout: 90000 });
+  await page.getByRole("button", { name: "View NEAR economy" }).click();
+  await expect(
+    share.getByRole("button", { name: "Collected", exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(share.getByText("YOURS", { exact: true })).toBeVisible();
+  const root = await page.evaluate(async () => {
+    const c = (await (await fetch("/moon-config.json")).json()) as {
+      contractId: string;
+    };
+    return c.contractId.replace(/^economy\./, "");
+  });
+  await share
+    .getByRole("button", { name: "Transfer ownership", exact: true })
+    .click();
+  await share.getByLabel("New owner’s NEAR testnet account").fill(root);
+  await share
+    .getByRole("button", { name: "Review transfer", exact: true })
+    .click();
+  await expect(
+    share.getByRole("button", {
+      name: "Confirm ownership transfer",
+      exact: true,
+    }),
+  ).toBeVisible({ timeout: 20000 });
+  await share
+    .getByRole("button", { name: "Confirm ownership transfer", exact: true })
+    .click();
+  await expect(share.getByText("TRANSFERRED", { exact: true })).toBeVisible({
+    timeout: 45000,
+  });
+  expect(errors).toEqual([]);
   await writeFile(
     "outputs/moon-ui-proof.json",
     JSON.stringify(
@@ -308,11 +365,50 @@ test("sponsored NEAR round confirms through the complete browser flow", async ({
         receipts: result.receipts,
         transactions: result.txs,
         browserTestPassed: true,
+        businessRewardCollected: true,
+        businessSharesPersistAfterReplay: true,
+        concessionTransferredTo: root,
       },
       null,
       2,
     ),
   );
+});
+
+test("opening clock waits for the first landing", async ({ page }) => {
+  await open(page);
+  await expect(page.getByTestId("opening-day-clock")).toHaveText("9:00");
+  await expect(page.getByText("FIRST LANDING", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "4×", exact: true }).click();
+  await expect
+    .poll(
+      async () =>
+        Number(await page.locator("main.moonpark").getAttribute("data-tick")),
+      { timeout: 10000 },
+    )
+    .toBeGreaterThan(10);
+  await expect(page.getByTestId("opening-day-clock")).not.toHaveText("9:00");
+});
+
+test("NEAR ownership explanation is clear and fits mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "How NEAR drives your park" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Your economy. Secured by NEAR." }),
+  ).toBeVisible();
+  await expect(page.getByText("Own your share", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Competition escrow", { exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "outputs/moon-near-mobile-explanation.png" });
 });
 
 test("merchant partnership reserves funding, rewards service, and shuttles carry departures", async ({
@@ -374,7 +470,7 @@ test("opening film decodes, advances smoothly and hands over to the park", async
     })
     .toBeGreaterThanOrEqual(2);
   await page
-    .getByRole("button", { name: "Open your park", exact: true })
+    .getByRole("button", { name: "Practice offline", exact: true })
     .click();
   await expect(video).toHaveClass(/playing/);
   await expect
@@ -407,7 +503,7 @@ test("opening remains playable when the movie cannot load", async ({
   await page.route("**/video/*.mp4", (r) => r.abort());
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Open your park", exact: true })
+    .getByRole("button", { name: "Practice offline", exact: true })
     .click();
   await expect(page.locator("video.mp-opening-film")).not.toHaveClass(
     /playing/,

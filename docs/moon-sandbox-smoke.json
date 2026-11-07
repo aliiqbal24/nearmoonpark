@@ -1,0 +1,269 @@
+{
+  "maxGas": "55520276229071",
+  "totalGas": "1450948631446169",
+  "frames": [
+    {
+      "tick": 10,
+      "gas": "34176966118538",
+      "hash": "5a76e98de068e9071839e0d6c2aef3ac50e51da5bf131f0b529389493aa26d22"
+    },
+    {
+      "tick": 20,
+      "gas": "35611448803426",
+      "hash": "43e2b78c0ff0dba7667d16312f182f82a4c8c671291b5819bb2c3d287dac1501"
+    },
+    {
+      "tick": 40,
+      "gas": "38675743385308",
+      "hash": "2ab10c93d657ad388d38ee1b609641ce2fdcaf3b7752150f024984bf614137b2"
+    },
+    {
+      "tick": 60,
+      "gas": "40174729526063",
+      "hash": "85ddcc189f9f9257bd1eeb7244c00f8de6522c65c08b5a45bca1939fa4d4d2b3"
+    },
+    {
+      "tick": 80,
+      "gas": "41956958296814",
+      "hash": "e11be41af9cb2c4d3daed72913dab325dc3cbf37770805d057018fe9eef58ac6"
+    },
+    {
+      "tick": 100,
+      "gas": "45146717269331",
+      "hash": "597b9637cfbf0ce5d486bf5ff737805d6b76784ef581f14c493a8db7a83ee05c"
+    },
+    {
+      "tick": 110,
+      "gas": "43440207801168",
+      "hash": "244b580d5163778a270986255b6f4fd61a32bba8c1b3b90e22be1ecdb00ea157"
+    },
+    {
+      "tick": 130,
+      "gas": "47413899205356",
+      "hash": "f9c50fc85099a2dd629788fe87a719c3a800506e5c9e5e239d3678a8e0113252"
+    },
+    {
+      "tick": 150,
+      "gas": "46694365880388",
+      "hash": "0ac9142596669bad64e7a4bb07de3403b86e04eb868d00298d0bf851ed6eaaa2"
+    },
+    {
+      "tick": 170,
+      "gas": "46287685871568",
+      "hash": "d0eb93e85ebd1e3486e637e55b9d5208f38c4ee6f694d1b835b9bf5fce29939d"
+    },
+    {
+      "tick": 190,
+      "gas": "49754690903913",
+      "hash": "46be104df3f667fda9a8a693dad24318f52ee7678b829efe3de41ed0f3569aa9"
+    },
+    {
+      "tick": 210,
+      "gas": "48067021823452",
+      "hash": "71ecee98a248d924b1e39066dc5c9839825d24050fefb46cde48488158363aa6"
+    },
+    {
+      "tick": 230,
+      "gas": "48792936379303",
+      "hash": "d600da820fdb20cf60a84cef0b8558a1e54c9d4cff2691b5b27cd253999d12bc"
+    },
+    {
+      "tick": 250,
+      "gas": "48669818053384",
+      "hash": "d2659958de7da9addc92c71b9121cb063c2a4f89b8d1b8e2996a542fbcb0b209"
+    },
+    {
+      "tick": 270,
+      "gas": "52930016200379",
+      "hash": "f8b2e3eace7fdbfe0b0ad937f3b9d3a04ec4d838593780088ed0bfd28d8106cc"
+    },
+    {
+      "tick": 290,
+      "gas": "49486303064185",
+      "hash": "3a6b7639fe59b4741aa70dc550a9fb032399c0fbf5a77c532b3f8d794b2fac78"
+    },
+    {
+      "tick": 310,
+      "gas": "50940378415144",
+      "hash": "e0547d35b0757dddb52e2838602c216af84ed35e510dd4bb8c0454108003b0da"
+    },
+    {
+      "tick": 320,
+      "gas": "48188874545302",
+      "hash": "f409aadb900c4e0924cef4f1bb8974107059549860d9cbae6eef5b86f04b2a1f"
+    },
+    {
+      "tick": 340,
+      "gas": "51798954119889",
+      "hash": "a78d956f2191d4e6c0a75ee7dc4afaf0d5feba6435cb4ca50e21552cc4fbdaba"
+    },
+    {
+      "tick": 360,
+      "gas": "52853692630555",
+      "hash": "a00d28e4912774ed1cf96c61f9cccac198c2a1b34558fe74ad5ccfadaf3a2a85"
+    },
+    {
+      "tick": 380,
+      "gas": "52742871269878",
+      "hash": "028ec0ea115e86f5032fd94b6c933f17e4400450ee49c9fc43d8a14bd4107b58"
+    },
+    {
+      "tick": 400,
+      "gas": "52937949105187",
+      "hash": "247cc916000fc6c7718767849f6ba43f23c0bf6fc38f7fe6b41852df9270b40c"
+    },
+    {
+      "tick": 420,
+      "gas": "55520276229071",
+      "hash": "8e1290b51db4b5c31bfd6a04a7393a660abebd1b7aa75fb799da3daa057ec623"
+    },
+    {
+      "tick": 440,
+      "gas": "53447216485042",
+      "hash": "d4d82d914564b5016d00c47639a0998aac279a17414c7fec16b5e5923cb4aef2"
+    },
+    {
+      "tick": 460,
+      "gas": "53389648657975",
+      "hash": "d7b6cfb0c454d16ea6a8fdda71bad3ae9d1b4b7527b9bdc7064d5ab030ac9f8d"
+    },
+    {
+      "tick": 480,
+      "gas": "53942878939735",
+      "hash": "94386dac649649839e1fe9785632350166d42fb92ee0e994ff7015cb22c6e585"
+    },
+    {
+      "tick": 500,
+      "gas": "52331949301978",
+      "hash": "8affa92a7302369225ed34af9a2a0da1f00c05ff3139eab5e1953bc44c9b2087"
+    },
+    {
+      "tick": 520,
+      "gas": "53132689355887",
+      "hash": "79eab625aa6496b34c4fb24ffffe5d29ea358e5f91f01652d73ea6763d4080c5"
+    },
+    {
+      "tick": 540,
+      "gas": "52035230445178",
+      "hash": "22a4ce6e400f0b60fd71209cd943388811898b5e9c75617b8866bfad0ff9edb2"
+    },
+    {
+      "tick": 550,
+      "gas": "50406513362772",
+      "hash": "c751f702d1b38e567d03bfe795269d5ee8edc0ac819e1cc0217c12f13a8a8a39"
+    }
+  ],
+  "score": {
+    "guests": 5806,
+    "finance": 1098,
+    "variety": 833,
+    "total": 7737,
+    "happy": 96,
+    "equity_gain": 65880,
+    "unique": 160,
+    "satisfaction": 9290
+  },
+  "leaderboard": {
+    "entries": [
+      {
+        "player_id": "opaque-alice",
+        "display_name": "Alice",
+        "run_id": "1",
+        "owner": "alice.sandbox",
+        "score": {
+          "guests": 5806,
+          "finance": 1098,
+          "variety": 833,
+          "total": 7737,
+          "happy": 96,
+          "equity_gain": 65880,
+          "unique": 160,
+          "satisfaction": 9290
+        },
+        "completed_at": "1794022432257059183"
+      }
+    ],
+    "challenge_id": "moonpark-v3",
+    "open": true
+  },
+  "ownershipProof": {
+    "concessions": [
+      {
+        "token_id": "1:1",
+        "owner_id": "alice.sandbox",
+        "merchant": "Omar",
+        "share_percent": 20,
+        "earned_credits_cents": 10580,
+        "earned_yocto": "10580000000000000000000",
+        "claimable_yocto": "10580000000000000000000",
+        "paid_yocto": "0",
+        "pending_yocto": "0",
+        "reserved_yocto": "10580000000000000000000",
+        "closed": true,
+        "transfer_pending": false,
+        "currency": "testnet NEAR"
+      },
+      {
+        "token_id": "1:2",
+        "owner_id": "alice.sandbox",
+        "merchant": "Mina",
+        "share_percent": 20,
+        "earned_credits_cents": 8780,
+        "earned_yocto": "8780000000000000000000",
+        "claimable_yocto": "8780000000000000000000",
+        "paid_yocto": "0",
+        "pending_yocto": "0",
+        "reserved_yocto": "8780000000000000000000",
+        "closed": true,
+        "transfer_pending": false,
+        "currency": "testnet NEAR"
+      },
+      {
+        "token_id": "1:3",
+        "owner_id": "alice.sandbox",
+        "merchant": "Nia",
+        "share_percent": 20,
+        "earned_credits_cents": 200,
+        "earned_yocto": "200000000000000000000",
+        "claimable_yocto": "200000000000000000000",
+        "paid_yocto": "0",
+        "pending_yocto": "0",
+        "reserved_yocto": "200000000000000000000",
+        "closed": true,
+        "transfer_pending": false,
+        "currency": "testnet NEAR"
+      }
+    ],
+    "transfer": {
+      "token_id": "1:1",
+      "from": "alice.sandbox",
+      "to": "bob.sandbox"
+    },
+    "collectedBusinessReward": {
+      "token_id": "1:1",
+      "owner_id": "bob.sandbox",
+      "merchant": "Omar",
+      "share_percent": 20,
+      "earned_credits_cents": 10580,
+      "earned_yocto": "10580000000000000000000",
+      "claimable_yocto": "0",
+      "paid_yocto": "10580000000000000000000",
+      "pending_yocto": "0",
+      "reserved_yocto": "10580000000000000000000",
+      "closed": true,
+      "transfer_pending": false,
+      "currency": "testnet NEAR"
+    },
+    "collectedPrize": {
+      "account_id": "alice.sandbox",
+      "allocated_yocto": "500000000000000000000000",
+      "claimable_yocto": "0",
+      "paid_yocto": "500000000000000000000000",
+      "pending_yocto": "0",
+      "tier": "track",
+      "currency": "testnet NEAR"
+    },
+    "privateCallbackRejected": true,
+    "duplicateClaimsRejected": true
+  }
+}

@@ -8,6 +8,7 @@ import {
   actions,
 } from "near-api-js";
 import { identity } from "@/lib/moon/auth";
+import { failoverRpc } from "@/lib/moon/rpc";
 export const dynamic = "force-dynamic";
 let queue: Promise<unknown> = Promise.resolve();
 export async function POST(request: Request) {
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
     const signed = await identity(request);
     if (!signed?.user)
       return Response.json(
-        { error: "Sign in with Google before ranked play." },
+        { error: "Sign in before ranked play." },
         { status: 401 },
       );
     const profile = await e.DB.prepare(
@@ -122,15 +123,42 @@ export async function POST(request: Request) {
         .bind(id, accountId, body.sessionPublicKey, playerId, ip, Date.now())
         .run();
     }
-    const p = new FailoverRpcProvider([
-      new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" }),
-      new JsonRpcProvider({ url: "https://rpc.testnet.near.org" }),
+    const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
+      "https://test.rpc.fastnear.com",
+      "https://rpc.testnet.near.org",
     ]);
     const root = new Account(
       e.MOON_SPONSOR_ID!,
       p,
       KeyPairSigner.fromSecretKey(e.MOON_SPONSOR_KEY! as `ed25519:${string}`),
     );
+    const safety = await p.callFunction<{ storage_buffer_yocto: string }>({
+      contractId: e.MOON_CONTRACT_ID!,
+      method: "get_fund_safety",
+      args: {},
+    });
+    if (
+      safety &&
+      BigInt(safety.storage_buffer_yocto) < 1000000000000000000000000n
+    ) {
+      const reserve = await root.getState();
+      if (reserve.balance.available < 2800000000000000000000000n)
+        return Response.json(
+          {
+            error:
+              "The testnet storage sponsor needs replenishing. Existing reward reserves remain protected; practice is available.",
+          },
+          { status: 503 },
+        );
+      await root.callFunction({
+        contractId: e.MOON_CONTRACT_ID!,
+        methodName: "fund_storage",
+        args: {},
+        deposit: 2000000000000000000000000n,
+        gas: 30000000000000n,
+        waitUntil: "EXECUTED",
+      });
+    }
     let exists = false;
     try {
       await p.viewAccount({ accountId });
@@ -148,7 +176,7 @@ export async function POST(request: Request) {
     }
     if (!exists) {
       const balance = await root.getState();
-      if (balance.balance.available < 1800000000000000000000000n)
+      if (balance.balance.available < 800000000000000000000000n)
         return Response.json(
           {
             error:
@@ -160,15 +188,20 @@ export async function POST(request: Request) {
         receiverId: accountId,
         actions: [
           actions.createAccount(),
-          actions.transfer(1500000000000000000000000n),
+          actions.transfer(500000000000000000000000n),
           actions.addFullAccessKey(
             PublicKey.fromString(body.recoveryPublicKey),
           ),
           actions.addFunctionCallAccessKey(
             PublicKey.fromString(body.sessionPublicKey),
             e.MOON_CONTRACT_ID!,
-            ["create_run", "apply_actions"],
-            1200000000000000000000000n,
+            [
+              "create_run",
+              "apply_actions",
+              "claim_business_reward",
+              "claim_prize",
+            ],
+            400000000000000000000000n,
           ),
         ],
         waitUntil: "EXECUTED",

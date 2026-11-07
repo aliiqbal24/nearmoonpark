@@ -22,6 +22,7 @@ import {
 import type { Snapshot } from "@/lib/moon/session";
 import type { MoonWorld } from "@/lib/moon/world";
 import type { MoonAudio } from "@/lib/moon/audio";
+import { NearMark } from "./near-economy";
 
 export function CashNumber({ value }: { value: number }) {
   const [display, setDisplay] = useState(value),
@@ -31,7 +32,7 @@ export function CashNumber({ value }: { value: number }) {
       start = performance.now();
     let frame = 0;
     const step = (t: number) => {
-      const u = Math.min(1, (t - start) / 550),
+      const u = Math.max(0, Math.min(1, (t - start) / 550)),
         v = from + (value - from) * (1 - (1 - u) ** 3);
       current.current = v;
       setDisplay(Math.round(v));
@@ -287,7 +288,7 @@ export function PartnershipCard({
             <em>{blueprint(deal.kind).name}</em>
           </strong>
         </div>
-        {near ? <ShieldCheck size={17} /> : <Handshake size={18} />}
+        {near ? <NearMark /> : <Handshake size={18} />}
       </div>
       {!compact && <h3>{deal.title}</h3>}
       <p>
@@ -296,9 +297,22 @@ export function PartnershipCard({
           : done
             ? `We did it. The Tourism Board paid ${money(deal.reward)} credits into your park.`
             : expired
-              ? "The target wasn’t met in time. My business keeps its working capital; the unused grant returned to the Board."
-              : requests[deal.kind]}
+              ? "The target wasn’t met in time. The unused grant returned to the Board; your signed sales share continues until closing."
+              : compact
+                ? `Back my business. Your ${deal.share_percent}% sales share helps us build this dream together.`
+                : requests[deal.kind]}
       </p>
+      {deal.building !== null && (
+        <div className="mp-concession-income">
+          Your signed share: {deal.share_percent}% · earned {money(deal.earned)}{" "}
+          credits
+          {near
+            ? receipt?.reservation || !pending
+              ? " · owned on NEAR"
+              : " · NEAR confirmation pending"
+            : " · practice"}
+        </div>
+      )}
       {active ? (
         <>
           <div className="mp-contract-progress">
@@ -332,14 +346,21 @@ export function PartnershipCard({
             </span>
             <ArrowUpRight size={15} />
             <span>
-              Earn <b>{money(deal.reward)}</b>
+              Grant <b>{money(deal.reward)}</b>
             </span>
           </div>
           <small className="mp-deal-goal">
             {partnershipGoal(deal)} in{" "}
-            {clock(Math.min(deal.duration, 540 - run.tick))}. Investment stays
+            {clock(Math.min(deal.duration, 550 - run.tick))}. Investment stays
             with the merchant if time runs out.
           </small>
+          {!compact && (
+            <small className="mp-deal-goal">
+              Includes a {deal.share_percent}% sales share for opening day
+              {near ? " and a transferable NEAR concession" : ""}. Agreed terms
+              stay fixed.
+            </small>
+          )}
           <button
             className="mp-primary"
             disabled={
@@ -393,8 +414,9 @@ export function PartnershipDesk({
   return (
     <>
       <p className="mp-subtle">
-        Three small businesses. Real working capital. Keep a promise together
-        and the Lunar Tourism Board pays the reserved grant automatically.
+        Back a neighbour with 100 park credits. Own 20% of their opening-day
+        sales, and help them meet a target for an extra grant. They keep their
+        own treasury and buy their own stock.
       </p>
       <div className="mp-partnership-grid">
         {state.run.partnerships.map((p) => (
@@ -413,8 +435,8 @@ export function PartnershipDesk({
         <ShieldCheck size={18} />
         <p>
           {state.mode === "near"
-            ? "Your signed NEAR transaction reserves the grant. The contract checks sales or repairs and releases each reward once."
-            : "Local practice uses the same partnership rules. Choose Play on NEAR for signed agreements and onchain settlement."}
+            ? "NEAR records your concession ownership and fixes its terms. Sales pay your park automatically; a separate funded testnet pool backs the certificate’s capped reward. Find your certificate and collect after closing in the NEAR economy panel."
+            : "Local practice uses the same partnership rules. Choose Open your park for signed NEAR ownership and onchain settlement."}
           <small>
             Tourism fund: {money(state.run.grant_cash)} available ·{" "}
             {money(state.run.grant_escrow)} reserved. These are virtual game

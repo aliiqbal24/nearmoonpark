@@ -1,5 +1,7 @@
-export const VERSION = "moonpark-v2";
-export const END = 540;
+export const VERSION = "moonpark-v3";
+export const LANDING = 10;
+export const END = 550;
+export const DAY_SECONDS = END - LANDING;
 export const GOLD_SCORE = 7000;
 export const WIDTH = 32;
 export const HEIGHT = 24;
@@ -227,6 +229,8 @@ export type Partnership = {
   progress: number;
   deadline: number;
   settled_at: number | null;
+  share_percent: number;
+  earned: number;
 };
 export type Run = {
   version: string;
@@ -300,6 +304,30 @@ export type RecordState = {
   deadline: string;
   last_request: string;
   run: Run;
+};
+export type Concession = {
+  token_id: string;
+  owner_id: string;
+  merchant: string;
+  share_percent: number;
+  earned_credits_cents: number;
+  earned_yocto: string;
+  claimable_yocto: string;
+  paid_yocto: string;
+  pending_yocto: string;
+  reserved_yocto: string;
+  closed: boolean;
+  transfer_pending: boolean;
+};
+export type PrizeStatus = {
+  entries: Entry[];
+  cutoff: string;
+  closed: boolean;
+  funding: string;
+  escrow_yocto: string;
+  award_tier: string;
+  currency: string;
+  usd_pledge_funded: boolean;
 };
 export type Placement = {
   kind: Kind | "path" | "erase";

@@ -1,0 +1,476 @@
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ArrowUpRight,
+  Check,
+  Coins,
+  ExternalLink,
+  ShieldCheck,
+  Trophy,
+} from "lucide-react";
+import { view, checkRecipient, type Config } from "@/lib/moon/near";
+import { money, type Concession, type PrizeStatus } from "@/lib/moon/model";
+import type { Snapshot } from "@/lib/moon/session";
+
+export const testNear = (amount: string) =>
+  (Number(amount) / 1e24).toLocaleString("en-US", { maximumFractionDigits: 6 });
+export function NearMark({ word = false }: { word?: boolean }) {
+  return (
+    <span className="mp-near-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M4 21V4c0-1.8 1.8-2.6 3-1l13 17V3M4 14l6-6M14 16l6-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      {word && <b>NEAR</b>}
+    </span>
+  );
+}
+type Method = "claim_business_reward" | "claim_prize" | "nft_transfer";
+export function NearEconomy({
+  state,
+  cfg,
+  owner,
+  owners,
+  onAction,
+  onPlay,
+}: {
+  state: Snapshot | null;
+  cfg: Config | null;
+  owner: string | null;
+  owners: string[];
+  onAction: (method: Method, args: Record<string, unknown>) => Promise<string>;
+  onPlay: () => void;
+}) {
+  const [assets, setAssets] = useState<Concession[]>([]),
+    [prizes, setPrizes] = useState<PrizeStatus | null>(null),
+    [pool, setPool] = useState<string | null>(null),
+    [prizeClaim, setPrizeClaim] = useState<{
+      account_id: string;
+      claimable_yocto: string;
+      paid_yocto: string;
+    } | null>(null),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(""),
+    [receipt, setReceipt] = useState(""),
+    [recipient, setRecipient] = useState(""),
+    [transfer, setTransfer] = useState<string | null>(null),
+    [review, setReview] = useState(false);
+  const runId = state?.record?.run_id,
+    finished = !!state?.record?.run.finished && !state?.pending;
+  const ownerKey = owners.join("|");
+  const read = useCallback(async () => {
+    if (!cfg) {
+      setLoading(false);
+      return;
+    }
+    const [p, f, current, owned, claim] = await Promise.all([
+      view<PrizeStatus>(cfg, "get_prize_snapshot"),
+      view<{ available_yocto: string }>(cfg, "get_business_fund"),
+      runId
+        ? view<Concession[]>(cfg, "get_concessions", { run_id: runId })
+        : Promise.resolve([]),
+      Promise.all(
+        ownerKey
+          .split("|")
+          .filter(Boolean)
+          .map((account_id) =>
+            view<{ token_id: string }[]>(cfg, "nft_tokens_for_owner", {
+              account_id,
+              limit: 12,
+            }),
+          ),
+      ).then((rows) => rows.flat()),
+      Promise.all(
+        ownerKey
+          .split("|")
+          .filter(Boolean)
+          .map((account_id) =>
+            view<{
+              account_id: string;
+              claimable_yocto: string;
+              paid_yocto: string;
+            }>(cfg, "get_prize_claim", { account_id }),
+          ),
+      ),
+    ]);
+    const ids = new Set(current.map((a) => a.token_id));
+    const extra = await Promise.all(
+      owned
+        .filter((a) => !ids.has(a.token_id))
+        .map((a) =>
+          view<Concession>(cfg, "get_business_share", { token_id: a.token_id }),
+        ),
+    );
+    return {
+      prizes: p,
+      pool: f.available_yocto,
+      assets: [...current, ...extra],
+      claim:
+        claim.find((c) => BigInt(c.claimable_yocto) > 0n) ?? claim[0] ?? null,
+    };
+  }, [cfg, runId, ownerKey]);
+  useEffect(() => {
+    let active = true;
+    const load = () =>
+      void read()
+        .then((v) => {
+          if (active && v) {
+            setPrizes(v.prizes);
+            setPool(v.pool);
+            setAssets(v.assets);
+            setPrizeClaim(v.claim);
+            setError("");
+          }
+        })
+        .catch(() => {
+          if (active)
+            setError(
+              "NEAR is taking a moment. Your ownership stays safe onchain.",
+            );
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    load();
+    const timer = setInterval(load, 15000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [read, finished]);
+  const act = async (
+    method: Method,
+    args: Record<string, unknown>,
+    key: string,
+  ) => {
+    if (busy) return;
+    setBusy(key);
+    setError("");
+    setReceipt("");
+    try {
+      const tx = await onAction(method, args);
+      setReceipt(tx);
+      setTransfer(null);
+      setReview(false);
+      setRecipient("");
+      const v = await read();
+      if (v) {
+        setAssets(v.assets);
+        setPrizeClaim(v.claim);
+        setPrizes(v.prizes);
+        setPool(v.pool);
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not complete the action.",
+      );
+    } finally {
+      setBusy("");
+    }
+  };
+  return (
+    <div className="mp-near-economy">
+      <div className="mp-near-intro">
+        <NearMark word />
+        <span>LIVE ON TESTNET · NO CASH VALUE</span>
+      </div>
+      <p className="mp-subtle">
+        You run the park. Your neighbours run their businesses. NEAR records who
+        owns each concession, enforces the agreements and pays funded rewards.
+      </p>
+      <details className="mp-near-explainer" open={state?.mode !== "near"}>
+        <summary>How NEAR powers your economy</summary>
+        <div className="mp-near-story">
+          <div>
+            <ShieldCheck size={19} />
+            <strong>Own your share</strong>
+            <p>
+              Backing a merchant creates a transferable ownership certificate.
+              It earns a fixed 20% of that shop’s sales in park credits.
+            </p>
+          </div>
+          <div>
+            <Coins size={19} />
+            <strong>Collect a real chain transfer</strong>
+            <p>
+              A separate, funded testnet pool rewards those earnings. Collect
+              after opening day; the current certificate owner holds the claim.
+            </p>
+          </div>
+          <div>
+            <Trophy size={19} />
+            <strong>Compete under public rules</strong>
+            <p>
+              The same starting park and scoring rules for everyone. Prize
+              standings freeze at the cutoff; funded payouts follow the frozen
+              order.
+            </p>
+          </div>
+        </div>
+      </details>
+      {state?.mode !== "near" && (
+        <div className="mp-callout">
+          <div>
+            <strong>Try the economy on NEAR</strong>
+            <p>
+              We create your account and cover testnet gas. Your park needs no
+              crypto purchase.
+            </p>
+          </div>
+          <button className="mp-primary" onClick={onPlay}>
+            Open a NEAR park <ArrowUpRight size={14} />
+          </button>
+        </div>
+      )}
+      <h3>Your business shares</h3>
+      {loading ? (
+        <p className="mp-subtle">
+          Reading ownership and funded rewards from NEAR…
+        </p>
+      ) : assets.length === 0 ? (
+        <p className="mp-subtle">
+          Back Omar, Mina or Nia during your opening day. Their concession and
+          earnings will appear here.
+        </p>
+      ) : (
+        <div className="mp-owned-shares">
+          {assets.map((a) => {
+            const mine = owners.includes(a.owner_id),
+              usable = a.closed && (a.owner_id !== owner || finished),
+              claimable = BigInt(a.claimable_yocto) > 0n;
+            return (
+              <article key={a.token_id} className="mp-owned-share">
+                <header>
+                  <NearMark />
+                  <div>
+                    <strong>{a.merchant}’s concession</strong>
+                    <small>
+                      {a.share_percent}% sales share · certificate #{a.token_id}
+                    </small>
+                  </div>
+                  <span>{mine ? "YOURS" : "TRANSFERRED"}</span>
+                </header>
+                <div className="mp-share-numbers">
+                  <span>
+                    Park income
+                    <strong>{money(a.earned_credits_cents)} credits</strong>
+                  </span>
+                  <span>
+                    Ready to collect
+                    <strong>{testNear(a.claimable_yocto)} tNEAR</strong>
+                  </span>
+                </div>
+                <p className="mp-fine">
+                  {testNear(a.paid_yocto)} tNEAR collected ·{" "}
+                  {a.closed
+                    ? "Opening day settled"
+                    : `Reward backing: up to ${testNear(a.reserved_yocto)} tNEAR`}
+                  . Owner:{" "}
+                  <a
+                    target="_blank"
+                    rel="noreferrer"
+                    href={`https://testnet.nearblocks.io/address/${a.owner_id}`}
+                  >
+                    {a.owner_id.slice(0, 18)}…
+                  </a>
+                </p>
+                {mine && (
+                  <div className="mp-share-actions">
+                    <button
+                      className="mp-primary"
+                      disabled={
+                        !usable || !claimable || !!busy || a.transfer_pending
+                      }
+                      onClick={() =>
+                        void act(
+                          "claim_business_reward",
+                          { token_id: a.token_id },
+                          a.token_id,
+                        )
+                      }
+                    >
+                      {busy === a.token_id ? (
+                        "Confirming on NEAR…"
+                      ) : BigInt(a.paid_yocto) > 0n && !claimable ? (
+                        <>
+                          <Check size={14} /> Collected
+                        </>
+                      ) : (
+                        <>
+                          Collect reward <Coins size={14} />
+                        </>
+                      )}
+                    </button>
+                    <button
+                      disabled={!usable || !!busy || a.transfer_pending}
+                      onClick={() => {
+                        setTransfer(
+                          transfer === a.token_id ? null : a.token_id,
+                        );
+                        setReview(false);
+                      }}
+                    >
+                      Transfer ownership
+                    </button>
+                  </div>
+                )}
+                {mine && !usable && (
+                  <p className="mp-fine">
+                    Finish and confirm your opening day to collect or transfer
+                    here. Your certificate already exists on NEAR.
+                  </p>
+                )}
+                {transfer === a.token_id && (
+                  <form
+                    className="mp-share-transfer"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!review) {
+                        if (!cfg) return;
+                        if (recipient.trim() === a.owner_id) {
+                          setError("You already own this concession.");
+                          return;
+                        }
+                        setBusy("review");
+                        setError("");
+                        void checkRecipient(cfg, recipient.trim())
+                          .then(() => setReview(true))
+                          .catch((e) => setError(e.message))
+                          .finally(() => setBusy(""));
+                        return;
+                      }
+                      void act(
+                        "nft_transfer",
+                        {
+                          token_id: a.token_id,
+                          receiver_id: recipient.trim(),
+                          approval_id: null,
+                          memo: "Moonpark concession ownership transfer",
+                        },
+                        a.token_id,
+                      );
+                    }}
+                  >
+                    <label htmlFor={`recipient-${a.token_id}`}>
+                      New owner’s NEAR testnet account
+                    </label>
+                    <input
+                      id={`recipient-${a.token_id}`}
+                      value={recipient}
+                      onChange={(e) => {
+                        setRecipient(e.target.value);
+                        setReview(false);
+                      }}
+                      required
+                      pattern="[a-z0-9]+([._-][a-z0-9]+)*"
+                      minLength={2}
+                      maxLength={64}
+                      placeholder="their-account.testnet"
+                      autoComplete="off"
+                    />
+                    <p className="mp-fine">
+                      This gives the recipient the certificate and its
+                      uncollected reward. Your park score stays with you.
+                      Ownership transfers cannot be undone by Moonpark.
+                    </p>
+                    {review && (
+                      <p>
+                        Send certificate <strong>#{a.token_id}</strong> and its{" "}
+                        <strong>{testNear(a.claimable_yocto)} tNEAR</strong>{" "}
+                        claim to <strong>{recipient.trim()}</strong>?
+                      </p>
+                    )}
+                    <button className="mp-secondary" disabled={!!busy}>
+                      {review
+                        ? "Confirm ownership transfer"
+                        : "Review transfer"}
+                    </button>
+                  </form>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+      {prizes && (
+        <div className="mp-near-pools">
+          <div>
+            <strong>Merchant reward pool</strong>
+            <span>{pool === null ? "—" : testNear(pool)} tNEAR available</span>
+            <small>
+              Separate from the park’s lunar credits. Up to 0.02 tNEAR is
+              reserved per certificate, subject to available backing.
+            </small>
+          </div>
+          <div>
+            <strong>Competition escrow</strong>
+            <span>{testNear(prizes.escrow_yocto)} tNEAR deposited</span>
+            <small>
+              {prizes.award_tier === "pending"
+                ? "Awaiting the award condition and frozen eligible standings."
+                : `${prizes.award_tier} tier allocated by the contract.`}{" "}
+              The conditional US$1K/US$5K pledge is not funded by these testnet
+              tokens.
+            </small>
+          </div>
+        </div>
+      )}
+      {prizeClaim && BigInt(prizeClaim.claimable_yocto) > 0n && (
+        <button
+          className="mp-primary"
+          disabled={(prizeClaim.account_id === owner && !finished) || !!busy}
+          onClick={() =>
+            void act(
+              "claim_prize",
+              { account_id: prizeClaim.account_id },
+              "prize",
+            )
+          }
+        >
+          Collect competition prize · {testNear(prizeClaim.claimable_yocto)}{" "}
+          tNEAR
+        </button>
+      )}
+      {receipt && (
+        <a
+          className="mp-settlement-link"
+          target="_blank"
+          rel="noreferrer"
+          href={`https://testnet.nearblocks.io/txns/${receipt}`}
+        >
+          <Check size={14} /> Confirmed on NEAR · view receipt{" "}
+          <ExternalLink size={12} />
+        </a>
+      )}
+      {error && (
+        <p role="status" className="mp-near-error">
+          {error}
+        </p>
+      )}
+      {cfg && (
+        <a
+          className="mp-settlement-link"
+          href={`https://testnet.nearblocks.io/address/${cfg.contractId}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Inspect the economy contract <ExternalLink size={12} />
+        </a>
+      )}
+      <p className="mp-fine">
+        The economy contract is deployed without access keys or an upgrade
+        method. NPC wallets are contract-managed game balances, not independent
+        signing wallets. Testnet rewards have no cash value and never increase
+        your ranked starting resources. Account keys stay in this browser;
+        transfer to a testnet wallet you control to keep ownership elsewhere.
+      </p>
+    </div>
+  );
+}

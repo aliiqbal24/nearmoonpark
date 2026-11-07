@@ -1,25 +1,20 @@
 {
-  "contractId": "moonpark-mw5r8aye.testnet",
-  "codeHash": "9MjNFtSTL5gxJJGX4WfYo59UaiRMsZHfXGwpgm5xpcQ2",
-  "url": "https://last-signal-mars.ajiqbal1.chatgpt.site",
-  "testedSourceCommit": "a515963313cdd9bfeb43f88d55bedd23f14db537",
-  "verifiedAt": "2026-11-07T02:34:36.446716+00:00",
-  "runId": "3",
-  "owner": "m6da2fb9edef3c3cb01e2.moonpark-mw5r8aye.testnet",
+  "url": "http://localhost:5173",
+  "runId": "2",
+  "owner": "m60145184b16322f448fe.moonpark-mw5uef63.testnet",
   "ranked": false,
-  "tick": 540,
-  "hash": "21b335bd54d570da813a4ab9fae957ec2efb27340f134868e0049ec418ad9d7c",
   "score": {
-    "guests": 4262,
-    "finance": 908,
-    "variety": 781,
-    "total": 5951,
-    "happy": 43,
-    "equity_gain": 54520,
-    "unique": 150,
-    "satisfaction": 6820
+    "guests": 4379,
+    "finance": 1015,
+    "variety": 812,
+    "total": 6206,
+    "happy": 46,
+    "equity_gain": 60910,
+    "unique": 156,
+    "satisfaction": 7007
   },
-  "tradeCount": 502,
+  "tradeCount": 518,
+  "hash": "1a3ae9089bb7db400fd1a50c868d0808f544fc856d132a1aa54ae4cab61c4c59",
   "partnerships": [
     {
       "id": 1,
@@ -36,7 +31,9 @@
       "baseline": 0,
       "progress": 8,
       "deadline": 162,
-      "settled_at": 119
+      "settled_at": 119,
+      "share_percent": 20,
+      "earned": 10360
     },
     {
       "id": 2,
@@ -53,7 +50,9 @@
       "baseline": 0,
       "progress": 0,
       "deadline": 0,
-      "settled_at": null
+      "settled_at": null,
+      "share_percent": 20,
+      "earned": 0
     },
     {
       "id": 3,
@@ -70,67 +69,57 @@
       "baseline": 0,
       "progress": 0,
       "deadline": 0,
-      "settled_at": null
+      "settled_at": null,
+      "share_percent": 20,
+      "earned": 0
     }
   ],
   "receipts": {
     "1": {
-      "reservation": "3oiwU43mWaoaPcpLzZimMVxduDHHcxjrkuicfS1jDkgv",
-      "payment": "7Yvmnt3gpBdaopSxCgvTs5BUppaM6yNynBZ8cd5Dmu8p"
+      "reservation": "G5DQe8nBbMVUJe3sybLWTLv9u5R2jBsshJ5DE5T2zvxA",
+      "payment": "HRAQo6ykVRQ57zDYCKVfWbHarUg7poKYeeGa8VnxNZVk"
     },
     "2": {},
     "3": {}
   },
   "transactions": [
-    "6pQxqiezsne2Vbpddf6n88hJHrTepeqRpwfVEshCR7Hk",
-    "FZ3xhEihBsVnUL8sgtvgETNdfaB5JcmBUd9zj2QTRhra",
-    "8NaTF3iSDNQALKAzndgR2YrmUQuiGjU25VC1k5jt9rCV",
-    "Acy73nM9vgghDHcLFv4pzgYeDU1Xf5F5fCszKrpqYqNN",
-    "3oiwU43mWaoaPcpLzZimMVxduDHHcxjrkuicfS1jDkgv",
-    "CyX4GWtPDz4oLSwp9Je1qMjdTutt2SKuH8q4nsaheTrb",
-    "2TDKJwVvjzjYrCffJ6Fd8Wt14DvVeizR5i7FnBYuJBr6",
-    "HXSyob7NV8qt8pom8QWkEsajko7N1j8JAeUEGCoXFmD4",
-    "9DEbaA5i5i88fnqsLbwT4t5Ce6GBwG7EK9m9ze9QSPcC",
-    "A2LTWAp2ABncZWZUQacWRcmxKXYj8pcq2K5Gg1mgvaVT",
-    "7Yvmnt3gpBdaopSxCgvTs5BUppaM6yNynBZ8cd5Dmu8p",
-    "6ffCdNfbJX2HPgrQP3geGNc6ArSaow87JfrWcCYe1ZLf",
-    "3dQ7yiJhQoeFGyQi1sq7K4Ped2mp6ywaoNV1862DzDC4",
-    "H831mM4TGBvHqtKRsVZRNj2tz22xW2HyPqv6L7P9eJYM",
-    "FzWTV2pxpC4sYRh4sW5KenTSqYgPHyRMU7TW6CPq8SZE",
-    "7hAaptiCou4rff8VsDgQzpp68wtuCjfJdYEa2Rz7YFKd",
-    "9LoDwikDPdAv7gkAqqmjKG3FoEgWvQSXuahgWqG7ACgE",
-    "D4Z5vDjwLQSePJj3Diraz4XAtCN8bYRQsiKsNf1v2Xjp",
-    "3698vDWevWMZ5mjohsbN2P1Zsn2ydL6M689sGh5oaLTL",
-    "CSYfoi7k1uAxniwgfysjUqXLHcDZWysDyawzQVd1cyCT",
-    "8Mzi5ekD8hBhw73bCSUC8YX7NJVeAKFnEjEFqoP96zcZ",
-    "Gczv4s4YoJdRJJuEuEGZHUX5oCtH85ShtSgVJoqmyAam",
-    "4QZKLvcCSSsmAgstEHvmMXjt6pFRZB7wN9me1iFSdfP1",
-    "8x6VpfcYsJhS8mWFKxBKH6WBJpbDsjjXtFsWWWwFGix2",
-    "HRmCoy8TeKovrF6pj9THFo77QFRPT71EdcvQ9Pgd6Eo1",
-    "AErixkvDc9dQbZbHPh11f5kZFuekQyRaVuqetWt7o8cP",
-    "A1heJcCooyQz2p1XTxM9Cqu3yhY71i2rgKqsG9E65qkE",
-    "ArTpLCNmDBssrAoKKSraYtHVxxnX2oeULnZQk4xd1Vpx",
-    "8U5RcrB365ttHke8mEGsMzNiNsUxWJSVCWLY5eMvNfjo",
-    "Dyswdtvj7VbU1sW8g68pdncBkq4ZZBFtpnvm8fFjCMwM",
-    "HYCtm5snrCzNUPzo8AQMvbxRuXPgx4PUE2tm1xdmix3e",
-    "8V2PT2e7g3YC9b151SFGGk886cxFyAnRg6ZGghnSxTzF"
-  ],
-  "flow": [
-    "sponsored restricted-key account",
-    "coaster construction and connection",
-    "signed partnership reservation",
-    "4x speed",
-    "mid-round reload and resume",
-    "canonical result and persisted payout-receipt link"
+    "9JbGjwbtJskwaUo2PT4LbSYie75cS2eVhWMBssb8uCoP",
+    "44AVEFmUSo9VWPkCLD7jgp2kKnjr4B766zcz2ZC2joM6",
+    "3ByshX8TZ8Pq2xNsDJgqYdRR7QoUdtR1LENZMjsgxUhx",
+    "G5DQe8nBbMVUJe3sybLWTLv9u5R2jBsshJ5DE5T2zvxA",
+    "216qwsC5NAN7DAVmbJci4SWtCMK1312Yb94Lji52Poba",
+    "EvovK2XpdcjA2xqumE37GdwXbWqwR21Km8KwM1DbsTFk",
+    "CoVP5jCY1j9WJwT5LF5fPXvuAs9Vn8aZKmEcvKaPYKy1",
+    "E9Ek7wUka9vxCyPs2f2vzBbzC1UqUGHZCwiuzrW4ovdg",
+    "HRAQo6ykVRQ57zDYCKVfWbHarUg7poKYeeGa8VnxNZVk",
+    "96qBYqxGgj9ocDSt9DCXcWMheie3iLyd6TqmRqKqD7e5",
+    "9uBsfVJVMxjCoU5d13frpGE6uedBFjGWvaYXTQaJC5fq",
+    "3L9T6uBeN2zF1xBNZcXN4kMkdFiLEZVzdPVxhKubU4Fy",
+    "gkVQhwnHKmQccoEhzww6JBCSGpxwkvLbe5dDtxRHm9F",
+    "AE9mP5YCMjMaSdnuA2osZ3T6LRYaHVwV9MdHJELKPhNV",
+    "3hWAzmfevtnVoKXb5LJoVTRXjVcTMaFBP9DKvRcDnAkB",
+    "6VsnUiXEZKUdnfRDHxYYQ2zzmpLRUNNc8upsdPNFZhT9",
+    "xMe4Uyxa9a5TmT37R1RTfWMM8cgvstRU2z3hrHuq9o8",
+    "DaZAs5uzvyQcaWYRM28KqAAQg2WLtXXuz8J1mtcu5p7r",
+    "27C1PUXoUEgyG8owA2SjdA1bLagvBhFrMTB1AJg4h76C",
+    "2bUJmPLok7DzwLRMt9uMVMD2ufoJGt79GcgoR4KVLhTU",
+    "A5sZ94e1NjAfp1XqBVwuf3Y6655tpCdGtV9oNr4MwRVo",
+    "EEbqz1mTf7FRLyf2rGqihBR84KjGFznTJra9mUUhfm61",
+    "9tduFKgcmZSRpqGVwDN6mC85ssyzAjim2PLw2L1q72of",
+    "4gcEav24wq6NNZzLBuGsVBM4sFKgvYMKHnY8FJ4P4Wf1",
+    "CD6Pe9yBf4aiKyaL8Yf2sMLgYZE22ssMmZTqzxbxh267",
+    "EUXPt4knC8vQTwvaveiqwo2Du5gnQ4TgWoxfwuzT9U9M",
+    "4KCygKvAfUDej3tXTHx2fDFs8ChGsQLDUCgefL4EBdxw",
+    "63dQez1kCWiueURMNs8tbc5tkda6sRADbs8xJeruSVW9",
+    "H5anJ3ABEq3H1qgL5yewm57A6JhyeTQNEWadQAcBjJjW",
+    "26zDDi1Ds74PMLeofRhLA936vKFuwf6BcA8JCZ5JGGmN",
+    "JAj8EdngPfZ52GRUeEcgM48HjS8kdTTkJKTavSXbxFjc"
   ],
   "browserTestPassed": true,
-  "hostedSuitePassed": 8,
-  "independentChainReadbackMatches": true,
-  "mobileFilm": {
-    "width": 1280,
-    "height": 720,
-    "duration": 40,
-    "playbackAndHandoffPassed": true
-  },
-  "hostedFilmHashesMatchManifest": true
+  "businessRewardCollected": true,
+  "concessionTransferredTo": "moonpark-mw5uef63.testnet",
+  "contractId": "economy.moonpark-mw5uef63.testnet",
+  "codeHash": "2aWWsedhvw8pCVUFuTf4yCN4YfTc2CBZfrU7oFXthpy5",
+  "environment": "local browser against deployed testnet contract",
+  "hostedVerificationPending": true
 }

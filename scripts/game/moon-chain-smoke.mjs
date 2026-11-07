@@ -8,15 +8,16 @@ import {
   KeyPair,
   KeyPairSigner,
 } from "near-api-js";
+import { failoverRpc } from "../../lib/moon/rpc.ts";
 const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
 assert.equal(cfg.network, "testnet");
 assert.ok(cfg.contractId.endsWith(".testnet"));
 const rootKey = JSON.parse(
-  await readFile(".near-local/moon-v2-deployer.json", "utf8"),
+  await readFile(".near-local/moon-v3-deployer.json", "utf8"),
 );
-const p = new FailoverRpcProvider([
-  new JsonRpcProvider({ url: cfg.rpcUrl }),
-  new JsonRpcProvider({ url: cfg.fallbackRpcUrl }),
+const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
+  cfg.rpcUrl,
+  cfg.fallbackRpcUrl,
 ]);
 const root = new Account(
   rootKey.accountId,
@@ -28,9 +29,14 @@ const key = KeyPair.fromRandom("ed25519"),
 await root.createAccount({
   newAccountId: id,
   publicKey: key.getPublicKey(),
-  nearToTransfer: 2000000000000000000000000n,
+  nearToTransfer: 700000000000000000000000n,
 });
 const player = new Account(id, p, new KeyPairSigner(key));
+await writeFile(
+  `.near-local/${id}.json`,
+  JSON.stringify({ accountId: id, secretKey: key.toString() }),
+  { mode: 0o600 },
+);
 await root.callFunction({
   contractId: cfg.contractId,
   methodName: "register_player",
@@ -45,7 +51,7 @@ await root.callFunction({
 let state = await player.callFunction({
   contractId: cfg.contractId,
   methodName: "create_run",
-  args: { challenge_id: "moonpark-v2", request_id: "real-chain-proof" },
+  args: { challenge_id: "moonpark-v3", request_id: "real-chain-proof" },
   gas: 180000000000000n,
   waitUntil: "EXECUTED",
 });
@@ -128,6 +134,90 @@ assert.ok(state.run.score.total >= 7000);
 assert.equal(state.ranked, false);
 assert.ok(state.run.partnerships.every((p) => p.status === "completed"));
 assert.equal(state.run.grant_escrow, 0);
+await writeFile(
+  "outputs/moon-v3-chain-progress.json",
+  JSON.stringify({ state, checkpoints, maxGas: maxGas.toString() }),
+);
+const concessions = await p.callFunction({
+  contractId: cfg.contractId,
+  method: "get_concessions",
+  args: { run_id: state.run_id },
+});
+assert.equal(concessions.length, 3);
+// Another signer deliberately advances the sponsor key to verify the RPC
+// wrapper preserves SDK nonce invalidation/retry across independent callers.
+const independentSponsor = new Account(
+  rootKey.accountId,
+  p,
+  KeyPairSigner.fromSecretKey(rootKey.secretKey),
+);
+await independentSponsor.callFunction({
+  contractId: cfg.contractId,
+  methodName: "fund_storage",
+  args: {},
+  gas: 30000000000000n,
+  waitUntil: "FINAL",
+});
+const ownershipReceipts = [];
+for (const share of concessions) {
+  assert.equal(share.owner_id, id);
+  const transfer = await player.callFunctionRaw({
+    contractId: cfg.contractId,
+    methodName: "nft_transfer",
+    args: { token_id: share.token_id, receiver_id: root.accountId },
+    deposit: 1n,
+    gas: 50000000000000n,
+    waitUntil: "FINAL",
+  });
+  await assert.rejects(() =>
+    player.callFunction({
+      contractId: cfg.contractId,
+      methodName: "claim_business_reward",
+      args: { token_id: share.token_id },
+      gas: 80000000000000n,
+      waitUntil: "FINAL",
+    }),
+  );
+  const claim = await root.callFunctionRaw({
+    contractId: cfg.contractId,
+    methodName: "claim_business_reward",
+    args: { token_id: share.token_id },
+    gas: 80000000000000n,
+    waitUntil: "FINAL",
+  });
+  const paid = await p.callFunction({
+    contractId: cfg.contractId,
+    method: "get_business_share",
+    args: { token_id: share.token_id },
+  });
+  assert.equal(paid.owner_id, root.accountId);
+  assert.equal(paid.paid_yocto, share.claimable_yocto);
+  assert.equal(paid.claimable_yocto, "0");
+  ownershipReceipts.push({
+    tokenId: share.token_id,
+    newOwner: root.accountId,
+    transfer: transfer.transaction.hash,
+    payment: claim.transaction.hash,
+    paid_yocto: paid.paid_yocto,
+  });
+}
+const storageRefund = await root.callFunction({
+  contractId: cfg.contractId,
+  methodName: "fund_storage",
+  args: {},
+  deposit: 100000000000000000000000n,
+  gas: 40000000000000n,
+  waitUntil: "FINAL",
+});
+assert.equal(storageRefund, "0", "Unused storage sponsorship must be refunded");
+const fundSafety = await p.callFunction({
+  contractId: cfg.contractId,
+  method: "get_fund_safety",
+  args: {},
+});
+assert.equal(fundSafety.solvent, true);
+const access = await p.viewAccessKeyList({ accountId: cfg.contractId });
+assert.equal(access.keys.length, 0);
 await mkdir("docs", { recursive: true });
 await writeFile(
   "docs/moon-testnet-smoke.json",
@@ -144,6 +234,11 @@ await writeFile(
       partnerships: state.run.partnerships,
       reservedFunding: state.run.grant_escrow,
       availableFunding: state.run.grant_cash,
+      ownershipReceipts,
+      fundSafety,
+      contractAccessKeys: access.keys.length,
+      unusedStorageDepositRefunded: true,
+      sponsorNonceRecoveryVerified: true,
       payoutReceipts: state.run.partnerships.map((p) => ({
         partnershipId: p.id,
         merchant: p.owner,

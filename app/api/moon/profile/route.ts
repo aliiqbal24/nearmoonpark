@@ -1,11 +1,21 @@
 import { env } from "cloudflare:workers";
-import { getAuth, identity } from "@/lib/moon/auth";
+import { getAuth, identity, platformAuthEnabled } from "@/lib/moon/auth";
+import { chatGPTSignInPath, chatGPTSignOutPath } from "@/app/chatgpt-auth";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const auth = getAuth(request);
-  if (!auth) return Response.json({ configured: false, player: null });
+  const platform = platformAuthEnabled(request);
+  const links = platform
+    ? {
+        signInUrl: chatGPTSignInPath("/?ranked=1"),
+        signOutUrl: chatGPTSignOutPath("/"),
+      }
+    : {};
+  if (!auth && !platform)
+    return Response.json({ configured: false, player: null });
   const signed = await identity(request);
-  if (!signed?.user) return Response.json({ configured: true, player: null });
+  if (!signed?.user)
+    return Response.json({ configured: true, player: null, ...links });
   const db = (env as unknown as { DB: D1Database }).DB;
   let row = await db
     .prepare("SELECT player_id,display_name FROM moon_profile WHERE user_id=?")
@@ -27,7 +37,7 @@ export async function GET(request: Request) {
       .bind(signed.user.id)
       .first<{ player_id: string; display_name: string }>();
   }
-  return Response.json({ configured: true, player: row });
+  return Response.json({ configured: true, player: row, ...links });
 }
 export async function POST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin)

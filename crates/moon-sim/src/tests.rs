@@ -96,7 +96,7 @@ fn merchant_pricing_is_transparent() {
 #[test]
 fn closed_round_rejects_actions() {
     let mut r = Run::new();
-    for _ in 0..54 {
+    for _ in 0..(END / 10) {
         r.apply(&[], 10).unwrap()
     }
     assert!(r.apply(&[cmd("sell", 1)], 0).is_err());
@@ -245,4 +245,38 @@ fn shuttles_deliver_small_groups_and_take_boarded_guests_home() {
     assert_eq!(r.guests[0].status, "gone");
     assert_eq!(r.departures[0], 1);
     assert_eq!(r.total_money(), r.money_supply);
+}
+
+#[test]
+fn signed_concession_protects_terms_and_tracks_actual_income() {
+    let mut r = Run::new();
+    let mut partner = cmd("partner", 2);
+    partner.value = 1;
+    r.apply(&[partner], 0).unwrap();
+    assert_eq!(r.buildings[1].rent, 20);
+    let mut rent = cmd("rent", 2);
+    rent.value = 30;
+    assert!(r
+        .apply(&[rent], 0)
+        .unwrap_err()
+        .contains("signed concession"));
+    assert!(r.apply(&[cmd("sell", 2)], 0).is_err());
+    while !r.finished {
+        r.apply(&[], 10).unwrap();
+        assert_eq!(r.total_money(), r.money_supply);
+    }
+    assert!(r.partnerships[0].earned > 0);
+    assert_eq!(r.partnerships[0].earned, r.buildings[1].revenue * 20 / 100);
+}
+#[test]
+fn first_landing_has_a_full_opening_day_remaining() {
+    let mut r = Run::new();
+    r.apply(&[], LANDING).unwrap();
+    assert_eq!(END - r.tick, 540);
+    assert!(r.guests.iter().all(|g| g.status == "upcoming"));
+    r.apply(&[], 1).unwrap();
+    assert_eq!(
+        r.guests.iter().filter(|g| g.status == "arriving").count(),
+        8
+    );
 }

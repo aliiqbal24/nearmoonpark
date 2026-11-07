@@ -5,10 +5,11 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::VecDeque;
 
-pub const VERSION: &str = "moonpark-v2";
+pub const VERSION: &str = "moonpark-v3";
 pub const WIDTH: u16 = 32;
 pub const HEIGHT: u16 = 24;
-pub const END: u16 = 540;
+pub const LANDING: u16 = 10;
+pub const END: u16 = 550;
 pub const MAX_TICKS: u16 = 20;
 pub const GATE: u16 = 23 * WIDTH + 15;
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -360,11 +361,27 @@ impl Run {
         good: &str,
         qty: u16,
     ) {
+        let from = from.into();
+        let to = to.into();
+        if good == "revenue share" && to == "Park" {
+            if let Some(id) = from
+                .strip_prefix("business:")
+                .and_then(|s| s.parse::<u32>().ok())
+            {
+                if let Some(p) = self
+                    .partnerships
+                    .iter_mut()
+                    .find(|p| p.building == Some(id))
+                {
+                    p.earned += amount;
+                }
+            }
+        }
         self.trade_count += 1;
         self.trades.push(Trade {
             tick: self.tick,
-            from: from.into(),
-            to: to.into(),
+            from,
+            to,
             amount,
             good: good.into(),
             qty,
@@ -661,6 +678,16 @@ impl Run {
                         self.buildings[i].enabled = !self.buildings[i].enabled;
                     }
                     "rent" => {
+                        if self
+                            .partnerships
+                            .iter()
+                            .any(|p| p.building == Some(c.building))
+                        {
+                            return Err(
+                                "Your signed concession fixes the revenue share for opening day."
+                                    .into(),
+                            );
+                        }
                         if !matches!(k.as_str(), "food" | "drink")
                             || !(0..=30).contains(&c.value)
                             || c.value % 5 != 0
@@ -685,6 +712,15 @@ impl Run {
                         );
                     }
                     "sell" => {
+                        if self
+                            .partnerships
+                            .iter()
+                            .any(|p| p.building == Some(c.building))
+                        {
+                            return Err(
+                                "Your partner's concession stays open for this opening day.".into(),
+                            );
+                        }
                         if !self.buildings[i].riders.is_empty() {
                             return Err("Wait for the current ride to finish.".into());
                         }
@@ -1066,6 +1102,22 @@ impl Run {
                     "maintenance",
                     1,
                 );
+                if self
+                    .partnerships
+                    .iter()
+                    .any(|p| p.building == Some(i as u32 + 1))
+                {
+                    let share = 1000 * self.buildings[i].rent as i64 / 100;
+                    self.buildings[i].cash -= share;
+                    self.cash += share;
+                    self.trade(
+                        format!("business:{}", i + 1),
+                        "Park",
+                        share,
+                        "revenue share",
+                        1,
+                    );
+                }
                 self.event(format!(
                     "Nia's robot serviced {}.",
                     item(&self.buildings[j].kind).unwrap().name

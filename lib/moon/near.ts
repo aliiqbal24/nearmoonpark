@@ -1,5 +1,6 @@
 import type { Command, RecordState, Entry } from "./model";
 import { VERSION } from "./model";
+import { failoverRpc } from "./rpc";
 export type Config = {
   contractId: string;
   rpcUrl: string;
@@ -76,10 +77,7 @@ export async function provision(
   const saved = localStorage.getItem(key);
   if (saved) {
     const credentials = JSON.parse(saved) as Credentials;
-    const p = new m.FailoverRpcProvider([
-      new m.JsonRpcProvider({ url: c.rpcUrl }),
-      new m.JsonRpcProvider({ url: c.fallbackRpcUrl }),
-    ]);
+    const p = failoverRpc(m, [c.rpcUrl, c.fallbackRpcUrl]);
     const account = new m.Account(
       credentials.accountId,
       p,
@@ -107,8 +105,8 @@ export async function provision(
           )
         : 0n;
     if (
-      state.balance.available >= 900000000000000000000000n &&
-      allowance >= 900000000000000000000000n
+      state.balance.available >= 320000000000000000000000n &&
+      allowance >= 320000000000000000000000n
     ) {
       credentials.displayName = displayName;
       return credentials;
@@ -164,10 +162,7 @@ async function client(c: Credentials, cfg: Config) {
       (m) =>
         new m.Account(
           c.accountId,
-          new m.FailoverRpcProvider([
-            new m.JsonRpcProvider({ url: cfg.rpcUrl }),
-            new m.JsonRpcProvider({ url: cfg.fallbackRpcUrl }),
-          ]),
+          failoverRpc(m, [cfg.rpcUrl, cfg.fallbackRpcUrl]),
           m.KeyPairSigner.fromSecretKey(c.secretKey as `ed25519:${string}`),
         ),
     );
@@ -228,3 +223,61 @@ export async function settle(
 }
 export const leaderboard = (c: Config) =>
   view<{ entries: Entry[]; open: boolean }>(c, "get_leaderboard");
+
+export async function checkRecipient(cfg: Config, accountId: string) {
+  const m = await api();
+  const p = failoverRpc(m, [cfg.rpcUrl, cfg.fallbackRpcUrl]);
+  try {
+    await within(p.viewAccount({ accountId }), 15000);
+  } catch {
+    throw Error(
+      "That NEAR testnet account could not be verified. Check its spelling before transferring.",
+    );
+  }
+}
+
+export async function ownershipAction(
+  c: Credentials,
+  cfg: Config,
+  methodName: "claim_business_reward" | "claim_prize" | "nft_transfer",
+  args: Record<string, unknown>,
+) {
+  const m = await api();
+  const account =
+    methodName === "nft_transfer"
+      ? new m.Account(
+          c.accountId,
+          failoverRpc(m, [cfg.rpcUrl, cfg.fallbackRpcUrl]),
+          m.KeyPairSigner.fromSecretKey(c.recoveryKey as `ed25519:${string}`),
+        )
+      : await client(c, cfg);
+  const raw = await within(
+    account.callFunctionRaw({
+      contractId: cfg.contractId,
+      methodName,
+      args,
+      gas: 80000000000000n,
+      deposit: methodName === "nft_transfer" ? 1n : 0n,
+      waitUntil: "FINAL",
+    }),
+    45000,
+  );
+  if (typeof raw.status !== "object" || !("SuccessValue" in raw.status))
+    throw Error(
+      "NEAR could not finish this action. Your ownership and claim remain onchain.",
+    );
+  const value = raw.status.SuccessValue
+    ? JSON.parse(
+        new TextDecoder().decode(
+          Uint8Array.from(atob(raw.status.SuccessValue), (x) =>
+            x.charCodeAt(0),
+          ),
+        ),
+      )
+    : null;
+  if (value === false)
+    throw Error(
+      "The reward transfer failed. It is available to collect again.",
+    );
+  return raw.transaction.hash;
+}

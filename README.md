@@ -4,34 +4,44 @@ Build the Moon's best day out. Rockets bring visitors with finite budgets; your 
 
 **Play:** https://last-signal-mars.ajiqbal1.chatgpt.site
 
-One player designs the park. Everyone else is an NPC. A skippable, narrated 40-second opening film leads into a nine-minute challenge, with 1×, 2× and 4× controls. Build rides and paths, tune prices and launches, support small businesses, and compete on a contract-calculated score.
-
-This is the complete gameplay prototype with its second presentation pass: a rendered opening film, frequent shuttles, physical income feedback and merchant partnerships. Character and ride artwork can continue evolving after playtesting. The conditional giveaway is public now; the eligible prize challenge stays closed until gameplay is frozen and Google sign-in is configured. No prize is funded or escrowed.
+One human designs the park; everyone else is an NPC. A narrated, skippable 40-second film leads into a nine-minute opening day. The clock holds at 9:00 until the first shuttle lands. Build rides and paths, tune prices and launches, back independent businesses, and use 1×/2×/4× to watch the consequences.
 
 ## Try it
 
-1. Choose **Open your park** for instant local practice, or **Play on NEAR** for sponsored testnet play. Watch or skip the opening.
-2. Choose **Mass-Driver Coaster**, place it on empty land, then select **Connect entrance**. The yellow tile marks its entrance. R rotates the blueprint; the second layout changes its footprint.
-3. See guests walk to the ride, queue, pay and ride. Change tickets or launch settings. Hover or select a visitor to see their budget, preferences and thoughts.
-4. Add **Crater Coolers** and an **Earthrise Wheel**. Tenants set their own prices, pay for supplies and send visible delivery rovers along your paths. A solar canopy adds power; the maintenance depot preserves ride condition and value.
-5. Back Omar, Mina or Nia through the partnership desk. Your 100-credit investment funds the business; a finite Tourism Board grant is reserved until the service target is met. NEAR settles each reward once and the desk links its receipt.
-6. Open the ledger to inspect actual transfers and confirmed NEAR transaction links. Ride the coaster with its camera. Use fast-forward to reach closing time sooner.
-7. Inspect the score breakdown, explore your completed park, export its public record or replay. A pending NEAR result is labelled until verified.
+1. **Open your park** starts sponsored NEAR testnet play. The account and gas are included. **Practice offline** runs the same economy locally without transactions.
+2. Build a **Mass-Driver Coaster** on empty land and choose **Connect entrance**. Watch guests disembark, walk, queue, pay and ride. Change tickets or launch settings; inspect a visitor's needs and thoughts.
+3. Back **Omar** in **Merchant partnerships**. The 100 park credits become his working capital. You receive a fixed 20% opening-day sales share and a **NEP-171 concession certificate** owned by your NEAR account. Completing his service target releases a separate virtual Tourism Board grant.
+4. Add **Crater Coolers**, power and maintenance as the park grows. Merchants choose prices, buy stock, pay operating costs, reorder supplies and can become insolvent. Coin trails and sound follow actual income receipts.
+5. Use **4×**, ride the mass driver with its front-seat camera, and inspect the economy ledger. NEAR validates commands and computes the final score.
+6. At closing, choose **Your NEAR business shares**. Collect the certificate's funded testnet reward and follow its transaction receipt. Optionally review a transfer to another existing testnet account. The new owner receives the uncollected reward right; the park and score stay with its founder.
+7. Sign in through the hosted site's **Continue with ChatGPT** link to play a provisionally eligible competition round after the challenge opens. The contract keeps one best result per identity and freezes separate prize standings at the cutoff.
 
-The top-five panel explains ranked sign-in and the conditional prize promise. Anonymous playtesting is not prize eligible. Local practice never claims to make NEAR transactions.
+The NEAR badge opens the ownership and funding panel throughout play. No wallet extension, crypto purchase, seed-phrase entry or gas confirmation is required in the normal game loop. Anonymous runs appear as verified exhibitions and cannot take prize standings.
+
+## Why NEAR is part of the game
+
+**Ownership:** backing a merchant issues an actual transferable NEP-171 asset. Standard NFT core, approval, enumeration and metadata methods use `near-contract-standards`. The certificate's current owner controls its reward claim independently of the game interface. Transfer and claim work through the contract API without our server.
+
+**Binding agreements:** the contract fixes the 20% share and prevents unilateral rent changes or demolition of the partnered shop during opening day. Each business has its own finite, contract-managed cash and inventory. Income comes from actual sales or repairs, not a client-supplied reward amount.
+
+**Funded settlement:** a separate testnet NEAR pool reserves up to 0.02 tNEAR per concession. Each earned lunar credit accrues 0.0001 tNEAR, capped by its reserved backing. A successful transfer is recorded once; failed payments restore the claim. Unused reserves return to that same pool at closing. These are testnet demonstration rewards with no cash value. Lunar game credits themselves are not redeemable.
+
+**Verifiable competition:** all rounds use the same engine, starting resources and scoring rules. The client submits commands, never replacement balances or claimed scores. A separately funded testnet prize escrow allocates to the first four frozen ranked accounts at weights 40/30/20/10, normalized if fewer qualify. The sponsor attests the external hackathon award; it cannot redirect winner claims or change the allocated tier. The conditional US$1K/US$5K creator pledge remains separate, unfunded and payable on mainnet only if the qualifying award occurs, subject to the published eligibility review.
+
+**A protected contract:** the v3 economy lives on a separate account with **zero access keys and no upgrade or general withdrawal method**. A gas sponsor has its own account and cannot overwrite the contract. Storage admission checks protect outstanding business/prize liabilities; storage sponsorship refunds only the unused portion of its new deposit. Code/configuration hashes and public evidence are in `public/moon-build.json` and [verification](docs/MOONPARK-VERIFICATION.md).
+
+NPC treasuries are contract-managed game balances, not independently signing NEAR accounts. This project does not claim NEAR Intents, NEP-245 items or LLM-controlled NPCs. The [official rules, Q-011](https://nearhackathon.com/HACKATHON.md) allow an original NEAR contract fitting the track; named integrations and the sample prompt are suggestions.
 
 ## Run locally
 
-Requirements: Node 22.22.2+, npm and a browser with WebGL. The checked-in browser WASM makes practice runnable without Rust.
+Requirements: Node 22.22.2+, npm and WebGL. Checked-in WASM makes offline practice runnable without Rust or secrets.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open http://localhost:5173. The initial park is usable without secrets, Google configuration or an external API key.
-
-For contract development, install Rust with the wasm32-unknown-unknown target. This project was built with Rust 1.98.1. Cargo.lock pins the dependency graph.
+Open http://localhost:5173 and select **Practice offline**. For contract development, install Rust and the WASM target (this project uses Rust 1.98.1; Cargo.lock pins dependencies):
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -43,43 +53,27 @@ npm run test:sandbox
 npm run typecheck
 ```
 
-With the dev server running, `npm run test:game` runs the Moonpark browser tests. Playwright uses `/usr/bin/chromium`; override `CHROMIUM_PATH` for another installation. `npm run build` builds the hosted Worker and browser assets.
+With the dev server running, `npm run test:game` checks gameplay, mobile layout, the first-landing clock, NEAR explanation and film. Playwright uses `/usr/bin/chromium`; override `CHROMIUM_PATH` if needed. `MOON_CHAIN_UI=1 npm run test:game` additionally spends testnet sponsorship on a complete round, mid-round resume, reward collection and ownership transfer. `npm run build` builds the Worker/browser application.
 
-`MOON_CHAIN_UI=1 npm run test:game` also runs the full sponsored testnet browser campaign, including mid-round reload and canonical completion. It requires configured sponsorship and spends testnet funds.
+## Deploy a testnet economy
 
-## What NEAR does
+`npm run deploy:testnet` creates a testnet sponsor and a **keyless child contract**, funds a merchant pool and a separate 0.5 tNEAR competition escrow, and writes public configuration plus ignored local secrets. The sponsor key is in `.near-local/moon-v3-deployer.json`. Preserve `.near-local/` and `.dev.vars`; never publish them. Existing Mars, Moonpark v1 and v2 deployments are preserved. There is no upgrade path for v3; new economic rules require a new deployment and challenge.
 
-The Rust simulation compiles to native code, browser WebAssembly and a NEAR contract. The browser submits **commands**, never replacement states or a claimed score. The contract validates construction, paths, costs, visitor spending, inventories, merchant pricing, revenue shares, investments, maintenance, partnership capital and reserved grant payouts, simulation timing and scoring.
+Each sponsored player receives 0.5 testnet NEAR and a session key with a 0.4 NEAR allowance. Its allowed methods are `create_run`, `apply_actions`, `claim_business_reward` and `claim_prize`; it cannot attach deposits. Optional certificate transfers use the browser-held recovery key for the standard one-yocto deposit. The sponsor receives public keys only. IP/global limits, finite reserves and protected storage backing bound sponsorship. Browser keys stay on the device; transfer a certificate to a wallet you control for external custody.
 
-NPC treasuries are **contract-managed balances**, with deterministic policies and finite stock. They are not independently controlled NEAR accounts. Lunar credits are virtual game currency. No LLM, oracle, trading token, NEAR Intents or claimed NEP-245 compatibility is involved. The organizers allow an original NEAR contract fitting the track; named integrations are suggestions rather than mandatory dependencies.
+The hosted site uses the Sites platform's social sign-in. `MOON_CHATGPT_AUTH=1` is trusted only in production at the configured `BETTER_AUTH_URL` on `.chatgpt.site`, behind Sites' identity gateway. Do not enable gateway-header trust on another hosting provider. Google OAuth remains an optional standalone alternative; [setup](docs/GOOGLE-AUTH.md). Anonymous access fails closed for ranked admission and profile changes.
 
-The client predicts smoothly using the same engine and settles bounded batches. Transactions use `EXECUTED` confirmation: game execution is finalized without waiting for gas-refund receipts. Keys are limited to `create_run` and `apply_actions`, with a finite gas allowance and zero attached deposits. Recovery keys stay in the browser; the sponsor receives public keys only. Low-budget sponsored accounts are replaced before a new round, retaining the same signed-in leaderboard identity.
-
-The contract derives scores from its own final state. Each signed-in identity has one best entry, even across different sponsored accounts. The live top five continues after the November 18 cutoff; separate eligible records preserve prize standings. See [implementation notes](docs/MOONPARK.md) and the [verification record](docs/MOONPARK-VERIFICATION.md).
-
-## Testnet and Google setup
-
-`npm run deploy:testnet` creates a faucet-funded testnet contract for the current v2 ruleset and writes public configuration plus ignored local secrets. It preserves the earlier Mars and Moonpark v1 contracts. The v2 deployment key is stored in ignored `.near-local/moon-v2-deployer.json`. Development-only `node scripts/game/moon-deploy.mjs --upgrade` refuses to upgrade an opened prize challenge.
-
-Keep `.near-local/` and `.dev.vars` private. Configure the Moonpark environment keys from `.env.example` as hosted secrets. Initial guest funding is 1.5 testnet NEAR; sponsorship has IP/global limits and a finite reserve. Replenish that reserve before inviting substantial traffic.
-
-After a production build, apply generated migrations to the local preview database:
+D1 holds identity, profile and sponsorship records, not game outcomes. Sites applies pending hosted migrations. Local preview migrations, applied once after a production build:
 
 ```sh
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_red_rockslide.sql
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_blue_lorna_dane.sql
 ```
 
-Apply each migration once. Sites applies pending hosted migrations during deployment. D1 holds authentication and sponsorship records, not game outcomes.
-
-Google OAuth is the external setup dependency. [Exact setup instructions](docs/GOOGLE-AUTH.md) include the callback URL and required secrets. No fake sign-in or development bypass is enabled in production. Practice and sponsored guest NEAR play remain available while Google is unconfigured.
-
-`npm run test:chain` spends sponsored testnet funds on a separate, non-prize verification run and writes public transaction evidence to `docs/moon-testnet-smoke.json`.
+`npm run test:chain` makes a separate non-prize verification run and records public transaction evidence. `node scripts/game/moon-deploy.mjs --open` opens the immutable challenge after verification. The prize cutoff is November 18, 2026 at 23:59 UTC. No real-money entry fee or mainnet transaction is part of this prototype.
 
 ## Submission and provenance
 
-Built for NEAR HACKATHON, Games With Real Economies. Original gameplay, simulation, interface, procedural models, camera sequence, musical score and sound effects. The rendered opening uses locally synthesized Kokoro narration; see [cinema sources and credits](docs/MOONPARK-CINEMA.md). The supplied Sites/Vinext starter and declared dependencies provide infrastructure. The Earth texture comes from the Three.js examples; see [visual credits](docs/VISUALS.md).
+Built for NEAR HACKATHON, **Games With Real Economies**. Original gameplay, simulation, interface, procedural models, camera sequence, musical score and sound effects. The opening uses locally synthesized Kokoro narration; [cinema sources and credits](docs/MOONPARK-CINEMA.md). Sites/Vinext and declared dependencies provide infrastructure. The Earth texture comes from the Three.js examples; [visual credits](docs/VISUALS.md).
 
-The previous Mars game remains at `/legacy`, with its source, contract and documentation retained. Its README is [archived separately](docs/MARS-PROTOTYPE.md).
-
-MIT license. A public source repository, further character/ride art polish, the human-published X demo and final hackathon submission are release milestones after gameplay review. No social post or hackathon submission has been sent.
+The earlier Mars game remains at `/legacy`; [archived README](docs/MARS-PROTOTYPE.md). MIT license. A public source repository, the owner-published demo post and final hackathon submission are separate release milestones. No social post or hackathon submission has been sent.

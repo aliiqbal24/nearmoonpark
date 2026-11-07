@@ -31,8 +31,10 @@ import {
   type Guest,
   type Command,
   type Entry,
+  type PrizeStatus,
 } from "@/lib/moon/model";
 import type { Snapshot } from "@/lib/moon/session";
+import { NearMark, testNear } from "./near-economy";
 
 export function Dialog({
   title,
@@ -203,6 +205,7 @@ export function Inspector({
     disabled = run.finished;
   const seats = a.seats + Math.floor((a.seats * b.level) / 2),
     duration = b.kind === "coaster" ? [36, 30, 24][b.launch - 1] : a.cycle;
+  const concession = run.partnerships.find((p) => p.building === b.id);
   const connectCost = connectionCost(run, b);
   const status =
     b.ready_at > run.tick
@@ -382,7 +385,7 @@ export function Inspector({
                 max="30"
                 step="5"
                 value={rentDraft}
-                disabled={disabled}
+                disabled={disabled || !!concession}
                 onChange={(e) =>
                   setRentDraft({ base: rent, value: Number(e.target.value) })
                 }
@@ -396,8 +399,9 @@ export function Inspector({
                 }}
               />
               <p className="mp-fine">
-                The owner sets prices and buys stock. A larger share leaves less
-                cash to restock.
+                {concession
+                  ? `Signed concession: ${concession.share_percent}% of sales. Your agreement protects these terms for opening day.`
+                  : "The owner sets prices and buys stock. A larger share leaves less cash to restock."}
               </p>
             </>
           )}
@@ -419,7 +423,7 @@ export function Inspector({
             {b.enabled ? "Close" : "Open"}
           </button>
           <button
-            disabled={!!b.riders.length}
+            disabled={!!b.riders.length || !!concession}
             onClick={() => action({ kind: "sell", building: b.id })}
           >
             Sell · {money(resaleValue(b))}
@@ -440,6 +444,8 @@ export function Leaderboard({
   onRanked,
   onSaveName,
   onSignOut,
+  authLinks,
+  prizeStatus,
 }: {
   entries: Entry[];
   prizeEntries: Entry[];
@@ -450,6 +456,8 @@ export function Leaderboard({
   onRanked: () => void;
   onSaveName: (name: string) => void;
   onSignOut: () => void;
+  authLinks: { signInUrl?: string; signOutUrl?: string };
+  prizeStatus: PrizeStatus | null;
 }) {
   const [name, setName] = useState(player?.display_name ?? "");
   return (
@@ -468,7 +476,9 @@ export function Leaderboard({
                 <strong>{e?.display_name || "Your name could be here"}</strong>
                 <small>
                   {e
-                    ? "Verified on NEAR"
+                    ? e.player_id.startsWith("guest:")
+                      ? "NEAR verified · exhibition"
+                      : "Verified on NEAR"
                     : "Waiting for a verified opening day"}
                 </small>
               </div>
@@ -500,17 +510,23 @@ export function Leaderboard({
             <strong>Sign in to compete</strong>
             <p>
               {configured
-                ? "Bring your Google account. We take care of the NEAR account and gas."
+                ? "Sign in once. We take care of your NEAR account and gas."
                 : "Google sign-in is awaiting configuration. Practice and NEAR playtesting are available."}
             </p>
           </div>
-          <button
-            className="mp-primary"
-            disabled={!configured}
-            onClick={onSignIn}
-          >
-            Continue with Google
-          </button>
+          {authLinks.signInUrl ? (
+            <a className="mp-primary" href={authLinks.signInUrl} target="_top">
+              Continue with ChatGPT
+            </a>
+          ) : (
+            <button
+              className="mp-primary"
+              disabled={!configured}
+              onClick={onSignIn}
+            >
+              Continue with Google
+            </button>
+          )}
         </div>
       )}
       {player && (
@@ -536,9 +552,15 @@ export function Leaderboard({
             >
               Save name
             </button>
-            <button type="button" onClick={onSignOut}>
-              Sign out
-            </button>
+            {authLinks.signOutUrl ? (
+              <a href={authLinks.signOutUrl} target="_top">
+                Sign out
+              </a>
+            ) : (
+              <button type="button" onClick={onSignOut}>
+                Sign out
+              </button>
+            )}
           </div>
           <small>
             Your email stays private. Name changes apply to future ranked runs.
@@ -565,11 +587,31 @@ export function Leaderboard({
           ))}
         </div>
         <p className="mp-fine">
-          The larger pool replaces the smaller. Conditional, not funded or
-          escrowed. No qualifying win means no payout. The creator will verify
-          winners and send prizes manually. No entry fee. One prize per eligible
-          person; automated and duplicate-person entries are ineligible.
+          The larger pool replaces the smaller. The USD pledge is conditional
+          and not yet funded. No qualifying win means no payout. NEAR freezes
+          eligible standings at the cutoff. After the creator attests a
+          qualifying award, the funded testnet pool is allocated in rank order
+          and winners collect directly. The USD pledge will be funded and
+          distributed on mainnet separately if we win. No entry fee. One prize
+          per eligible person; automated and duplicate-person entries are
+          ineligible.
         </p>
+        {prizeStatus && (
+          <div className="mp-backed-note">
+            <NearMark />
+            <div>
+              <strong>
+                Testnet escrow: {testNear(prizeStatus.escrow_yocto)} tNEAR
+                deposited
+              </strong>
+              <small>
+                Proves the payout mechanism. Testnet tokens have no cash value
+                and do not fund the USD pledge. Four winners split 40/30/20/10;
+                fewer eligible winners split proportionally.
+              </small>
+            </div>
+          </div>
+        )}
         <p className="mp-fine">
           Prize scores close November 18, 2026 · 23:59 UTC. The live leaderboard
           continues afterward. Gameplay rules freeze before the public prize
@@ -618,12 +660,14 @@ export function Results({
   onExplore,
   onLeaders,
   onExport,
+  onOwnership,
 }: {
   state: Snapshot;
   onReplay: () => void;
   onExplore: () => void;
   onLeaders: () => void;
   onExport: () => void;
+  onOwnership: () => void;
 }) {
   const r = state.run,
     badge =
@@ -686,6 +730,11 @@ export function Results({
         </button>
         <button onClick={onExplore}>Look around your park</button>
         <button onClick={onLeaders}>Top five</button>
+        {state.mode === "near" && (
+          <button onClick={onOwnership}>
+            <NearMark /> Your NEAR business shares
+          </button>
+        )}
         <button onClick={onExport}>Export run</button>
       </div>
     </div>
