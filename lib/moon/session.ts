@@ -1,6 +1,7 @@
 import { simulate } from "./engine";
 import { create, settle, view, type Config, type Credentials } from "./near";
 import type { Run, RecordState, Command } from "./model";
+import { VERSION } from "./model";
 type Op = { commands: Command[]; ticks: number; id: string };
 export type Snapshot = {
   run: Run;
@@ -11,6 +12,7 @@ export type Snapshot = {
   txs: string[];
   deadline: number;
   notice?: string;
+  receipts?: Record<string, { reservation?: string; payment?: string }>;
 };
 export class ParkSession {
   state: Snapshot;
@@ -36,6 +38,7 @@ export class ParkSession {
       error: null,
       txs: [],
       deadline: deadline ?? Date.now() + 540000,
+      receipts: {},
     };
     this.desired = run.tick;
     this.emit();
@@ -72,6 +75,10 @@ export class ParkSession {
       config: Config | null;
     } | null;
     if (!saved) return null;
+    if (saved.state.run.version !== VERSION)
+      throw Error(
+        "This saved park uses the previous rules. Start a new opening day to try the new shuttles and partnerships.",
+      );
     let record = saved.state.record;
     if (record && saved.config)
       record = await view<RecordState>(saved.config, "get_run", {
@@ -86,6 +93,7 @@ export class ParkSession {
       saved.state.deadline,
     );
     s.state.txs = saved.state.txs;
+    s.state.receipts = saved.state.receipts ?? {};
     let ops = saved.ops;
     if (record?.run.finished) ops = [];
     if (record?.last_request) {
@@ -230,6 +238,21 @@ export class ParkSession {
         }
       }
       await this.enqueue(async () => {
+        if (result.tx) {
+          const receipts = { ...this.state.receipts };
+          for (const deal of result.record.run.partnerships) {
+            const before = this.state.record!.run.partnerships.find(
+              (p) => p.id === deal.id,
+            );
+            const receipt = { ...receipts[deal.id] };
+            if (before?.status === "offered" && deal.status !== "offered")
+              receipt.reservation = result.tx;
+            if (before?.status !== "completed" && deal.status === "completed")
+              receipt.payment = result.tx;
+            receipts[deal.id] = receipt;
+          }
+          this.state.receipts = receipts;
+        }
         this.state.record = result.record;
         if (result.tx)
           this.state.txs = [...this.state.txs, result.tx].slice(-120);

@@ -1,10 +1,11 @@
 pub mod catalog;
+pub mod partnerships;
 use catalog::{item, ride, tenant};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::VecDeque;
 
-pub const VERSION: &str = "moonpark-v1";
+pub const VERSION: &str = "moonpark-v2";
 pub const WIDTH: u16 = 32;
 pub const HEIGHT: u16 = 24;
 pub const END: u16 = 540;
@@ -99,6 +100,10 @@ pub struct Run {
     pub supplies: [u16; 3],
     #[serde(default)]
     pub consumed: [u16; 3],
+    pub grant_cash: i64,
+    pub grant_escrow: i64,
+    pub partnerships: Vec<partnerships::Partnership>,
+    pub departures: Vec<u16>,
     pub paths: Vec<u16>,
     pub buildings: Vec<Building>,
     pub guests: Vec<Guest>,
@@ -240,6 +245,10 @@ impl Run {
             money_supply: 0,
             supplies: [2048; 3],
             consumed: [0; 3],
+            grant_cash: 60000,
+            grant_escrow: 0,
+            partnerships: partnerships::offers(),
+            departures: vec![0; 14],
             paths: (0..32)
                 .map(|x| 20 * WIDTH + x)
                 .chain([
@@ -279,7 +288,7 @@ impl Run {
             r.guests.push(Guest {
                 id,
                 group,
-                arrival: 1 + (id / 16) * 90,
+                arrival: 11 + (id / 8) * 40,
                 cash: [2400, 3600, 4800][group as usize],
                 satisfaction: 65,
                 hunger: 20 + (id % 3) * 7,
@@ -303,6 +312,8 @@ impl Run {
     }
     pub fn total_money(&self) -> i64 {
         self.cash
+            + self.grant_cash
+            + self.grant_escrow
             + self.supplier_cash
             + self.builder_cash
             + self.buildings.iter().map(|b| b.cash).sum::<i64>()
@@ -515,6 +526,7 @@ impl Run {
             }
             next.step();
         }
+        next.settle_partnerships();
         next.revision += 1;
         next.score = next.calculate_score();
         next.rehash();
@@ -523,6 +535,7 @@ impl Run {
     }
     fn command(&mut self, c: &Command) -> Result<(), String> {
         match c.kind.as_str() {
+            "partner" => self.accept_partnership(c.value, c.building)?,
             "build" => {
                 let a = item(&c.item).ok_or("Unknown blueprint")?;
                 if self.buildings.len() >= 32 {
@@ -699,10 +712,10 @@ impl Run {
     fn step(&mut self) {
         self.tick += 1;
         self.refresh_connections();
-        if (self.tick - 1) % 90 == 0 {
-            let wave = (self.tick - 1) / 90 + 1;
+        if self.tick % 40 == 11 && self.tick <= 451 {
+            let wave = self.tick / 40 + 1;
             self.event(format!(
-                "Rocket {wave}/6 has landed. Sixteen visitors, one very big day."
+                "Shuttle {wave}/12 docked. Eight new visitors are walking into your park."
             ));
         }
         for i in 0..self.buildings.len() {
@@ -848,12 +861,21 @@ impl Run {
                 && self.guests[gi].status == "upcoming"
                 && active < 48
             {
-                self.guests[gi].status = "walking".into();
+                self.guests[gi].status = "arriving".into();
+                self.guests[gi].timer = 6;
                 active += 1;
                 self.guests[gi].thought = "Look at Earth! Now, where is that coaster?".into();
             }
             let status = self.guests[gi].status.clone();
-            if status == "upcoming" || status == "gone" {
+            if status == "upcoming" || status == "gone" || status == "boarding" {
+                continue;
+            }
+            if status == "arriving" {
+                if self.guests[gi].timer > 0 {
+                    self.guests[gi].timer -= 1;
+                } else {
+                    self.guests[gi].status = "walking".into();
+                }
                 continue;
             }
             if self.tick % 6 == 0 {
@@ -888,7 +910,8 @@ impl Run {
                 self.guests[gi].cell = c;
                 if self.guests[gi].route.is_empty() {
                     if self.guests[gi].status == "leaving" {
-                        self.guests[gi].status = "gone".into();
+                        self.guests[gi].status = "boarding".into();
+                        self.guests[gi].timer = self.tick;
                     } else if let Some(id) = self.guests[gi].target {
                         if let Some(b) = self.buildings.iter_mut().find(|b| b.id == id && !b.sold) {
                             b.queue.push(self.guests[gi].id);
@@ -904,11 +927,34 @@ impl Run {
                 continue;
             }
             if status == "leaving" {
-                self.guests[gi].status = "gone".into();
+                self.guests[gi].status = "boarding".into();
+                self.guests[gi].timer = self.tick;
                 continue;
             }
             self.choose(gi);
         }
+        if self.tick % 40 == 30 {
+            let mut count = 0;
+            for g in &mut self.guests {
+                let phase = g.timer % 40;
+                let boarding_start = if (10..=24).contains(&phase) {
+                    g.timer
+                } else {
+                    g.timer + (50 - phase) % 40
+                };
+                if g.status == "boarding" && boarding_start + 6 <= self.tick {
+                    g.status = "gone".into();
+                    count += 1;
+                }
+            }
+            self.departures[(self.tick / 40) as usize] = count;
+            if count > 0 {
+                self.event(format!(
+                    "Shuttle homebound: {count} visitors boarded. See you next time!"
+                ));
+            }
+        }
+        self.settle_partnerships();
         if self.tick >= END {
             self.finished = true;
             self.event("Last boarding call. Your first day on the Moon is complete.");
@@ -1010,6 +1056,7 @@ impl Run {
                 self.cash -= 1000;
                 self.buildings[i].cash += 1000;
                 self.buildings[i].stock -= 1;
+                self.buildings[i].served += 1;
                 self.consumed[2] += 1;
                 self.buildings[j].condition = (self.buildings[j].condition + 30).min(100);
                 self.trade(

@@ -4,9 +4,9 @@ Build the Moon's best day out. Rockets bring visitors with finite budgets; your 
 
 **Play:** https://last-signal-mars.ajiqbal1.chatgpt.site
 
-One player designs the park. Everyone else is an NPC. A skippable 40-second opening leads into a nine-minute challenge, with 1×, 2× and 4× controls. Build rides and paths, tune prices and launches, support small businesses, and compete on a contract-calculated score.
+One player designs the park. Everyone else is an NPC. A skippable, narrated 40-second opening film leads into a nine-minute challenge, with 1×, 2× and 4× controls. Build rides and paths, tune prices and launches, support small businesses, and compete on a contract-calculated score.
 
-This is the complete gameplay prototype. Final models, character art, music and cinematic production follow human playtesting. The conditional giveaway is public now; the eligible prize challenge stays closed until gameplay is frozen and Google sign-in is configured. No prize is funded or escrowed.
+This is the complete gameplay prototype with its second presentation pass: a rendered opening film, frequent shuttles, physical income feedback and merchant partnerships. Character and ride artwork can continue evolving after playtesting. The conditional giveaway is public now; the eligible prize challenge stays closed until gameplay is frozen and Google sign-in is configured. No prize is funded or escrowed.
 
 ## Try it
 
@@ -14,8 +14,9 @@ This is the complete gameplay prototype. Final models, character art, music and 
 2. Choose **Mass-Driver Coaster**, place it on empty land, then select **Connect entrance**. The yellow tile marks its entrance. R rotates the blueprint; the second layout changes its footprint.
 3. See guests walk to the ride, queue, pay and ride. Change tickets or launch settings. Hover or select a visitor to see their budget, preferences and thoughts.
 4. Add **Crater Coolers** and an **Earthrise Wheel**. Tenants set their own prices, pay for supplies and send visible delivery rovers along your paths. A solar canopy adds power; the maintenance depot preserves ride condition and value.
-5. Open the ledger to inspect actual transfers and confirmed NEAR transaction links. Ride the coaster with its camera. Use fast-forward to reach closing time sooner.
-6. Inspect the score breakdown, explore your completed park, export its public record or replay. A pending NEAR result is labelled until verified.
+5. Back Omar, Mina or Nia through the partnership desk. Your 100-credit investment funds the business; a finite Tourism Board grant is reserved until the service target is met. NEAR settles each reward once and the desk links its receipt.
+6. Open the ledger to inspect actual transfers and confirmed NEAR transaction links. Ride the coaster with its camera. Use fast-forward to reach closing time sooner.
+7. Inspect the score breakdown, explore your completed park, export its public record or replay. A pending NEAR result is labelled until verified.
 
 The top-five panel explains ranked sign-in and the conditional prize promise. Anonymous playtesting is not prize eligible. Local practice never claims to make NEAR transactions.
 
@@ -48,7 +49,7 @@ With the dev server running, `npm run test:game` runs the Moonpark browser tests
 
 ## What NEAR does
 
-The Rust simulation compiles to native code, browser WebAssembly and a NEAR contract. The browser submits **commands**, never replacement states or a claimed score. The contract validates construction, paths, costs, visitor spending, inventories, merchant pricing, revenue shares, investments, maintenance, simulation timing and scoring.
+The Rust simulation compiles to native code, browser WebAssembly and a NEAR contract. The browser submits **commands**, never replacement states or a claimed score. The contract validates construction, paths, costs, visitor spending, inventories, merchant pricing, revenue shares, investments, maintenance, partnership capital and reserved grant payouts, simulation timing and scoring.
 
 NPC treasuries are **contract-managed balances**, with deterministic policies and finite stock. They are not independently controlled NEAR accounts. Lunar credits are virtual game currency. No LLM, oracle, trading token, NEAR Intents or claimed NEP-245 compatibility is involved. The organizers allow an original NEAR contract fitting the track; named integrations are suggestions rather than mandatory dependencies.
 
@@ -58,7 +59,7 @@ The contract derives scores from its own final state. Each signed-in identity ha
 
 ## Testnet and Google setup
 
-`npm run deploy:testnet` creates a faucet-funded testnet contract and writes public configuration plus ignored local secrets. It preserves the earlier Mars contract. Development-only `node scripts/game/moon-deploy.mjs --upgrade` refuses to upgrade an opened prize challenge.
+`npm run deploy:testnet` creates a faucet-funded testnet contract for the current v2 ruleset and writes public configuration plus ignored local secrets. It preserves the earlier Mars and Moonpark v1 contracts. The v2 deployment key is stored in ignored `.near-local/moon-v2-deployer.json`. Development-only `node scripts/game/moon-deploy.mjs --upgrade` refuses to upgrade an opened prize challenge.
 
 Keep `.near-local/` and `.dev.vars` private. Configure the Moonpark environment keys from `.env.example` as hosted secrets. Initial guest funding is 1.5 testnet NEAR; sponsorship has IP/global limits and a finite reserve. Replenish that reserve before inviting substantial traffic.
 
@@ -77,8 +78,8 @@ Google OAuth is the external setup dependency. [Exact setup instructions](docs/G
 
 ## Submission and provenance
 
-Built for NEAR HACKATHON, Games With Real Economies. Original gameplay, simulation, interface, procedural models, camera sequence and synthesized placeholder audio. The supplied Sites/Vinext starter and declared dependencies provide infrastructure. The Earth texture comes from the Three.js examples; see [visual credits](docs/VISUALS.md).
+Built for NEAR HACKATHON, Games With Real Economies. Original gameplay, simulation, interface, procedural models, camera sequence, musical score and sound effects. The rendered opening uses locally synthesized Kokoro narration; see [cinema sources and credits](docs/MOONPARK-CINEMA.md). The supplied Sites/Vinext starter and declared dependencies provide infrastructure. The Earth texture comes from the Three.js examples; see [visual credits](docs/VISUALS.md).
 
 The previous Mars game remains at `/legacy`, with its source, contract and documentation retained. Its README is [archived separately](docs/MARS-PROTOTYPE.md).
 
-MIT license. A public source repository, final asset/audio upgrade, the human-published X demo and final hackathon submission are release milestones after gameplay review. No social post or hackathon submission has been sent.
+MIT license. A public source repository, further character/ride art polish, the human-published X demo and final hackathon submission are release milestones after gameplay review. No social post or hackathon submission has been sent.

@@ -1,10 +1,10 @@
 # Moonpark implementation
 
-Moonpark is a single-player lunar theme park. The player owns rides and land; visitors and concessionaires are NPCs. The 40-second skippable opening introduces the first tourists and an optimistic Moon-colonization dream. The playable opening day lasts 540 simulation seconds at 1×, 2× or 4× speed. The park remains visible and explorable at closing.
+Moonpark is a single-player lunar theme park. The player owns rides and land; visitors and concessionaires are NPCs. The 40-second skippable, narrated opening film introduces the first tourists and an optimistic Moon-colonization dream. The playable opening day lasts 540 simulation seconds at 1×, 2× or 4× speed. The park remains visible and explorable at closing.
 
 ## The loop
 
-Six rockets bring sixteen visitors each. Visitors have finite wallets, different thrill preferences, hunger and thirst. They walk along connected paths, choose affordable destinations, queue, pay, ride and form opinions. Repeating the same ride gives diminishing satisfaction. Hovering or selecting a guest reveals their actual state.
+Twelve inbound shuttles bring eight visitors each. Shuttles visit the spaceport every forty simulation seconds, descend, dock, unload and collect homebound guests. Later flights continue collecting departures. Guests visibly walk the gangway; they wait for an actual boarding window before the contract marks them gone. Visitors have finite wallets, different thrill preferences, hunger and thirst. They walk along connected paths, choose affordable destinations, queue, pay, ride and form opinions. Repeating the same ride gives diminishing satisfaction. Hovering or selecting a guest reveals their actual state.
 
 The player starts with 1,600 credits, a Lunar Bounce and a food concession. Available construction is deliberately small: Bounce (300), Earthrise Wheel (600), Rover Rally (800), Mass-Driver Coaster (1,200), food/drink kiosks (150), maintenance depot (250) and solar canopy (300). Money is stored as integer centicredits. Paths cost two credits per new tile. Smart connection uses a 0–1 breadth-first search to minimize newly purchased tiles; existing paths are free to reuse. Paths can be erased, and walkers reroute. The gate cannot be erased.
 
@@ -13,6 +13,14 @@ Coasters have two footprint blueprints, rotation and three launch settings. Gent
 Concessionaires have their own finite cash and inventories. They set prices through deterministic policies responding to recent demand and scarcity. The player chooses placement and revenue share, or invests 100 credits. Supplies are purchased upfront and arrive after fifteen seconds; connected delivery rovers represent those actual orders. Operating costs are charged every fifteen seconds. A tenant unable to pay closes until investment restores operating cash. The depot buys parts and charges for repairs. No cosmetic delivery changes the economic record.
 
 Every transfer has a sender, recipient, amount and reason. Goods have explicit stock, deliveries and consumption. The ledger shows a bounded recent history; the simulation retains cumulative totals for scoring and conservation tests. Lunar credits are virtual currency, not redeemable tokens.
+
+## Merchant partnerships
+
+Omar, Mina and Nia offer one optional partnership each. Only one can be active at a time. The player transfers 100 credits of working capital to the merchant; the Tourism Board reserves the advertised grant from its finite 600-credit opening budget. Omar sells eight meals in 160 seconds for a 180-credit grant. Mina sells eight drinks in 140 seconds for 200. Nia completes one repair in 170 seconds for 220. Later offers open as the day develops; the existing park-building hints take precedence during the first few moments.
+
+Progress counts work performed after acceptance. Completion releases the grant once; a missed deadline or sold business returns unclaimed funding to the Board, while the merchant keeps its invested capital. These transfers conserve the same virtual credit supply as every other transaction. NEAR validates the signed command, reserves funding and emits a `partnership_paid` event upon settlement. `get_partnerships` exposes the canonical terms and reserves. The browser persists agreement/payment transaction links across reloads. No real-value token, withdrawal or external yield is promised.
+
+Income feedback comes from actual ledger receipts: grouped ticket sales, revenue shares, refunds and partnership rewards. Coin trails point toward the cash HUD, the balance counts smoothly and positive receipts trigger sound. At high simulation speed, nearby receipts merge rather than filling the screen with repeated notifications. Merchant owners stand beside their businesses and remain selectable.
 
 ## Scoring and competition
 
@@ -38,4 +46,4 @@ NPC businesses use contract-managed treasuries and deterministic policies, not i
 
 ## Presentation boundary
 
-The persistent Three.js park, animated visitors, occupied rides, delivery rovers, rockets, coaster camera and live opening sequence are functional. Models and synthesized WebAudio are original placeholders. The next phase follows human gameplay review: finished character and ride assets, lighting and effects, original polished music/sound, cinematic finishing and the submission demo. The earlier Mars prototype remains at `/legacy`.
+The persistent Three.js park, animated visitors, occupied rides, delivery rovers, recurring shuttles, coaster camera and rendered opening film are functional. The film includes an original score, narration and sound design, with a live fallback and reduced-motion presentation. Further character/ride artwork and the submission demo follow gameplay review. See `MOONPARK-CINEMA.md` for editable production sources and verification. The earlier Mars prototype remains at `/legacy`.

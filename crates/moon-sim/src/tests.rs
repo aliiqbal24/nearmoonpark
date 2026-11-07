@@ -153,3 +153,96 @@ fn launch_settings_have_a_real_throughput_tradeoff() {
     assert!(b.duration() < gentle);
     assert!(b.power() > low);
 }
+
+#[test]
+fn partnerships_reserve_finite_funding_and_pay_once() {
+    let mut r = Run::new();
+    r.buildings[1].served = 10;
+    let supply = r.total_money();
+    let cash = r.cash;
+    r.apply(
+        &[Command {
+            kind: "partner".into(),
+            building: 2,
+            value: 1,
+            ..Default::default()
+        }],
+        0,
+    )
+    .unwrap();
+    assert_eq!(r.cash, cash - 10000);
+    assert_eq!(r.grant_cash, 42000);
+    assert_eq!(r.grant_escrow, 18000);
+    assert_eq!(r.partnerships[0].progress, 0); // Old sales cannot earn the grant.
+    assert_eq!(r.total_money(), supply);
+    assert!(r
+        .apply(
+            &[Command {
+                kind: "partner".into(),
+                building: 2,
+                value: 1,
+                ..Default::default()
+            }],
+            0
+        )
+        .is_err());
+    r.buildings[1].served += 8;
+    r.settle_partnerships();
+    assert_eq!(r.partnerships[0].status, "completed");
+    assert_eq!(r.cash, cash + 8000);
+    assert_eq!(r.grant_escrow, 0);
+    let paid = r.cash;
+    r.settle_partnerships();
+    assert_eq!(r.cash, paid);
+    assert_eq!(r.total_money(), supply);
+}
+#[test]
+fn failed_partnership_releases_grant_without_refunding_investment() {
+    let mut r = Run::new();
+    r.apply(
+        &[
+            cmd("toggle", 2),
+            Command {
+                kind: "partner".into(),
+                building: 2,
+                value: 1,
+                ..Default::default()
+            },
+        ],
+        0,
+    )
+    .unwrap();
+    for _ in 0..16 {
+        r.apply(&[], 10).unwrap();
+        assert_eq!(r.total_money(), r.money_supply);
+    }
+    assert_eq!(r.partnerships[0].status, "expired");
+    assert_eq!(r.grant_cash, 60000);
+    assert_eq!(r.grant_escrow, 0);
+    assert_eq!(
+        r.trades
+            .iter()
+            .filter(|t| t.good == "partnership reward")
+            .count(),
+        0
+    );
+}
+#[test]
+fn shuttles_deliver_small_groups_and_take_boarded_guests_home() {
+    let mut r = Run::new();
+    r.apply(&[], 10).unwrap();
+    assert_eq!(
+        r.guests.iter().filter(|g| g.status != "upcoming").count(),
+        0
+    );
+    r.apply(&[], 1).unwrap();
+    assert_eq!(
+        r.guests.iter().filter(|g| g.status != "upcoming").count(),
+        8
+    );
+    r.guests[0].status = "boarding".into();
+    r.apply(&[], 19).unwrap();
+    assert_eq!(r.guests[0].status, "gone");
+    assert_eq!(r.departures[0], 1);
+    assert_eq!(r.total_money(), r.money_supply);
+}

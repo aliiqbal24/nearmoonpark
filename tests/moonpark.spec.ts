@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { PerspectiveCamera, Vector3 } from "three";
 import { KeyPair } from "near-api-js";
+import { writeFile } from "node:fs/promises";
 function project(page: Page, x: number, z: number, y = 0.1) {
   const size = page.viewportSize()!;
   const camera = new PerspectiveCamera(50, size.width / size.height, 0.1, 250);
@@ -84,7 +85,9 @@ test("opening day: build, connect, tune, economy, ride camera and closing", asyn
   await page.clock.install();
   await page.clock.fastForward(550000);
   await expect(
-    page.getByText("OPENING DAY COMPLETE", { exact: false }),
+    page
+      .locator(".mp-results")
+      .getByText("OPENING DAY COMPLETE", { exact: false }),
   ).toBeVisible({ timeout: 30000 });
   await expect(
     page.locator("canvas[data-session-canvas=original]"),
@@ -221,6 +224,12 @@ test("sponsored NEAR round confirms through the complete browser flow", async ({
   );
   await page.getByRole("button", { name: /Connect entrance/ }).click();
   await page.getByLabel("Ticket price").fill("1000");
+  await page.getByRole("button", { name: "Merchant partnerships" }).click();
+  await page.getByRole("button", { name: "Partner with Omar" }).click();
+  await expect(page.getByTestId("partnership-1")).toContainText(
+    "reserved on NEAR",
+  );
+  await page.getByRole("button", { name: "Close panel" }).click();
   await page.getByRole("button", { name: "4×", exact: true }).click();
   await expect
     .poll(
@@ -261,6 +270,7 @@ test("sponsored NEAR round confirms through the complete browser flow", async ({
       record: s.state.record,
       txs: s.state.txs,
       error: s.state.error,
+      receipts: s.state.receipts,
     };
   });
   expect(result.run).toEqual(result.record.run);
@@ -271,7 +281,140 @@ test("sponsored NEAR round confirms through the complete browser flow", async ({
   ).toBe(true);
   expect(result.record.ranked).toBe(false);
   expect(result.txs.length).toBeGreaterThan(20);
+  expect(result.record.run.partnerships[0].status).toBe("completed");
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("moonpark-current")!).state.receipts[
+          "1"
+        ].payment,
+    ),
+  ).toBeTruthy();
   expect(result.error).toBeNull();
   expect(errors).toEqual([]);
   await page.screenshot({ path: "outputs/moon-near-browser-result.png" });
+  await writeFile(
+    "outputs/moon-ui-proof.json",
+    JSON.stringify(
+      {
+        url: process.env.GAME_URL ?? "http://localhost:5173",
+        runId: result.record.run_id,
+        owner: result.record.owner,
+        ranked: result.record.ranked,
+        score: result.run.score,
+        tradeCount: result.run.trade_count,
+        hash: result.run.hash,
+        partnerships: result.run.partnerships,
+        receipts: result.receipts,
+        transactions: result.txs,
+        browserTestPassed: true,
+      },
+      null,
+      2,
+    ),
+  );
+});
+
+test("merchant partnership reserves funding, rewards service, and shuttles carry departures", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await open(page);
+  await page.getByRole("button", { name: "Merchant partnerships" }).click();
+  await page.getByRole("button", { name: "Partner with Omar" }).click();
+  await expect(page.getByTestId("partnership-1")).toContainText(
+    "180 credits reserved in practice",
+  );
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("moonpark-current")!).state.run
+          .grant_escrow,
+    ),
+  ).toBe(18000);
+  await page.getByRole("button", { name: "Close panel" }).click();
+  await page.getByRole("button", { name: "4×", exact: true }).click();
+  await page.clock.install();
+  await page.clock.fastForward(60000);
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            JSON.parse(localStorage.getItem("moonpark-current")!).state.run
+              .partnerships[0].status,
+        ),
+      { timeout: 20000 },
+    )
+    .toBe("completed");
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() =>
+          JSON.parse(
+            localStorage.getItem("moonpark-current")!,
+          ).state.run.departures.reduce((a: number, b: number) => a + b, 0),
+        ),
+      { timeout: 15000 },
+    )
+    .toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Merchant partnerships" }).click();
+  await expect(page.getByTestId("partnership-1")).toContainText("Paid +180");
+  await page.screenshot({ path: "outputs/moon-partnership-paid.png" });
+});
+
+test("opening film decodes, advances smoothly and hands over to the park", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const video = page.locator("video.mp-opening-film");
+  await expect
+    .poll(() => video.evaluate((e: HTMLVideoElement) => e.readyState), {
+      timeout: 30000,
+    })
+    .toBeGreaterThanOrEqual(2);
+  await page
+    .getByRole("button", { name: "Open your park", exact: true })
+    .click();
+  await expect(video).toHaveClass(/playing/);
+  await expect
+    .poll(() => video.evaluate((e: HTMLVideoElement) => e.currentTime), {
+      timeout: 10000,
+    })
+    .toBeGreaterThan(1);
+  expect(
+    await video.evaluate((e: HTMLVideoElement) => ({
+      width: e.videoWidth,
+      height: e.videoHeight,
+      duration: e.duration,
+    })),
+  ).toEqual({ width: 1920, height: 1080, duration: 40 });
+  await video.evaluate((e: HTMLVideoElement) => (e.currentTime = 15));
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: "outputs/moon-opening-playback.png" });
+  await page.getByRole("button", { name: "Skip intro" }).click();
+  await expect(
+    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+  ).toBeVisible();
+  await expect
+    .poll(() => video.evaluate((e: HTMLVideoElement) => e.paused))
+    .toBe(true);
+});
+
+test("opening remains playable when the movie cannot load", async ({
+  page,
+}) => {
+  await page.route("**/video/*.mp4", (r) => r.abort());
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open your park", exact: true })
+    .click();
+  await expect(page.locator("video.mp-opening-film")).not.toHaveClass(
+    /playing/,
+  );
+  await expect(page.locator('[data-testid="moon-world"] canvas')).toBeVisible();
+  await page.getByRole("button", { name: "Skip intro" }).click();
+  await expect(
+    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+  ).toBeVisible();
 });

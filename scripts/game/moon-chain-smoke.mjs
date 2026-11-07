@@ -12,7 +12,7 @@ const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
 assert.equal(cfg.network, "testnet");
 assert.ok(cfg.contractId.endsWith(".testnet"));
 const rootKey = JSON.parse(
-  await readFile(".near-local/moon-deployer.json", "utf8"),
+  await readFile(".near-local/moon-v2-deployer.json", "utf8"),
 );
 const p = new FailoverRpcProvider([
   new JsonRpcProvider({ url: cfg.rpcUrl }),
@@ -45,7 +45,7 @@ await root.callFunction({
 let state = await player.callFunction({
   contractId: cfg.contractId,
   methodName: "create_run",
-  args: { challenge_id: "moonpark-v1", request_id: "real-chain-proof" },
+  args: { challenge_id: "moonpark-v2", request_id: "real-chain-proof" },
   gas: 180000000000000n,
   waitUntil: "EXECUTED",
 });
@@ -126,6 +126,8 @@ for (let i = 0; i < replay.frames.length; i++) {
 assert.equal(state.run.finished, true);
 assert.ok(state.run.score.total >= 7000);
 assert.equal(state.ranked, false);
+assert.ok(state.run.partnerships.every((p) => p.status === "completed"));
+assert.equal(state.run.grant_escrow, 0);
 await mkdir("docs", { recursive: true });
 await writeFile(
   "docs/moon-testnet-smoke.json",
@@ -139,6 +141,16 @@ await writeFile(
       checkpoints,
       maxGas: maxGas.toString(),
       score: state.run.score,
+      partnerships: state.run.partnerships,
+      reservedFunding: state.run.grant_escrow,
+      availableFunding: state.run.grant_cash,
+      payoutReceipts: state.run.partnerships.map((p) => ({
+        partnershipId: p.id,
+        merchant: p.owner,
+        amount: p.reward,
+        transaction: checkpoints.find((c) => c.tick >= p.settled_at)
+          ?.transaction,
+      })),
       parity: "Every checkpoint matched native Rust and browser WASM.",
     },
     null,

@@ -10,14 +10,14 @@ import { createHash, randomBytes } from "node:crypto";
 await mkdir(".near-local", { recursive: true });
 let key;
 try {
-  key = JSON.parse(await readFile(".near-local/moon-deployer.json", "utf8"));
+  key = JSON.parse(await readFile(".near-local/moon-v2-deployer.json", "utf8"));
 } catch {
   const pair = KeyPair.fromRandom("ed25519");
   key = {
     accountId: `moonpark-${Date.now().toString(36)}.testnet`,
     secretKey: pair.toString(),
   };
-  await writeFile(".near-local/moon-deployer.json", JSON.stringify(key), {
+  await writeFile(".near-local/moon-v2-deployer.json", JSON.stringify(key), {
     mode: 0o600,
   });
 }
@@ -111,7 +111,7 @@ await writeFile(
   "public/moon-build.json",
   JSON.stringify(
     {
-      version: "moonpark-v1",
+      version: "moonpark-v2",
       contractSha256: createHash("sha256").update(code).digest("hex"),
       engineSha256: createHash("sha256")
         .update(await readFile("public/engine/moon.wasm"))

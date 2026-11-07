@@ -1,0 +1,101 @@
+import * as T from "three";
+export const INTRO_SECONDS = 40;
+export const INTRO_CUTS = [6, 14, 21, 29, 33, 35];
+const ease = (n: number) => {
+  const t = T.MathUtils.clamp(n, 0, 1);
+  return t * t * (3 - 2 * t);
+};
+const path = (points: number[][], u: number) =>
+  new T.CatmullRomCurve3(
+    points.map((p) => new T.Vector3(...(p as [number, number, number]))),
+  ).getPoint(ease(u));
+export function cinematicPose(
+  t: number,
+  coaster?: { curve: T.CatmullRomCurve3; frame: T.Object3D },
+) {
+  let position: T.Vector3,
+    target: T.Vector3,
+    fov = 44;
+  if (t < 6) {
+    const u = t / 6;
+    position = path(
+      [
+        [6, 7, 110],
+        [4, 7, 94],
+        [0, 8, 80],
+      ],
+      u,
+    );
+    target = new T.Vector3(-300, 90, -1000);
+    fov = 38;
+  } else if (t < 14) {
+    const u = (t - 6) / 8;
+    position = path(
+      [
+        [-12, 12, 37],
+        [-3, 9, 35],
+        [8, 5, 34],
+      ],
+      u,
+    );
+    target = new T.Vector3(0, 32 * (1 - ease(u)) + 2.8, 22);
+    fov = 44;
+  } else if (t < 21) {
+    const u = (t - 14) / 7;
+    position = path(
+      [
+        [-20, 6, 24],
+        [-11, 9, 24],
+        [10, 11, 25],
+        [23, 13, 17],
+      ],
+      u,
+    );
+    target = new T.Vector3(-1, 1.5, -1);
+    fov = 48;
+  } else if (t < 29 && coaster) {
+    const u = 0.055 + ease((t - 21) / 8) * 0.79;
+    position = coaster.curve.getPointAt(u % 1);
+    target = coaster.curve.getPointAt((u + 0.018) % 1);
+    coaster.frame.updateWorldMatrix(true, true);
+    coaster.frame.localToWorld(position);
+    coaster.frame.localToWorld(target);
+    position.y += 0.72;
+    target.y += 0.65;
+    fov = 56;
+  } else if (t < 33) {
+    const u = (t - 29) / 4;
+    position = path(
+      [
+        [5, 2.3, 20.5],
+        [3.6, 1.8, 20],
+        [2.6, 1.6, 19.2],
+      ],
+      u,
+    );
+    target = new T.Vector3(2, 1.15, 15.7);
+    fov = 40;
+  } else if (t < 35) {
+    position = new T.Vector3(5, 2, 17.5);
+    target = new T.Vector3(3, 1, 13.5);
+    fov = 43;
+  } else {
+    const u = (t - 35) / 5;
+    position = path(
+      [
+        [14, 10, 24],
+        [24, 18, 32],
+        [32, 28, 44],
+      ],
+      u,
+    );
+    target = new T.Vector3(0, T.MathUtils.lerp(1, 0, ease(u)), 0);
+    fov = T.MathUtils.lerp(45, 50, ease(u));
+  }
+  let fade = 1;
+  for (const c of INTRO_CUTS)
+    if (Math.abs(t - c) < 0.16)
+      fade = Math.min(fade, ease(Math.abs(t - c) / 0.16));
+  fade *= ease(t / 0.8);
+  return { position, target, fov, fade };
+}

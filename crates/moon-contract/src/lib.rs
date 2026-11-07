@@ -165,8 +165,17 @@ impl Moonpark {
             run.tick.saturating_add(ticks).min(END) <= allowed,
             "Simulation is ahead of the clock"
         );
+        let previous_deals: Vec<_> = run.partnerships.iter().map(|p| p.status.clone()).collect();
         run.apply(&commands, ticks)
             .unwrap_or_else(|e| env::panic_str(&e));
+        for (i, p) in run.partnerships.iter().enumerate() {
+            if p.status == "completed" && previous_deals[i] != "completed" {
+                env::log_str(&format!(
+                    "EVENT_JSON:{}",
+                    serde_json::json!({"standard":"moonpark","version":"2.0.0","event":"partnership_paid","data":[{"run_id":run_id,"owner":env::predecessor_account_id(),"merchant":p.owner,"partnership_id":p.id,"amount_credits_cents":p.reward.to_string(),"funding":"reserved_tourism_grant","tick":run.tick}]})
+                ));
+            }
+        }
         record["last_request"] = request_id.into();
         record["run"] = serde_json::to_value(&run).unwrap();
         if run.finished && record["ranked"].as_bool().unwrap() {
@@ -189,6 +198,10 @@ impl Moonpark {
     }
     pub fn get_run(&self, run_id: String) -> serde_json::Value {
         serde_json::from_str(&self.runs.get(&run_id).expect("Run not found")).unwrap()
+    }
+    pub fn get_partnerships(&self, run_id: String) -> serde_json::Value {
+        let record = self.get_run(run_id);
+        serde_json::json!({"owner":record["owner"],"partnerships":record["run"]["partnerships"],"available_funding":record["run"]["grant_cash"],"reserved_funding":record["run"]["grant_escrow"],"currency":"virtual lunar credits","ruleset":VERSION})
     }
     pub fn get_leaderboard(&self) -> serde_json::Value {
         serde_json::json!({"entries":self.top.iter().map(|id|serde_json::from_str::<Entry>(&self.best.get(id).unwrap()).unwrap()).collect::<Vec<_>>(),"challenge_id":VERSION,"open":self.launch_at>0})
@@ -213,7 +226,7 @@ impl Moonpark {
             .collect()
     }
     pub fn get_challenge(&self) -> serde_json::Value {
-        serde_json::json!({"id":VERSION,"seconds":END,"width":32,"height":24,"visitors":96,"max_active":48,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"contract-managed","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":"conditional_unfunded"})
+        serde_json::json!({"id":VERSION,"seconds":END,"width":32,"height":24,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":60000,"partnerships":3,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"contract-managed","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":"conditional_unfunded"})
     }
 }
 fn better(a: &Entry, b: &Entry) -> bool {

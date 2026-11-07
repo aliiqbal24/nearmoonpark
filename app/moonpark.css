@@ -1787,3 +1787,521 @@
     animation: none !important;
   }
 }
+
+/* The opening is a deterministic, pre-rendered film; live simulation resumes beneath its dissolve. */
+.mp-opening-film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 8;
+  transition: opacity 0.65s ease;
+  background: #03060c;
+}
+.mp-opening-film.playing {
+  opacity: 1;
+  visibility: visible;
+}
+.mp-opening-film.leaving {
+  opacity: 0;
+  visibility: visible;
+}
+.mp-opening-still {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 9;
+}
+.mp-intro::before,
+.mp-intro::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6vh;
+  background: #03060c;
+  pointer-events: none;
+}
+.mp-intro::before {
+  top: 0;
+}
+.mp-intro::after {
+  bottom: 0;
+}
+.mp-intro-captions {
+  animation: mp-caption-enter 0.8s ease both;
+}
+.mp-intro-bottom {
+  bottom: 7.3vh;
+}
+.mp-cinema-top {
+  top: 7.5vh;
+}
+@keyframes mp-caption-enter {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mp-cash:has(.mp-cash-credit) {
+  animation: mp-cash-glow 0.6s ease both;
+}
+.mp-cash-credit {
+  color: #2c8069;
+}
+@keyframes mp-cash-glow {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0 #8eddd300;
+  }
+  40% {
+    box-shadow: inset 0 0 0 3px #82cdb7aa;
+    background: #e5f2d8;
+  }
+}
+.mp-income-effects {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9;
+  overflow: hidden;
+}
+.mp-income {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+.mp-income-words {
+  display: block;
+  padding: 7px 13px;
+  border-radius: 13px;
+  background: #172b36e8;
+  box-shadow: 0 5px 20px #06142435;
+  animation: mp-income-rise 1.8s ease both;
+  color: #f6d78a;
+  white-space: nowrap;
+}
+.mp-income-words small {
+  display: block;
+  font-size: 9px;
+  color: #d4e9e0;
+  text-align: center;
+  margin-bottom: 2px;
+}
+.mp-income-words strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.mp-income i {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  color: #f5cd79;
+  font-size: 24px;
+  font-style: normal;
+  text-shadow: 0 0 10px #e7b653;
+  animation: mp-coin-flight 1.35s cubic-bezier(0.23, 0.6, 0.35, 1) both;
+}
+.mp-income.jackpot .mp-income-words {
+  background: #f4cf85;
+  color: #25384a;
+  outline: 3px solid #fff4ca66;
+  padding: 14px 22px;
+}
+.mp-income.jackpot small {
+  color: #52665c;
+}
+.mp-income.jackpot strong {
+  font-size: 34px;
+}
+@keyframes mp-income-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.85);
+  }
+  15%,
+  65% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-35px) scale(0.96);
+  }
+}
+@keyframes mp-coin-flight {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.45);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -22px) scale(1);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--coin-x), var(--coin-y)) scale(0.3);
+  }
+}
+.mp-shuttle-status {
+  font-variant-numeric: tabular-nums;
+}
+.mp-shuttle-status.phase-docked {
+  color: #84d2b9;
+}
+.mp-shuttle-status.phase-inbound svg {
+  animation: mp-shuttle-signal 1.8s ease infinite;
+}
+@keyframes mp-shuttle-signal {
+  50% {
+    transform: translate(2px, -2px);
+  }
+}
+.mp-partnership-preview {
+  position: absolute;
+  left: 75px;
+  top: 135px;
+  width: 290px;
+  z-index: 4;
+  max-height: calc(100dvh - 330px);
+  overflow: auto;
+  scrollbar-width: thin;
+  border-radius: 18px;
+}
+.mp-partnership {
+  border: 1px solid #ced7c9;
+  background: #f9f5eb;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 8px 25px #05122618;
+  color: #263448;
+}
+.mp-partner-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.mp-partner-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.mp-partner-heading small {
+  display: block;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: #718783;
+  font-weight: 700;
+}
+.mp-partner-heading strong {
+  display: block;
+  font-size: 19px;
+  line-height: 1.3;
+}
+.mp-partner-heading em {
+  font-style: normal;
+  display: block;
+  font-size: 9px;
+  font-weight: 400;
+  color: #657573;
+}
+.mp-owner-portrait {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  flex-shrink: 0;
+  border-radius: 15px;
+  background: #eac5a0;
+  color: #5d493d;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 25px;
+  font-weight: 700;
+}
+.merchant-drink .mp-owner-portrait {
+  background: #b3e2e6;
+  color: #31516a;
+}
+.merchant-depot .mp-owner-portrait {
+  background: #e8bad4;
+  color: #6f405e;
+}
+.mp-owner-portrait i {
+  font-size: 11px;
+  font-style: normal;
+  position: absolute;
+  right: -3px;
+  bottom: 0;
+  color: #f9f5eb;
+  background: #4b7067;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+}
+.mp-partnership h3 {
+  font-size: 18px;
+  margin: 10px 0;
+}
+.mp-partnership p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #59696a;
+  margin: 0 0 12px;
+}
+.mp-deal-terms {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 0;
+  border-top: 1px solid #d8dfd2;
+  border-bottom: 1px solid #d8dfd2;
+  margin: 12px 0 8px;
+  font-size: 10px;
+  color: #6b7672;
+}
+.mp-deal-terms b {
+  display: block;
+  font-size: 21px;
+  font-family: "Space Grotesk", sans-serif;
+  color: #263448;
+  line-height: 1.2;
+}
+.mp-deal-goal {
+  display: block;
+  color: #6a7875;
+  font-size: 9px;
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+.mp-partnership > .mp-primary {
+  width: 100%;
+  font-size: 11px;
+  padding: 10px;
+}
+.mp-contract-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 13px;
+}
+.mp-contract-progress > span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.mp-partnership progress {
+  width: 100%;
+  height: 7px;
+  margin: 8px 0;
+  accent-color: #4e9d85;
+}
+.mp-contract-reward {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #477e69;
+  margin-top: 8px;
+}
+.moonpark .mp-contract-details {
+  width: 100%;
+  background: none;
+  border: 0;
+  font-size: 9px;
+  color: #70817b;
+  padding: 8px 0 0;
+}
+.mp-partnership-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+.mp-partnership-grid .mp-partnership {
+  box-shadow: none;
+  padding: 15px;
+}
+.mp-funding-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #e9eee3;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #52665e;
+  line-height: 1.6;
+}
+.mp-funding-note svg {
+  flex-shrink: 0;
+}
+.mp-funding-note p {
+  margin: 0;
+}
+.mp-funding-note small {
+  display: block;
+  margin-top: 8px;
+  font-size: 10px;
+  color: #75857b;
+}
+@media (max-width: 800px) {
+  .mp-partnership-grid {
+    grid-template-columns: 1fr;
+  }
+  .mp-partnership-grid .mp-partnership {
+    padding: 18px;
+  }
+  .mp-partnership-preview {
+    left: 60px;
+    right: 12px;
+    top: 132px;
+    width: auto;
+    max-width: 290px;
+    max-height: calc(100dvh - 330px);
+  }
+  .mp-partnership.compact {
+    padding: 12px;
+  }
+  .mp-partnership.compact .mp-partner-heading {
+    margin-bottom: 5px;
+  }
+  .mp-partnership.compact .mp-partner-heading strong {
+    font-size: 16px;
+  }
+  .mp-partnership.compact p {
+    display: none;
+  }
+  .mp-partnership.compact .mp-deal-terms {
+    margin: 5px 0;
+    padding: 7px 0;
+  }
+  .mp-partnership.compact .mp-deal-terms b {
+    display: inline;
+    font-size: 16px;
+    margin-left: 4px;
+  }
+  .mp-partnership.compact .mp-deal-goal {
+    font-size: 8px;
+    margin-bottom: 7px;
+  }
+  .mp-partnership.compact .mp-owner-portrait {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    font-size: 21px;
+  }
+  .mp-income-words strong {
+    font-size: 19px;
+  }
+  .mp-cinema-top {
+    left: 18px;
+    right: 18px;
+  }
+  .mp-intro-captions {
+    left: 7%;
+    right: 7%;
+    bottom: 18vh;
+  }
+  .mp-intro-captions h1 {
+    font-size: 30px;
+  }
+  .mp-intro-captions p {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mp-opening-film.playing {
+    opacity: 0;
+  }
+  .mp-opening-still {
+    display: block;
+  }
+  .mp-income i {
+    display: none;
+  }
+  .mp-income-words,
+  .mp-shuttle-status svg,
+  .mp-intro-captions {
+    animation: none;
+  }
+  .mp-opening-film {
+    transition: none;
+  }
+}
+.mp-subhud {
+  gap: 9px;
+}
+.mp-subhud > span {
+  background: #172938dd;
+  padding: 5px 8px;
+  border-radius: 7px;
+  text-shadow: none;
+}
+.mp-settlement-link {
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 10px;
+  color: #4a7f6d;
+  text-decoration: none;
+}
+@media (max-width: 800px) {
+  .mp-subhud {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .mp-subhud > span {
+    padding: 4px 5px;
+  }
+  .mp-partnership-preview {
+    top: 167px;
+    left: 50px;
+  }
+  .mp-subhud .mp-chain {
+    font-size: 6px;
+  }
+  .mp-partnership-preview .mp-settlement-link {
+    font-size: 8px;
+  }
+}
+.mp-income i {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid #ffe2a0;
+  background: linear-gradient(140deg, #ffe8a2, #d6a44b);
+  color: #996626;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 1px 8px #d9ae5b55;
+  text-shadow: none;
+}
+.mp-intro-progress{transition:width .25s linear}

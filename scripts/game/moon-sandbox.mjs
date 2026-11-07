@@ -54,13 +54,13 @@ try {
   });
   await call(root, "open_challenge", {});
   let state = await call(alice, "create_run", {
-    challenge_id: "moonpark-v1",
+    challenge_id: "moonpark-v2",
     request_id: "sandbox",
   });
   assert.deepEqual(
     state,
     await call(alice, "create_run", {
-      challenge_id: "moonpark-v1",
+      challenge_id: "moonpark-v2",
       request_id: "sandbox",
     }),
   );
@@ -73,7 +73,7 @@ try {
       ticks: 1,
     }),
   );
-  const native = spawnSync("target/release/examples/moon_replay", ["balanced"], {
+  const native = spawnSync("target/release/examples/moon_replay", ["gold"], {
     encoding: "utf8",
     maxBuffer: 20000000,
   });
@@ -144,6 +144,10 @@ try {
       console.log(`Sandbox: ${state.run.tick}/540, ${Number(gas) / 1e12} TGas`);
   }
   assert.equal(state.run.finished, true);
+  assert.ok(state.run.partnerships.every(p=>p.status==="completed"));
+  const deals=await p.callFunction({contractId:contract.accountId,method:"get_partnerships",args:{run_id:state.run_id}});
+  assert.equal(deals.reserved_funding,0);
+  assert.equal(deals.available_funding,0);
   const board = await p.callFunction({
     contractId: contract.accountId,
     method: "get_leaderboard",

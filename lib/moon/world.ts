@@ -18,12 +18,16 @@ import {
   footprint,
   entrance,
   walkingRoute,
+  isTenant,
+  merchantOwner,
   type Run,
   type Placement,
   type Detail,
 } from "./model";
 
+import { cinematicPose } from "./cinema";
 type Options = {
+  autoStart?: boolean;
   onPick: (d: Detail | null) => void;
   onHover: (d: Detail | null) => void;
   onPlace: (x: number, z: number) => void;
@@ -32,6 +36,14 @@ type Options = {
 export class MoonWorld {
   renderer: T.WebGLRenderer;
   scene = new T.Scene();
+  private sky = new T.Scene();
+  private skyCamera = new T.PerspectiveCamera(50, 1, 1, 4000);
+  private earth: T.Mesh | null = null;
+  private manual = false;
+  private paused = false;
+  private dust: T.Points | null = null;
+  private gangway: T.Group;
+
   camera: T.PerspectiveCamera;
   controls: OrbitControls;
   private host: HTMLElement;
@@ -58,6 +70,7 @@ export class MoonWorld {
   private selection: T.LineSegments;
   private lander: T.Group;
   private cockpit = new T.Group();
+  private rideNose = new T.Group();
   private founder: T.Group;
   private gagRobot = new T.Group();
   private popcorn: T.Object3D[] = [];
@@ -65,6 +78,7 @@ export class MoonWorld {
   private time = 0;
   private speed = 1;
   private cinematic: number | null = null;
+  private cinematicAt = 0;
   private rideId: number | null = null;
   private savedPosition = new T.Vector3();
   private lastTick = -1;
@@ -73,21 +87,26 @@ export class MoonWorld {
     .matches;
   constructor(host: HTMLElement, opts: Options) {
     this.host = host;
+    this.manual = opts.autoStart === false;
     this.opts = opts;
     this.renderer = new T.WebGLRenderer({
       antialias: true,
       powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    this.renderer.setPixelRatio(
+      Math.min(devicePixelRatio, host.clientWidth < 800 ? 1.25 : 1.5),
+    );
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = T.PCFShadowMap;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
     host.appendChild(this.renderer.domElement);
-    this.scene.background = new T.Color("#101b30");
-    this.scene.fog = new T.FogExp2("#202a43", 0.006);
-    this.camera = new T.PerspectiveCamera(50, 1, 0.1, 250);
+    this.renderer.autoClear = false;
+    this.renderer.setClearColor("#03060c");
+    this.scene.background = null;
+    this.scene.fog = new T.Fog("#131722", 220, 1400);
+    this.camera = new T.PerspectiveCamera(50, 1, 0.1, 2200);
     this.camera.position.set(32, 28, 44);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.target.set(0, 0, 0);
@@ -112,11 +131,22 @@ export class MoonWorld {
     this.cockpit.add(flightSign);
     this.cockpit.visible = false;
     this.camera.add(this.cockpit);
-    this.scene.add(new T.HemisphereLight("#bfd6ff", "#55516c", 2.2));
+    box(this.rideNose, "#eac478", 0, -0.76, -1.18, 1.65, 0.36, 0.6);
+    box(this.rideNose, "#263a4d", 0, -0.55, -1.34, 1.35, 0.08, 0.08);
+    this.rideNose.visible = false;
+    this.camera.add(this.rideNose);
+    this.scene.add(
+      new T.HemisphereLight("#bfd6ff", "#55516c", this.manual ? 1.15 : 2.2),
+    );
     const sun = new T.DirectionalLight("#fff0d6", 3.8);
-    sun.position.set(-20, 40, 15);
+    sun.position.set(-20, this.manual ? 22 : 40, 15);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    const shadowSize = this.manual
+      ? 4096
+      : host.clientWidth < 800
+        ? 1024
+        : 2048;
+    sun.shadow.mapSize.set(shadowSize, shadowSize);
     sun.shadow.camera.left = -30;
     sun.shadow.camera.right = 30;
     sun.shadow.camera.top = 30;
@@ -151,6 +181,28 @@ export class MoonWorld {
     this.lander = rocket();
     this.lander.position.set(0, 0.1, 22);
     this.scene.add(this.lander);
+    this.gangway = new T.Group();
+    box(this.gangway, "#c1cbd2", 0, 0.2, 18.6, 1.5, 0.15, 7);
+    for (const x of [-0.7, 0.7])
+      box(this.gangway, "#8eddd3", x, 0.5, 18.6, 0.06, 0.6, 7);
+    this.scene.add(this.gangway);
+    const dustGeometry = new T.BufferGeometry();
+    dustGeometry.setAttribute(
+      "position",
+      new T.BufferAttribute(new Float32Array(80 * 3), 3),
+    );
+    this.dust = new T.Points(
+      dustGeometry,
+      new T.PointsMaterial({
+        color: "#b4b1bf",
+        size: 0.5,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    this.dust.position.set(0, 0.2, 22);
+    this.scene.add(this.dust);
     const pad = new T.Group();
     cylinder(pad, "#343e55", 0, 0, 0, 4.3, 0.18);
     const ring = new T.Mesh(
@@ -195,14 +247,29 @@ export class MoonWorld {
     el.addEventListener("pointerleave", this.pointerLeave);
     el.addEventListener("contextmenu", this.contextMenu);
     window.addEventListener("keydown", this.keyDown);
-    this.frame = requestAnimationFrame(this.animate);
+    if (!this.manual) this.frame = requestAnimationFrame(this.animate);
     opts.onReady();
   }
   private environment() {
     const ground = new T.Mesh(
-      new T.PlaneGeometry(220, 220),
+      new T.PlaneGeometry(1800, 1800, 100, 100),
       material("#8c8b9c"),
     );
+    const terrain = ground.geometry.attributes.position;
+    for (let i = 0; i < terrain.count; i++) {
+      const x = terrain.getX(i),
+        z = terrain.getY(i),
+        distance = Math.hypot(x, z);
+      const hills = Math.max(0, Math.min(1, (distance - 55) / 120));
+      terrain.setZ(
+        i,
+        hills *
+          (5 +
+            Math.sin(x * 0.024) * Math.cos(z * 0.017) * 8 +
+            Math.sin(x * 0.047 + z * 0.019) * 3),
+      );
+    }
+    ground.geometry.computeVertexNormals();
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.2;
     ground.receiveShadow = true;
@@ -258,47 +325,66 @@ export class MoonWorld {
         cylinder(this.scene, "#d2cbd1", x, 0.5, z, 0.055, 1);
         sphere(this.scene, "#8eddd3", x, 1, z, 0.1);
       }
-    const stars = new Float32Array(900 * 3);
-    for (let i = 0; i < 900; i++) {
-      stars[i * 3] = (rand() - 0.5) * 220;
-      stars[i * 3 + 1] = 20 + rand() * 100;
-      stars[i * 3 + 2] = -35 - rand() * 90;
+    const stars = new Float32Array(650 * 3);
+    for (let i = 0; i < 650; i++) {
+      const direction = new T.Vector3(
+        (rand() - 0.5) * 2,
+        rand(),
+        (rand() - 0.5) * 2,
+      )
+        .normalize()
+        .multiplyScalar(1800);
+      stars.set([direction.x, direction.y, direction.z], i * 3);
     }
     const geo = new T.BufferGeometry();
     geo.setAttribute("position", new T.BufferAttribute(stars, 3));
-    this.scene.add(
+    this.sky.add(
       new T.Points(
         geo,
         new T.PointsMaterial({
-          color: "#deeaff",
-          size: 0.13,
+          color: "#d9e8ff",
+          size: 1.35,
           sizeAttenuation: true,
+          transparent: true,
+          opacity: 0.8,
         }),
       ),
     );
     const earth = new T.Mesh(
-      new T.SphereGeometry(7, 48, 32),
-      new T.MeshBasicMaterial({ color: "#ffffff" }),
+      new T.SphereGeometry(24, 64, 48),
+      new T.MeshPhongMaterial({
+        color: "#ffffff",
+        shininess: 8,
+        specular: "#25394b",
+      }),
     );
-    earth.position.set(0, 10, -42);
+    earth.position.copy(
+      new T.Vector3(-0.33, 0.16, -0.93).normalize().multiplyScalar(1400),
+    );
     earth.rotation.y = -1.5;
-    this.scene.add(earth);
+    this.sky.add(earth);
+    this.earth = earth;
     new T.TextureLoader().load("/textures/earth.jpg", (tex) => {
       tex.colorSpace = T.SRGBColorSpace;
-      (earth.material as T.MeshBasicMaterial).map = tex;
+      (earth.material as T.MeshPhongMaterial).map = tex;
       earth.material.needsUpdate = true;
     });
     const atmosphere = new T.Mesh(
-      new T.SphereGeometry(7.15, 32, 24),
+      new T.SphereGeometry(24.55, 48, 32),
       new T.MeshBasicMaterial({
         color: "#8ed8ff",
         transparent: true,
-        opacity: 0.12,
+        opacity: 0.13,
         side: T.BackSide,
+        depthWrite: false,
       }),
     );
     atmosphere.position.copy(earth.position);
-    this.scene.add(atmosphere);
+    this.sky.add(atmosphere);
+    this.sky.add(new T.AmbientLight("#879dc0", 0.07));
+    const earthSun = new T.DirectionalLight("#fff7e8", 3);
+    earthSun.position.set(-600, 500, 700);
+    this.sky.add(earthSun);
     const observatory = new T.Group();
     cylinder(observatory, "#d2d7dd", 0, 1, 0, 3, 2);
     const dome = sphere(observatory, "#8bb1cf", 0, 2, 0, 3);
@@ -329,13 +415,17 @@ export class MoonWorld {
       (this.rideId !== null && rideId === null);
     this.speed = speed;
     this.cinematic = cinematic;
+    this.cinematicAt = performance.now();
     this.rideId = rideId;
     this.controls.enabled = cinematic === null && rideId === null;
-    if (returnToPark) this.home();
+    if (returnToPark) {
+      this.home();
+      this.renderer.toneMappingExposure = 1.15;
+    }
     if (this.run !== run) {
       this.run = run;
-      this.updateTime = performance.now();
       if (this.lastTick !== run.tick) {
+        this.updateTime = performance.now();
         this.lastTick = run.tick;
       }
       this.sync();
@@ -447,6 +537,28 @@ export class MoonWorld {
           0.18,
           (b.z + h / 2 - HEIGHT / 2) * SCALE,
         );
+        if (isTenant(b.kind)) {
+          const owner = astronaut(
+            (
+              { food: "#f2ad6b", drink: "#7ad7f1", depot: "#ea91ba" } as Record<
+                string,
+                string
+              >
+            )[b.kind] ?? "#a9e4d3",
+            1.05,
+          );
+          owner.name = "merchant-owner";
+          const entry = entrance(b);
+          owner.position.set(
+            (entry.x + 0.5 - b.x - w / 2) * SCALE + 0.6,
+            0,
+            (entry.z + 0.5 - b.z - h / 2) * SCALE,
+          );
+          const name = label(merchantOwner(b.kind), "#d5f1e8", 1.15);
+          name.position.y = 1.35;
+          owner.add(name);
+          m.root.add(owner);
+        }
         m.root.traverse((o) => (o.userData.building = b.id));
         this.scene.add(m.root);
         this.models.set(b.id, m);
@@ -577,6 +689,8 @@ export class MoonWorld {
     if (e.key === "Home") this.home();
   };
   home() {
+    this.camera.fov = 50;
+    this.camera.updateProjectionMatrix();
     this.camera.position.set(32, 28, 44);
     this.controls.target.set(0, 0, 0);
     this.controls.update();
@@ -599,19 +713,30 @@ export class MoonWorld {
     return { x: ((p.x + 1) / 2) * r.width, y: ((1 - p.y) / 2) * r.height };
   }
   private animate = (now: number) => {
-    this.frame = requestAnimationFrame(this.animate);
+    if (!this.manual) this.frame = requestAnimationFrame(this.animate);
+    if (this.paused) return;
     const dt = Math.min(0.06, (now - this.last) / 1000 || 0);
     this.last = now;
     this.time += dt;
     const run = this.run;
-    this.cockpit.visible = this.cinematic !== null && this.cinematic < 9;
+    const cinematic =
+      this.cinematic === null
+        ? null
+        : this.cinematic +
+          (this.manual
+            ? 0
+            : Math.max(0, Math.min(0.25, (now - this.cinematicAt) / 1000)));
+    this.cockpit.visible = cinematic !== null && cinematic < 9;
     this.gagRobot.visible =
-      this.cinematic !== null && this.cinematic >= 30 && this.cinematic < 35;
+      cinematic !== null && cinematic >= 33 && cinematic < 35;
+    this.rideNose.visible =
+      this.rideId !== null ||
+      (cinematic !== null && cinematic >= 21 && cinematic < 29);
     this.founder.rotation.y = 0;
     (this.founder.userData.arms[1] as T.Object3D).rotation.z =
       -0.8 + Math.sin(this.time * 5) * 0.25;
     if (this.gagRobot.visible) {
-      const t = this.cinematic! - 30;
+      const t = cinematic! - 33;
       this.gagRobot.rotation.z = Math.sin(t * 9) * 0.07;
       this.popcorn.forEach((p, i) => {
         const start = i * 0.07,
@@ -625,27 +750,45 @@ export class MoonWorld {
       });
     }
     if (run) {
-      const visual = run.tick + ((now - this.updateTime) / 1000) * this.speed;
+      const visual =
+        cinematic !== null
+          ? 40 + cinematic
+          : run.finished
+            ? run.tick
+            : run.tick +
+              Math.min(1, ((now - this.updateTime) / 1000) * this.speed);
       for (const b of run.buildings) {
         const m = this.models.get(b.id);
         if (m && !b.sold)
           m.animate(
             visual,
             b,
-            run.finished
-              ? Math.min(b.cycle_left, (now - this.updateTime) / 1000)
-              : Math.min(1, ((now - this.updateTime) / 1000) * this.speed),
+            cinematic !== null
+              ? cinematic % 1
+              : run.finished
+                ? Math.min(b.cycle_left, (now - this.updateTime) / 1000)
+                : Math.min(1, ((now - this.updateTime) / 1000) * this.speed),
           );
       }
       this.animateGuests(run, dt, visual);
       this.animateDeliveries(run, visual);
-      const phase = visual % 90;
-      this.lander.position.y =
-        phase > 80 ? Math.pow((phase - 80) / 10, 2) * 22 : 0.1;
-      const flame = this.lander.userData.flame as T.Mesh;
-      flame.visible = phase > 78;
-      flame.scale.y = 1 + Math.sin(this.time * 25) * 0.2;
-      if (this.cinematic !== null) this.introCamera(this.cinematic);
+      const shuttleTime =
+        cinematic !== null
+          ? Math.min(39.99, Math.max(0, (cinematic - 6) * 1.25))
+          : visual;
+      this.animateShuttle(shuttleTime);
+      for (const building of run.buildings) {
+        const owner = this.models
+          .get(building.id)
+          ?.root.getObjectByName("merchant-owner");
+        if (owner) {
+          owner.visible = building.ready_at <= run.tick;
+          (owner.userData.arms[1] as T.Object3D).rotation.z = building.insolvent
+            ? 0
+            : -0.35 + Math.sin(this.time * 2 + building.id) * 0.18;
+        }
+      }
+      if (cinematic !== null) this.introCamera(cinematic);
       else if (this.rideId !== null) {
         const b = run.buildings.find((b) => b.id === this.rideId);
         const m = this.models.get(this.rideId);
@@ -660,7 +803,20 @@ export class MoonWorld {
         }
       }
     }
-    if (this.cinematic === null && this.rideId === null) this.controls.update();
+    if (cinematic === null && this.rideId === null) this.controls.update();
+    if (this.earth) this.earth.rotation.y = -1.5 + this.time * 0.000073;
+    this.skyCamera.quaternion.copy(this.camera.quaternion);
+    if (
+      this.skyCamera.aspect !== this.camera.aspect ||
+      this.skyCamera.fov !== this.camera.fov
+    ) {
+      this.skyCamera.aspect = this.camera.aspect;
+      this.skyCamera.fov = this.camera.fov;
+      this.skyCamera.updateProjectionMatrix();
+    }
+    this.renderer.clear();
+    this.renderer.render(this.sky, this.skyCamera);
+    this.renderer.clearDepth();
     this.renderer.render(this.scene, this.camera);
   };
   private animateGuests(run: Run, dt: number, time: number) {
@@ -681,12 +837,37 @@ export class MoonWorld {
         this.people.set(g.id, p);
         const x = ((g.cell % WIDTH) + 0.5 - WIDTH / 2) * SCALE,
           z = (Math.floor(g.cell / WIDTH) + 0.5 - HEIGHT / 2) * SCALE;
-        p.position.set(x, 0.2, z);
+        if (g.status === "arriving")
+          p.position.set(
+            ((g.id % 2) - 0.5) * 0.42,
+            0.2,
+            21.2 + Math.floor((g.id % 8) / 2) * 0.25,
+          );
+        else p.position.set(x, 0.2, z);
       }
       p.visible = true;
       let x = ((g.cell % WIDTH) + 0.5 - WIDTH / 2) * SCALE,
         z = (Math.floor(g.cell / WIDTH) + 0.5 - HEIGHT / 2) * SCALE;
-      if (g.status === "queueing") {
+      if (g.status === "arriving") {
+        const delay = Math.floor((g.id % 8) / 2) * 0.24;
+        const u = T.MathUtils.clamp(
+          (time - g.arrival - delay) / (6 - delay),
+          0,
+          1,
+        );
+        x = T.MathUtils.lerp(((g.id % 2) - 0.5) * 0.42, x, u);
+        z = T.MathUtils.lerp(21.2, z, u);
+      } else if (g.status === "boarding") {
+        const phase = g.timer % 40,
+          start =
+            phase >= 10 && phase <= 24
+              ? g.timer
+              : g.timer + ((50 - phase) % 40);
+        const u = T.MathUtils.clamp((time - start) / 6, 0, 1);
+        x = T.MathUtils.lerp(x, ((g.id % 4) - 1.5) * 0.23, u);
+        z = T.MathUtils.lerp(z, 21.3, u);
+        if (u >= 1) p.visible = false;
+      } else if (g.status === "queueing") {
         const b = run.buildings.find((b) => b.id === g.target);
         const index = b?.queue.indexOf(g.id) ?? 0;
         x += ((index % 3) - 1) * 0.25;
@@ -701,14 +882,18 @@ export class MoonWorld {
       p.position.lerp(target, Math.min(1, dt * Math.max(5, this.speed * 5)));
       p.position.y =
         0.22 +
-        (g.status === "walking"
+        (["walking", "arriving", "leaving", "boarding"].includes(g.status)
           ? Math.abs(Math.sin(time * 5 + g.id)) * 0.05
           : 0);
       for (let i = 0; i < 2; i++) {
-        (p.userData.legs[i] as T.Object3D).rotation.x =
-          g.status === "walking"
-            ? Math.sin(time * 6 + g.id + i * Math.PI) * 0.35
-            : 0;
+        (p.userData.legs[i] as T.Object3D).rotation.x = [
+          "walking",
+          "arriving",
+          "leaving",
+          "boarding",
+        ].includes(g.status)
+          ? Math.sin(time * 6 + g.id + i * Math.PI) * 0.35
+          : 0;
       }
     }
   }
@@ -772,47 +957,83 @@ export class MoonWorld {
     }
   }
   private introCamera(t: number) {
+    this.cockpit.visible = false;
     if (this.reducedMotion) {
       this.camera.position.set(32, 28, 44);
       this.camera.lookAt(0, 0, 0);
-      this.cockpit.visible = false;
       return;
     }
-    const coaster = [...this.models.values()].find((m) => !!m.curve);
-    if (t < 9) {
-      this.camera.position.set(
-        T.MathUtils.lerp(2, 4, t / 9),
-        4,
-        T.MathUtils.lerp(45, 28, t / 9),
-      );
-      this.camera.lookAt(-8, 9, -30);
-    } else if (t < 12) {
-      this.camera.position.set(3, 2.6, 19.8);
-      this.camera.lookAt(2, 1.1, 15.7);
-    } else if (t < 17) {
-      const u = (t - 12) / 5;
-      this.camera.position.set(
-        T.MathUtils.lerp(26, 20, u),
-        T.MathUtils.lerp(22, 15, u),
-        T.MathUtils.lerp(29, 12, u),
-      );
-      this.camera.lookAt(0, 1, 0);
-    } else if (t < 30 && coaster?.curve) {
-      const u = (((t - 17) / 13) * 0.9 + 0.07) % 1;
-      const p = coaster.curve.getPointAt(u),
-        a = coaster.curve.getPointAt((u + 0.015) % 1);
-      coaster.root.children[0].localToWorld(p);
-      coaster.root.children[0].localToWorld(a);
-      this.camera.position.copy(p).add(new T.Vector3(0, 0.65, 0));
-      this.camera.lookAt(a.add(new T.Vector3(0, 0.6, 0)));
-    } else if (t < 35) {
-      this.camera.position.set(5, 2.4, 17.5);
-      this.camera.lookAt(3, 0.85, 13.5);
-    } else {
-      const u = Math.min(1, (t - 35) / 5);
-      this.camera.position.set(25 + u * 7, 12 + u * 16, 25 + u * 19);
-      this.camera.lookAt(0, 1, 0);
+    const b = this.run?.buildings.find((b) => b.kind === "coaster" && !b.sold);
+    const m = b ? this.models.get(b.id) : null;
+    const pose = cinematicPose(
+      t,
+      m?.curve ? { curve: m.curve, frame: m.root.children[0] } : undefined,
+    );
+    this.camera.position.copy(pose.position);
+    this.camera.lookAt(pose.target);
+    this.camera.fov = pose.fov;
+    this.camera.updateProjectionMatrix();
+    this.renderer.toneMappingExposure = 1.15 * pose.fade;
+  }
+  private animateShuttle(t: number) {
+    const phase = t % 40,
+      smooth = (v: number) => {
+        const u = T.MathUtils.clamp(v, 0, 1);
+        return u * u * (3 - 2 * u);
+      };
+    const y =
+      phase < 10
+        ? 32 * (1 - smooth(phase / 10))
+        : phase < 30
+          ? 0
+          : 38 * smooth((phase - 30) / 8);
+    this.lander.position.set(
+      phase < 10
+        ? (1 - smooth(phase / 10)) * 4
+        : phase > 30
+          ? smooth((phase - 30) / 8) * -5
+          : 0,
+      0.1 + y,
+      22,
+    );
+    this.lander.visible = phase < 38;
+    this.gangway.visible = phase >= 10 && phase < 30;
+    const flame = this.lander.userData.flame as T.Mesh;
+    flame.visible = phase < 10 || (phase >= 30 && phase < 38);
+    flame.scale.y =
+      1.1 + Math.sin(this.time * 32) * 0.13 + (phase >= 30 ? 0.7 : 0);
+    if (this.dust) {
+      const amount = flame.visible ? Math.max(0, 1 - y / 12) : 0;
+      (this.dust.material as T.PointsMaterial).opacity = amount * 0.28;
+      const p = this.dust.geometry.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const a = i * 2.3999,
+          r = 2 + ((this.time * 4 + i * 0.19) % 5);
+        p.setXYZ(
+          i,
+          Math.cos(a) * r,
+          Math.abs(Math.sin(i * 1.7 + this.time * 2)) * 0.6,
+          Math.sin(a) * r,
+        );
+      }
+      p.needsUpdate = true;
     }
+  }
+  setPaused(value: boolean) {
+    this.paused = value;
+    if (!value) {
+      this.last = performance.now();
+      this.renderer.toneMappingExposure = 1.15;
+    }
+  }
+  renderIntroAt(t: number) {
+    this.manual = true;
+    cancelAnimationFrame(this.frame);
+    this.paused = false;
+    this.last = (t - 1 / 30) * 1000;
+    this.time = t - 1 / 30;
+    this.cinematic = t;
+    this.animate(t * 1000);
   }
   dispose() {
     cancelAnimationFrame(this.frame);

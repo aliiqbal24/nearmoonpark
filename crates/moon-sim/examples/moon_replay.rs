@@ -72,6 +72,25 @@ fn main() {
             commands.push(action("price", id, price));
             commands.push(action("launch", id, launch));
         }
+        if strategy == "gold"
+            && commands.is_empty()
+            && run.cash >= 20000
+            && !run.partnerships.iter().any(|p| p.status == "active")
+        {
+            if let Some((id, b)) = run
+                .partnerships
+                .iter()
+                .filter(|p| p.status == "offered" && p.available_at <= run.tick && run.tick <= 495)
+                .find_map(|p| {
+                    run.buildings
+                        .iter()
+                        .find(|b| b.kind == p.kind && !b.sold)
+                        .map(|b| (p.id, b.id))
+                })
+            {
+                commands.push(action("partner", b, id as i64));
+            }
+        }
         let before = run.clone();
         if let Err(e) = run.apply(&commands, 10) {
             eprintln!("At {}: {}", before.tick, e);

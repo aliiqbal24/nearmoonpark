@@ -1,4 +1,5 @@
 import type { Run, Command } from "./model";
+import { VERSION } from "./model";
 type Exports = {
   memory: WebAssembly.Memory;
   sim_alloc: (n: number) => number;
@@ -8,7 +9,7 @@ type Exports = {
 let loading: Promise<Exports> | undefined;
 export async function engine() {
   return (loading ??= (async () => {
-    const r = await fetch("/engine/moon.wasm");
+    const r = await fetch(`/engine/moon.wasm?v=${VERSION}`);
     if (!r.ok) throw Error("Moonpark engine could not load.");
     return new WebAssembly.Instance(
       await WebAssembly.compile(await r.arrayBuffer()),

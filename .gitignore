@@ -13,3 +13,5 @@ outputs/
 .near-local/
 test-results/
 playwright-report/
+
+.media-tools/

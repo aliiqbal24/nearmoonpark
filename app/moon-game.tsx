@@ -27,7 +27,16 @@ import {
   Play,
   ShieldCheck,
   Eye,
+  Handshake,
 } from "lucide-react";
+import {
+  CashNumber,
+  MoneyFeedback,
+  ShuttleStatus,
+  PartnershipCard,
+  PartnershipDesk,
+  nextPartnership,
+} from "./components/moon-experience";
 import MoonWorld from "./components/moon-world";
 import {
   Dialog,
@@ -37,6 +46,7 @@ import {
   Results,
   Ledger,
 } from "./components/moon-panels";
+import { dreamPark } from "@/lib/moon/dream";
 import { simulate } from "@/lib/moon/engine";
 import { ParkSession, type Snapshot } from "@/lib/moon/session";
 import {
@@ -50,6 +60,7 @@ import {
 import { MoonAudio } from "@/lib/moon/audio";
 import {
   CATALOG,
+  VERSION,
   blueprint,
   footprint,
   isRide,
@@ -78,53 +89,8 @@ const ICONS = {
 };
 type Player = { player_id: string; display_name: string };
 type Screen = "title" | "intro" | "playing" | "results";
-type Panel = "leaderboard" | "ledger" | "help" | "score" | null;
-function dreamPark(initial: Run): Run {
-  const r = structuredClone(initial);
-  const base = r.buildings[0];
-  r.tick = 40;
-  const kinds: [Kind, number, number][] = [
-    ["coaster", 3, 5],
-    ["wheel", 22, 5],
-    ["rover", 22, 12],
-    ["drink", 23, 17],
-    ["depot", 27, 17],
-    ["solar", 16, 6],
-    ["bounce", 15, 11],
-  ];
-  for (const [k, x, z] of kinds) {
-    const a = blueprint(k);
-    r.buildings.push({
-      ...structuredClone(base),
-      id: r.buildings.length + 1,
-      kind: k,
-      x,
-      z,
-      price: a.price,
-      invested: a.cost,
-      ready_at: 0,
-      powered: true,
-      connected: true,
-      stock: 16,
-      riders: isRide(k) ? [0, 1, 2, 3] : [],
-    });
-  }
-  for (const b of r.buildings) {
-    b.powered = true;
-    b.connected = true;
-    const { w, h } = footprint(b);
-    const x = b.x + Math.floor(w / 2);
-    for (let z = b.z + h; z <= 20; z++) {
-      const c = z * 32 + x;
-      if (!r.paths.includes(c)) r.paths.push(c);
-    }
-  }
-  for (let i = 0; i < 24; i++) {
-    r.guests[i].status = "walking";
-    r.guests[i].cell = 20 * 32 + 4 + i;
-  }
-  return r;
-}
+type Panel =
+  "leaderboard" | "ledger" | "help" | "score" | "partnerships" | null;
 function download(value: unknown, name: string) {
   const u = URL.createObjectURL(
     new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
@@ -148,6 +114,8 @@ export default function Game() {
     [toast, setToast] = useState(""),
     [muted, setMuted] = useState(true),
     [introTime, setIntroTime] = useState(0),
+    [videoFailed, setVideoFailed] = useState(false),
+    [introLeaving, setIntroLeaving] = useState(false),
     [launching, setLaunching] = useState(false),
     [resumeAvailable, setResumeAvailable] = useState(false),
     [rideId, setRideId] = useState<number | null>(null),
@@ -160,6 +128,7 @@ export default function Game() {
     [wallLeft, setWallLeft] = useState(540);
   const [cfg, setCfg] = useState<Config | null>(null),
     [chosenMode, setChosenMode] = useState<"practice" | "near">("practice");
+  const videoRef = useRef<HTMLVideoElement>(null);
   const worldRef = useRef<World | null>(null),
     session = useRef<ParkSession | null>(null),
     audio = useRef<MoonAudio | null>(null),
@@ -182,7 +151,10 @@ export default function Game() {
       audio.current?.effect("finish");
     }
     finishedRef.current = s.run.finished;
-    const wave = Math.floor(Math.max(0, s.run.tick - 1) / 90) + 1;
+    const wave =
+      s.run.tick < 11
+        ? 0
+        : Math.min(12, Math.floor((s.run.tick - 11) / 40) + 1);
     if (wave > lastWave.current && s.run.tick < 540) {
       lastWave.current = wave;
       audio.current?.effect("rocket");
@@ -197,7 +169,7 @@ export default function Game() {
           const saved = JSON.parse(
             localStorage.getItem("moonpark-current") || "null",
           );
-          setResumeAvailable(!!saved?.state?.run);
+          setResumeAvailable(saved?.state?.run?.version === VERSION);
         } catch {}
       })
       .catch((e) => setToast(String(e)));
@@ -233,6 +205,9 @@ export default function Game() {
     };
   }, []);
   useEffect(() => {
+    audio.current?.setCinematic(screen === "intro" && !videoFailed);
+  }, [screen, videoFailed]);
+  useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(""), 6000);
     return () => clearTimeout(t);
@@ -253,10 +228,11 @@ export default function Game() {
     return () => clearInterval(timer);
   }, [screen, speed]);
   useEffect(() => {
-    if (screen !== "intro") return;
-    const start = performance.now();
+    if (screen !== "intro" || !videoFailed) return;
+    const start = performance.now(),
+      offset = videoRef.current?.currentTime ?? 0;
     const t = setInterval(() => {
-      const elapsed = (performance.now() - start) / 1000;
+      const elapsed = offset + (performance.now() - start) / 1000;
       setIntroTime(Math.min(40, elapsed));
       if (elapsed >= 40) {
         clearInterval(t);
@@ -264,7 +240,30 @@ export default function Game() {
       }
     }, 80);
     return () => clearInterval(t);
-  }, [screen]);
+  }, [screen, videoFailed]);
+  useEffect(() => {
+    if (screen !== "intro" || videoFailed) return;
+    let time = videoRef.current?.currentTime ?? 0,
+      progressAt = performance.now();
+    const timer = setInterval(() => {
+      const video = videoRef.current;
+      if (!video) return;
+      const now = performance.now();
+      if (video.currentTime > time + 0.02) {
+        time = video.currentTime;
+        progressAt = now;
+      }
+      if (
+        video.error ||
+        video.networkState === 3 ||
+        (!video.ended && now - progressAt > 8000)
+      ) {
+        video.pause();
+        setVideoFailed(true);
+      }
+    }, 250);
+    return () => clearInterval(timer);
+  }, [screen, videoFailed]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.matches("input,textarea")) return;
@@ -317,7 +316,14 @@ export default function Game() {
     if (!audioStarted.current) {
       setMuted(audio.current?.toggle() ?? true);
       audioStarted.current = true;
-      audio.current?.effect("rocket");
+    }
+    audio.current?.setCinematic(true);
+    if (videoRef.current) {
+      videoRef.current.volume = 1;
+      videoRef.current.currentTime = 0;
+      void videoRef.current.play().catch((e) => {
+        if (e.name !== "AbortError") setVideoFailed(true);
+      });
     }
     session.current?.dispose();
     session.current = null;
@@ -362,6 +368,20 @@ export default function Game() {
       );
       session.current = next;
       setScreen("playing");
+      setIntroLeaving(true);
+      const fadeStart = performance.now();
+      const fade = (now: number) => {
+        if (videoRef.current)
+          videoRef.current.volume = Math.max(0, 1 - (now - fadeStart) / 650);
+        if (now - fadeStart < 650) requestAnimationFrame(fade);
+      };
+      requestAnimationFrame(fade);
+      setTimeout(() => {
+        setIntroLeaving(false);
+        videoRef.current?.pause();
+        if (videoRef.current) videoRef.current.volume = 1;
+      }, 650);
+      audio.current?.setCinematic(false);
       setWallLeft(540);
       setLaunching(false);
       worldRef.current?.home();
@@ -377,6 +397,11 @@ export default function Game() {
   const resume = async () => {
     setLaunching(true);
     try {
+      if (!audioStarted.current) {
+        setMuted(audio.current?.toggle() ?? true);
+        audioStarted.current = true;
+      }
+      audio.current?.setCinematic(false);
       finishedRef.current = false;
       const next = await ParkSession.resume(receive);
       if (next) {
@@ -395,7 +420,8 @@ export default function Game() {
     if (!session.current || screen !== "playing") return;
     try {
       await session.current.action(command);
-      audio.current?.effect(command.kind === "build" ? "build" : "cash");
+      if (command.kind === "build") audio.current?.effect("build");
+      else if (command.kind === "partner") audio.current?.effect("contract");
       if (command.kind === "build") {
         const b = session.current.state.run.buildings.at(-1)!;
         setSelection({ kind: "building", id: b.id, x: 0, y: 0 });
@@ -489,11 +515,7 @@ export default function Game() {
           4,
     };
   }, [run]);
-  const nextRocket = run
-    ? run.tick < 451
-      ? 90 - (Math.max(0, run.tick - 1) % 90)
-      : 0
-    : 90;
+  const partnership = run ? nextPartnership(run) : undefined;
   const hint = run
     ? !run.buildings.some((b) => b.kind === "coaster" && !b.sold)
       ? "Build a mass-driver coaster. Your first visitors deserve a story to take home."
@@ -510,35 +532,47 @@ export default function Game() {
                 : "Watch the queues. New attractions, good value and fresh stock make happy visitors."
     : "";
   const introBeat =
-    introTime < 9
+    introTime < 6
       ? {
-          k: "THE NEXT GREAT ADVENTURE",
-          title: "We learned to live on the Moon.",
-          text: "Now, let's give people a reason to love it.",
+          k: "A LITTLE FARTHER FROM ORDINARY",
+          title: "We came here to build a future.",
+          text: "384,000 kilometres from the everyday.",
         }
-      : introTime < 17
+      : introTime < 14
         ? {
-            k: "A NEAR FUTURE",
-            title: "Welcome to the best day off Earth.",
-            text: "At least, that's what the brochure promises.",
+            k: "NEAR LUNAR TRANSIT / FINAL APPROACH",
+            title: "Then someone asked about the weekend.",
+            text: "Every great adventure begins with an arrival.",
           }
-        : introTime < 30
+        : introTime < 21
           ? {
-              k: "THE MASS DRIVER",
-              title: "Please keep all dreams inside the vehicle.",
-              text: "Industrial launch technology. Recreational screaming.",
+              k: "WELCOME TO MOONPARK",
+              title: "Make room for a little wonder.",
+              text: "Big dreams. Small businesses. An extraordinary day out.",
             }
-          : introTime < 35
+          : introTime < 29
             ? {
-                k: "SMALL LEAPS. BIG AMBITIONS.",
-                title: "Somebody should probably hire a mechanic.",
-                text: "The Moon has no shortage of possibilities.",
+                k: "THE MASS DRIVER",
+                title: "One small launch. One giant scream.",
+                text: "Please keep all dreams inside the vehicle.",
               }
-            : {
-                k: "YOUR PARK. YOUR OPENING DAY.",
-                title: "Let's make it happen.",
-                text: "Nine minutes. Six rockets. One extraordinary day out.",
-              };
+            : introTime < 33
+              ? {
+                  k: "YOUR NEIGHBOURS. YOUR NEXT BIG IDEA.",
+                  title: "Nobody builds a dream alone.",
+                  text: "Meet the people who will help your park thrive.",
+                }
+              : introTime < 35
+                ? {
+                    k: "LOW GRAVITY. HIGH EXPECTATIONS.",
+                    title: "And nobody mentioned the popcorn.",
+                    text: "Some jobs are bigger than they look.",
+                  }
+                : {
+                    k: "YOUR PARK. YOUR OPENING DAY.",
+                    title: "Give the Moon a reason to smile.",
+                    text: "Build something worth coming back for.",
+                  };
   return (
     <main
       className="moonpark"
@@ -551,13 +585,50 @@ export default function Game() {
         speed={screen === "playing" ? speed : 0.4}
         placement={screen === "playing" ? placement : null}
         selected={selectedBuilding?.id ?? null}
-        cinematic={screen === "intro" ? introTime : null}
+        cinematic={screen === "intro" && videoFailed ? introTime : null}
+        paused={screen === "intro" && !videoFailed}
         rideId={rideId}
         onPick={pick}
         onHover={setHover}
         onPlace={place}
         worldRef={worldRef}
       />
+      <video
+        ref={videoRef}
+        className={`mp-opening-film ${screen === "intro" && !videoFailed ? "playing" : ""} ${introLeaving ? "leaving" : ""}`}
+        poster="/video/moonpark-opening-poster.jpg"
+        preload="auto"
+        playsInline
+        muted={muted}
+        aria-hidden="true"
+        onError={() => setVideoFailed(true)}
+        onTimeUpdate={(e) => {
+          if (screen === "intro" && !videoFailed)
+            setIntroTime(e.currentTarget.currentTime);
+        }}
+        onEnded={() => {
+          if (screen === "intro") finishIntroRef.current();
+        }}
+      >
+        <source
+          src="/video/moonpark-opening-v2-mobile.mp4"
+          media="(max-width: 800px)"
+          type="video/mp4"
+        />
+        <source
+          src="/video/moonpark-opening-v2.mp4"
+          type="video/mp4"
+          onError={() => setVideoFailed(true)}
+        />
+      </video>
+      {screen === "intro" && !videoFailed && (
+        <img
+          className="mp-opening-still"
+          src="/video/moonpark-opening-poster.jpg"
+          alt="A lunar park under the stars"
+        />
+      )}
+      <MoneyFeedback state={snapshot} worldRef={worldRef} audio={audio} />
       {screen === "title" && (
         <div className="mp-title">
           <div className="mp-title-content">
@@ -594,7 +665,7 @@ export default function Game() {
               </button>
               <button
                 className="mp-secondary"
-                disabled={!initial}
+                disabled={!initial || launching}
                 onClick={() => start("near")}
               >
                 <ShieldCheck size={17} />
@@ -612,7 +683,7 @@ export default function Game() {
             </div>
             <div className="mp-title-details">
               <span>
-                <Rocket size={15} /> Six rocket arrivals
+                <Rocket size={15} /> Shuttles every 40 seconds
               </span>
               <span>
                 <Orbit size={15} /> Under 10 minutes
@@ -655,7 +726,7 @@ export default function Game() {
               {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
           </div>
-          <div className="mp-intro-captions">
+          <div className="mp-intro-captions" key={introBeat.k}>
             <span className="mp-eyebrow">{introBeat.k}</span>
             <h1>{introBeat.title}</h1>
             <p>{introBeat.text}</p>
@@ -704,7 +775,9 @@ export default function Game() {
               <Coins size={21} />
               <div>
                 <small>LUNAR CREDITS</small>
-                <strong>{money(run.cash)}</strong>
+                <strong>
+                  <CashNumber value={run.cash} />
+                </strong>
               </div>
             </div>
             <div className="mp-hud-stat">
@@ -755,12 +828,7 @@ export default function Game() {
               <Zap size={14} />
               {power.used}/{power.cap} power
             </span>
-            <span>
-              <Rocket size={14} />
-              {nextRocket
-                ? `Next rocket in ${clock(nextRocket)}`
-                : "Last rocket has landed"}
-            </span>
+            <ShuttleStatus run={run} />
             <span className="mp-chain">
               <span
                 className={`mp-live-dot ${snapshot?.mode === "near" ? "chain" : "practice"}`}
@@ -774,16 +842,40 @@ export default function Game() {
                 : "LOCAL PRACTICE"}
             </span>
           </div>
-          {screen === "playing" && !selection && !placement && !rideId && (
-            <div className="mp-advisor">
-              <span className="mp-advisor-avatar">◉</span>
-              <div>
-                <strong>MAKE IT A DAY TO REMEMBER</strong>
-                <p>{hint}</p>
+          {screen === "playing" &&
+            !selection &&
+            !placement &&
+            !rideId &&
+            !panel &&
+            (partnership && snapshot ? (
+              <div className="mp-partnership-preview">
+                <PartnershipCard
+                  compact
+                  run={run}
+                  deal={partnership}
+                  near={snapshot.mode === "near"}
+                  pending={snapshot.pending}
+                  action={(c) => void action(c)}
+                  onDetails={() => setPanel("partnerships")}
+                  receipt={snapshot.receipts?.[partnership.id]}
+                />
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="mp-advisor">
+                <span className="mp-advisor-avatar">◉</span>
+                <div>
+                  <strong>MAKE IT A DAY TO REMEMBER</strong>
+                  <p>{hint}</p>
+                </div>
+              </div>
+            ))}
           <nav className="mp-map-tools" aria-label="Park tools">
+            <button
+              aria-label="Merchant partnerships"
+              onClick={() => setPanel("partnerships")}
+            >
+              <Handshake size={20} />
+            </button>
             <button
               aria-label="Leaderboard"
               onClick={() => setPanel("leaderboard")}
@@ -1020,6 +1112,7 @@ export default function Game() {
                       run: snapshot.run,
                       record: snapshot.record,
                       transactions: snapshot.txs,
+                      partnershipReceipts: snapshot.receipts,
                     },
                     "moonpark-opening-day.json",
                   )
@@ -1040,17 +1133,21 @@ export default function Game() {
       {panel && (
         <Dialog
           title={
-            panel === "leaderboard"
-              ? "The Moon's finest five"
-              : panel === "ledger"
-                ? "Follow the lunar credits"
-                : panel === "score"
-                  ? "A great park earns its stars"
-                  : "Your first day on the Moon"
+            panel === "partnerships"
+              ? "Build a future together"
+              : panel === "leaderboard"
+                ? "The Moon's finest five"
+                : panel === "ledger"
+                  ? "Follow the lunar credits"
+                  : panel === "score"
+                    ? "A great park earns its stars"
+                    : "Your first day on the Moon"
           }
           onClose={closePanel}
         >
-          {panel === "leaderboard" ? (
+          {panel === "partnerships" && snapshot ? (
+            <PartnershipDesk state={snapshot} action={(c) => void action(c)} />
+          ) : panel === "leaderboard" ? (
             <Leaderboard
               key={player?.display_name ?? "guest"}
               entries={entries}
@@ -1112,7 +1209,8 @@ export default function Game() {
                 <li>
                   <strong>Build a reason to visit.</strong> Pick a ride, place
                   its blueprint and connect its entrance. Guests arrive by
-                  rocket every 90 simulation seconds.
+                  shuttle every 40 simulation seconds. Watch them disembark and
+                  catch their ride home.
                 </li>
                 <li>
                   <strong>Watch what people do.</strong> Queues, thirst, budgets
@@ -1142,11 +1240,13 @@ export default function Game() {
               </p>
               <div className="mp-callout">
                 <div>
-                  <strong>Prototype first. Moon magic next.</strong>
+                  <strong>Small businesses. Big dreams.</strong>
                   <p>
-                    This version tests the complete game. Final characters,
-                    assets, sound and the cinematic receive their full
-                    production pass after playtesting.
+                    Back your neighbours, keep their promises and watch a real
+                    little economy grow. The opening film, visitor shuttles and
+                    merchant partnerships are now part of the complete game;
+                    character and ride artwork can keep evolving after
+                    playtesting.
                   </p>
                 </div>
               </div>

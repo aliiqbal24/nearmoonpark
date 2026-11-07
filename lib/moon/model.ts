@@ -1,4 +1,4 @@
-export const VERSION = "moonpark-v1";
+export const VERSION = "moonpark-v2";
 export const END = 540;
 export const GOLD_SCORE = 7000;
 export const WIDTH = 32;
@@ -211,6 +211,23 @@ export type Score = {
   unique: number;
   satisfaction: number;
 };
+export type Partnership = {
+  id: number;
+  owner: string;
+  kind: Kind;
+  title: string;
+  target: number;
+  investment: number;
+  reward: number;
+  available_at: number;
+  duration: number;
+  status: "offered" | "active" | "completed" | "expired";
+  building: number | null;
+  baseline: number;
+  progress: number;
+  deadline: number;
+  settled_at: number | null;
+};
 export type Run = {
   version: string;
   tick: number;
@@ -222,6 +239,10 @@ export type Run = {
   money_supply: number;
   supplies: number[];
   consumed: number[];
+  grant_cash: number;
+  grant_escrow: number;
+  partnerships: Partnership[];
+  departures: number[];
   paths: number[];
   buildings: Building[];
   guests: Guest[];
@@ -245,6 +266,7 @@ export type Command = {
     | "toggle"
     | "rent"
     | "invest"
+    | "partner"
     | "sell";
   building?: number;
   item?: Kind;
@@ -254,6 +276,12 @@ export type Command = {
   variant?: number;
   value?: number;
 };
+export const merchantOwner = (kind: string) =>
+  ({ food: "Omar", drink: "Mina", depot: "Nia" })[kind] ?? "Lunar Logistics";
+export const partnershipGoal = (p: Partnership) =>
+  p.kind === "depot"
+    ? `${p.target} ride repair${p.target === 1 ? "" : "s"}`
+    : `${p.target} ${p.kind === "food" ? "meals" : "drinks"} sold`;
 export type Entry = {
   player_id: string;
   display_name: string;
@@ -331,7 +359,7 @@ export const guestName = (id: number) =>
   ][id % 16] +
   " " +
   ["Chen", "Park", "Ortiz", "Laurent", "Reed", "Sato"][Math.floor(id / 16) % 6];
-function gridRoute(
+export function gridRoute(
   run: Run,
   from: number,
   to: number,

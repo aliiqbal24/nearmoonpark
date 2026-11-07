@@ -168,7 +168,7 @@ export function Inspector({
         <h2>{guestName(guest.id)}</h2>
         <p className="mp-subtle">
           {["Family explorer", "Colony worker", "Thrill seeker"][guest.group]} ·
-          Rocket {Math.floor(guest.id / 16) + 1}
+          Rocket {Math.floor(guest.id / 8) + 1}
         </p>
         <blockquote>“{guest.thought}”</blockquote>
         <div className="mp-stats">
@@ -641,7 +641,7 @@ export function Results({
   return (
     <div className="mp-results">
       <span className="mp-eyebrow">
-        LAST ROCKET HOME / OPENING DAY COMPLETE
+        EVENING DEPARTURES / OPENING DAY COMPLETE
       </span>
       <div className="mp-medal">
         <Trophy size={34} />
