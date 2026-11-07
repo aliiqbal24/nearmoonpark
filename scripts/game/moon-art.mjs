@@ -40,6 +40,7 @@ try {
       alpha: true,
       preserveDrawingBuffer: true,
     });
+    renderer.setPixelRatio(2);
     renderer.setSize(512, 384);
     renderer.setClearColor(0, 0);
     renderer.toneMapping = T.ACESFilmicToneMapping;
@@ -127,9 +128,30 @@ try {
       if (portrait) {
         center.set(0, 0.68, 0);
         camera.position.set(0.6, 0.85, 3);
-        object.userData.arms[1].rotation.z = -0.6;
+        object.userData.arms[1].rotation.z = 2.1;
       } else camera.position.copy(center).add(new T.Vector3(8, 6.5, 10));
       camera.lookAt(center);
+      if (!portrait) {
+        camera.updateMatrixWorld();
+        const projected = new T.Box3();
+        for (const x of [bounds.min.x, bounds.max.x])
+          for (const y of [bounds.min.y, bounds.max.y])
+            for (const z of [bounds.min.z, bounds.max.z]) {
+              projected.expandByPoint(
+                new T.Vector3(x, y, z).applyMatrix4(camera.matrixWorldInverse),
+              );
+            }
+        const halfHeight =
+          Math.max(
+            (projected.max.y - projected.min.y) / 2,
+            ((projected.max.x - projected.min.x) * 3) / 8,
+          ) * 1.06;
+        camera.left = (-halfHeight * 4) / 3;
+        camera.right = (halfHeight * 4) / 3;
+        camera.top = halfHeight;
+        camera.bottom = -halfHeight;
+        camera.updateProjectionMatrix();
+      }
       renderer.render(scene, camera);
     }, name);
     const source = `outputs/moonpark-art/${name}.png`;
@@ -143,8 +165,12 @@ try {
       "-y",
       "-i",
       source,
+      "-lossless",
+      "1",
       "-quality",
-      "92",
+      "100",
+      "-compression_level",
+      "6",
       `public/art/${name}-v1.webp`,
     ]);
     if (encode.status) throw Error(encode.stderr.toString());

@@ -154,6 +154,10 @@ export function lunarTerrain(scene: T.Scene) {
   scene.add(deck);
 
   const rocks = new T.Group();
+  const stone = ["#69767d", "#949e9e"].map(
+    (color) =>
+      new T.MeshStandardMaterial({ color, roughness: 0.95, metalness: 0 }),
+  );
   for (let i = 0; i < 240; i++) {
     const x = (rand() - 0.5) * 170,
       z = (rand() - 0.5) * 155;
@@ -166,7 +170,7 @@ export function lunarTerrain(scene: T.Scene) {
       v.setXYZ(j, v.getX(j) * n, v.getY(j) * n, v.getZ(j) * n);
     }
     geo.computeVertexNormals();
-    const rock = new T.Mesh(geo, material(i % 2 ? "#69767d" : "#949e9e"));
+    const rock = new T.Mesh(geo, stone[i % 2]);
     rock.position.set(x, r * 0.12 - 0.15, z);
     rock.scale.y = 0.55;
     rock.rotation.set(rand(), rand() * 6, rand());

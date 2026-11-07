@@ -556,3 +556,26 @@ test("opening remains playable when the movie cannot load", async ({
     page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
   ).toBeVisible();
 });
+
+test("park renders when floating-point color targets are unavailable", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const getExtension = WebGL2RenderingContext.prototype.getExtension;
+    Object.defineProperty(WebGL2RenderingContext.prototype, "getExtension", {
+      value: function (this: WebGL2RenderingContext, name: string) {
+        return name === "EXT_color_buffer_float"
+          ? null
+          : Reflect.apply(getExtension, this, [name]);
+      },
+    });
+  });
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await open(page);
+  await expect(page.locator('[data-testid="moon-world"] canvas')).toBeVisible();
+  await expect(
+    page.getByText("This park needs WebGL.", { exact: false }),
+  ).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

@@ -67,17 +67,17 @@ export function cinematicPose(
     const u = (t - 29) / 4;
     position = path(
       [
-        [5, 2.3, 20.5],
-        [3.6, 1.8, 20],
-        [2.6, 1.6, 19.2],
+        [1.2, 1.7, 20.5],
+        [1.1, 1.65, 19.8],
+        [1, 1.6, 18.8],
       ],
       u,
     );
-    target = new T.Vector3(2, 1.15, 15.7);
+    target = new T.Vector3(2, 1.35, 15.7);
     fov = 40;
   } else if (t < 35) {
-    position = new T.Vector3(5, 2, 17.5);
-    target = new T.Vector3(3, 1, 13.5);
+    position = new T.Vector3(4.5, 2, 17);
+    target = new T.Vector3(3, 1.1, 13.5);
     fov = 43;
   } else {
     const u = (t - 35) / 5;

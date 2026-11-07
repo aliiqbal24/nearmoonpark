@@ -1,6 +1,11 @@
 import * as T from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import {
   lunarTerrain,
   spaceport,
@@ -97,6 +102,10 @@ export class MoonWorld {
     .matches;
   private slowFrames = 0;
   private sun: T.DirectionalLight;
+  private post: EffectComposer;
+  private ambientOcclusion: GTAOPass;
+  private bloom: UnrealBloomPass;
+  private postEnabled = true;
   constructor(host: HTMLElement, opts: Options) {
     this.host = host;
     this.manual = opts.autoStart === false;
@@ -105,6 +114,16 @@ export class MoonWorld {
       antialias: true,
       powerPreference: "high-performance",
     });
+    const gl = this.renderer.getContext() as WebGL2RenderingContext;
+    const graphics = gl.getExtension("WEBGL_debug_renderer_info");
+    const floatColor = !!gl.getExtension("EXT_color_buffer_float");
+    this.postEnabled =
+      floatColor &&
+      (this.manual ||
+        !graphics ||
+        !/swiftshader|llvmpipe|software/i.test(
+          gl.getParameter(graphics.UNMASKED_RENDERER_WEBGL),
+        ));
     this.renderer.setPixelRatio(
       Math.min(devicePixelRatio, host.clientWidth < 800 ? 1.25 : 1.5),
     );
@@ -112,7 +131,7 @@ export class MoonWorld {
     this.renderer.shadowMap.type = T.PCFShadowMap;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.05;
     host.appendChild(this.renderer.domElement);
     this.renderer.autoClear = false;
     this.renderer.setClearColor("#03060c");
@@ -148,7 +167,7 @@ export class MoonWorld {
     this.rideNose.visible = false;
     this.camera.add(this.rideNose);
     this.scene.add(new T.HemisphereLight("#bfd6ff", "#55516c", 0.85));
-    const sun = new T.DirectionalLight("#fff0d6", 3.8);
+    const sun = new T.DirectionalLight("#ffe4ba", 2.8);
     this.sun = sun;
     sun.position.set(-24, 30, 20);
     sun.castShadow = true;
@@ -169,12 +188,14 @@ export class MoonWorld {
     const rim = new T.DirectionalLight("#6db8ed", 1);
     rim.position.set(20, 8, -25);
     this.scene.add(rim);
-    const pmrem = new T.PMREMGenerator(this.renderer);
-    const room = new RoomEnvironment();
-    this.scene.environment = pmrem.fromScene(room, 0.04).texture;
-    this.scene.environmentIntensity = 0.38;
-    room.dispose();
-    pmrem.dispose();
+    if (floatColor) {
+      const pmrem = new T.PMREMGenerator(this.renderer);
+      const room = new RoomEnvironment();
+      this.scene.environment = pmrem.fromScene(room, 0.04).texture;
+      this.scene.environmentIntensity = 0.48;
+      room.dispose();
+      pmrem.dispose();
+    }
     this.environment();
     this.paths = new T.InstancedMesh(
       new T.BoxGeometry(1.2, 0.065, 1.2),
@@ -210,6 +231,15 @@ export class MoonWorld {
       "position",
       new T.BufferAttribute(new Float32Array(80 * 3), 3),
     );
+    const dustCanvas = document.createElement("canvas");
+    dustCanvas.width = dustCanvas.height = 64;
+    const dustPaint = dustCanvas.getContext("2d")!;
+    const puff = dustPaint.createRadialGradient(32, 32, 0, 32, 32, 31);
+    puff.addColorStop(0, "rgba(255,255,255,0.7)");
+    puff.addColorStop(0.4, "rgba(255,255,255,0.32)");
+    puff.addColorStop(1, "rgba(255,255,255,0)");
+    dustPaint.fillStyle = puff;
+    dustPaint.fillRect(0, 0, 64, 64);
     this.dust = new T.Points(
       dustGeometry,
       new T.PointsMaterial({
@@ -218,13 +248,14 @@ export class MoonWorld {
         transparent: true,
         opacity: 0,
         depthWrite: false,
+        map: new T.CanvasTexture(dustCanvas),
       }),
     );
     this.dust.position.set(0, 0.2, 22);
     this.scene.add(this.dust);
     spaceport(this.scene);
     this.founder = astronaut("#a9e4d3", 1.5);
-    this.founder.position.set(2, 0.2, 15.7);
+    this.founder.position.set(2, 0.1, 15.7);
     this.scene.add(this.founder);
     this.gagRobot.add(serviceRover("#e4b17d"));
     box(this.gagRobot, "#f7edd5", 0, 0.78, 0.44, 0.38, 0.38, 0.32);
@@ -234,9 +265,37 @@ export class MoonWorld {
       const piece = sphere(this.gagRobot, "#fff0c2", 0, 2, 0, 0.07);
       this.popcorn.push(piece);
     }
-    this.gagRobot.position.set(3, 0.2, 13.5);
+    this.gagRobot.position.set(3, 0.08, 13.5);
     this.gagRobot.visible = false;
     this.scene.add(this.gagRobot);
+    const floatSamples = (
+      floatColor
+        ? gl.getInternalformatParameter(gl.RENDERBUFFER, gl.RGBA16F, gl.SAMPLES)
+        : null
+    ) as Int32Array | null;
+    this.post = new EffectComposer(
+      this.renderer,
+      new T.WebGLRenderTarget(1, 1, {
+        type: T.HalfFloatType,
+        samples: Math.min(4, floatSamples?.[0] ?? 0),
+      }),
+    );
+    this.post.addPass(new RenderPass(this.sky, this.skyCamera));
+    const parkPass = new RenderPass(this.scene, this.camera);
+    parkPass.clear = false;
+    parkPass.clearDepth = true;
+    this.post.addPass(parkPass);
+    this.ambientOcclusion = new GTAOPass(this.scene, this.camera, 1, 1);
+    this.ambientOcclusion.blendIntensity = 0.65;
+    this.ambientOcclusion.updateGtaoMaterial({
+      radius: 0.75,
+      distanceExponent: 2,
+      thickness: 1,
+    });
+    this.post.addPass(this.ambientOcclusion);
+    this.bloom = new UnrealBloomPass(new T.Vector2(1, 1), 0.1, 0.22, 4.5);
+    this.post.addPass(this.bloom);
+    this.post.addPass(new OutputPass());
     this.resize = new ResizeObserver(() => this.layout());
     this.resize.observe(host);
     this.layout();
@@ -324,6 +383,13 @@ export class MoonWorld {
     const { width, height } = this.host.getBoundingClientRect();
     if (!width || !height) return;
     this.renderer.setSize(width, height);
+    this.post.setPixelRatio(this.renderer.getPixelRatio());
+    this.post.setSize(width, height);
+    const aoScale = this.manual ? 0.75 : 0.5;
+    this.ambientOcclusion.setSize(
+      Math.max(1, Math.round(width * this.renderer.getPixelRatio() * aoScale)),
+      Math.max(1, Math.round(height * this.renderer.getPixelRatio() * aoScale)),
+    );
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
@@ -345,7 +411,7 @@ export class MoonWorld {
     this.controls.enabled = cinematic === null && rideId === null;
     if (returnToPark) {
       this.home();
-      this.renderer.toneMappingExposure = 1.15;
+      this.renderer.toneMappingExposure = 1.05;
     }
     if (this.run !== run) {
       this.run = run;
@@ -481,7 +547,7 @@ export class MoonWorld {
             0,
             (entry.z + 0.5 - b.z - h / 2) * SCALE,
           );
-          const name = label(merchantOwner(b.kind), "#d5f1e8", 1.15, true);
+          const name = label(merchantOwner(b.kind), "#d5f1e8", 1.05, true);
           name.position.y = 1.35;
           owner.add(name);
           m.root.add(owner);
@@ -651,7 +717,7 @@ export class MoonWorld {
     const elapsed = now - this.last;
     if (!this.manual && elapsed > 0 && elapsed < 1000) {
       this.slowFrames =
-        elapsed > 48 ? this.slowFrames + 1 : Math.max(0, this.slowFrames - 1);
+        elapsed > 34 ? this.slowFrames + 1 : Math.max(0, this.slowFrames - 1);
       if (this.slowFrames >= 12 && this.renderer.getPixelRatio() > 0.75) {
         this.renderer.setPixelRatio(
           Math.max(0.75, this.renderer.getPixelRatio() * 0.75),
@@ -659,6 +725,9 @@ export class MoonWorld {
         this.sun.shadow.mapSize.set(512, 512);
         this.sun.shadow.map?.dispose();
         this.sun.shadow.map = null;
+        this.ambientOcclusion.enabled = false;
+        this.bloom.enabled = false;
+        this.postEnabled = false;
         this.slowFrames = 0;
         this.layout();
       }
@@ -682,7 +751,7 @@ export class MoonWorld {
       (cinematic !== null && cinematic >= 21 && cinematic < 29);
     this.founder.rotation.y = 0;
     (this.founder.userData.arms[1] as T.Object3D).rotation.z =
-      -0.8 + Math.sin(this.time * 5) * 0.25;
+      2.2 + Math.sin(this.time * 5) * 0.25;
     if (this.gagRobot.visible) {
       const t = cinematic! - 33;
       this.gagRobot.rotation.z = Math.sin(t * 9) * 0.07;
@@ -735,7 +804,7 @@ export class MoonWorld {
           owner.visible = building.ready_at <= run.tick;
           (owner.userData.arms[1] as T.Object3D).rotation.z = building.insolvent
             ? 0
-            : -0.35 + Math.sin(this.time * 2 + building.id) * 0.18;
+            : 0.5 + Math.sin(this.time * 2 + building.id) * 0.18;
         }
       }
       if (cinematic !== null) this.introCamera(cinematic);
@@ -764,10 +833,13 @@ export class MoonWorld {
       this.skyCamera.fov = this.camera.fov;
       this.skyCamera.updateProjectionMatrix();
     }
-    this.renderer.clear();
-    this.renderer.render(this.sky, this.skyCamera);
-    this.renderer.clearDepth();
-    this.renderer.render(this.scene, this.camera);
+    if (this.postEnabled) this.post.render(dt);
+    else {
+      this.renderer.clear();
+      this.renderer.render(this.sky, this.skyCamera);
+      this.renderer.clearDepth();
+      this.renderer.render(this.scene, this.camera);
+    }
   };
   private animateGuests(run: Run, dt: number, time: number) {
     for (const g of run.guests) {
@@ -863,7 +935,7 @@ export class MoonWorld {
           : Math.sin(time * 1.7 + g.id + i) * 0.045;
         (p.userData.arms[i] as T.Object3D).rotation.z =
           g.status === "leaving" && g.satisfaction > 70
-            ? (i ? -0.8 : 0.15) + Math.sin(time * 4 + g.id) * 0.12
+            ? (i ? 2.1 : -0.15) + Math.sin(time * 4 + g.id) * 0.12
             : (i ? -1 : 1) * 0.08;
       }
     }
@@ -910,7 +982,7 @@ export class MoonWorld {
           0.5 -
           WIDTH / 2) *
           SCALE,
-        0.25,
+        0.19,
         (T.MathUtils.lerp(
           Math.floor(from / WIDTH),
           Math.floor(to / WIDTH),
@@ -944,7 +1016,7 @@ export class MoonWorld {
     this.camera.lookAt(pose.target);
     this.camera.fov = pose.fov;
     this.camera.updateProjectionMatrix();
-    this.renderer.toneMappingExposure = 1.15 * pose.fade;
+    this.renderer.toneMappingExposure = 1.05 * pose.fade;
   }
   private animateShuttle(t: number) {
     const phase = t % 40,
@@ -994,7 +1066,7 @@ export class MoonWorld {
     this.paused = value;
     if (!value) {
       this.last = performance.now();
-      this.renderer.toneMappingExposure = 1.15;
+      this.renderer.toneMappingExposure = 1.05;
     }
   }
   setAttractMode(value: boolean) {
@@ -1029,6 +1101,8 @@ export class MoonWorld {
     disposeObject(this.scene);
     disposeObject(this.sky);
     this.scene.environment?.dispose();
+    for (const pass of this.post.passes) pass.dispose();
+    this.post.dispose();
     this.renderer.dispose();
     el.remove();
   }

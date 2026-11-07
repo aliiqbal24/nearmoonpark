@@ -8,7 +8,7 @@ export function material(color: string | number) {
   const key = String(color);
   let m = materials.get(key);
   if (!m) {
-    m = new T.MeshStandardMaterial({ color, roughness: 0.38, metalness: 0.28 });
+    m = new T.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.12 });
     materials.set(key, m);
   }
   return m;
@@ -81,8 +81,7 @@ export function batch(g: T.Object3D) {
     if (
       !(child instanceof T.Mesh) ||
       Array.isArray(child.material) ||
-      child.children.length ||
-      child.userData.keep
+      child.children.length
     )
       continue;
     const list = sets.get(child.material) ?? [];
@@ -114,6 +113,44 @@ export function batch(g: T.Object3D) {
 
 function sharedGeometry(geometry: T.BufferGeometry) {
   return geometry === boxGeo || geometry === sphereGeo || geometry === cylGeo;
+}
+
+function platformMaterial(columns: number, rows: number, accent: string) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 512;
+  const paint = canvas.getContext("2d")!;
+  paint.fillStyle = "#deded4";
+  paint.fillRect(0, 0, 512, 512);
+  const tileWidth = 512 / columns,
+    tileHeight = 512 / rows;
+  for (let x = 0; x < columns; x++)
+    for (let z = 0; z < rows; z++) {
+      const left = x * tileWidth,
+        top = z * tileHeight;
+      paint.strokeStyle = "#b7c1bc";
+      paint.lineWidth = 1;
+      paint.strokeRect(left + 3, top + 3, tileWidth - 6, tileHeight - 6);
+      paint.strokeStyle = "#f7f5e9";
+      paint.strokeRect(left + 5, top + 5, tileWidth - 10, tileHeight - 10);
+      for (const dx of [9, tileWidth - 9])
+        for (const dz of [9, tileHeight - 9]) {
+          paint.fillStyle = "#9ba9a5";
+          paint.beginPath();
+          paint.arc(left + dx, top + dz, 1.6, 0, Math.PI * 2);
+          paint.fill();
+        }
+    }
+  paint.fillStyle = accent;
+  paint.fillRect(14, 14, 5, 42);
+  paint.fillStyle = "#607577";
+  paint.font = "700 10px monospace";
+  paint.fillText("MP / LUNAR DIVISION", 26, 27);
+  paint.font = "8px monospace";
+  paint.fillText("PRESSURE DECK  //  SERVICE ACCESS", 26, 41);
+  const map = new T.CanvasTexture(canvas);
+  map.colorSpace = T.SRGBColorSpace;
+  map.anisotropy = 8;
+  return new T.MeshStandardMaterial({ map, roughness: 0.78, metalness: 0.08 });
 }
 
 function batchSuit(g: T.Object3D) {
@@ -306,6 +343,8 @@ export function astronaut(color: string, size = 1) {
   box(g, palette.navy, 0, 0.41, -0.18, 0.28, 0.32, 0.18);
   box(g, color, 0, 0.42, -0.28, 0.23, 0.26, 0.08);
   box(g, color, 0, 0.43, 0.145, 0.23, 0.16, 0.05);
+  for (const x of [-0.13, 0.13])
+    box(g, "#9caaa7", x, 0.42, 0.14, 0.026, 0.27, 0.035);
   box(g, palette.navy, 0, 0.45, 0.18, 0.15, 0.06, 0.025);
   for (const x of [-0.05, 0, 0.05]) sphere(g, "#fff2bc", x, 0.4, 0.18, 0.015);
   const legs: T.Group[] = [],
@@ -316,12 +355,14 @@ export function astronaut(color: string, size = 1) {
     box(leg, suit, 0, -0.075, 0, 0.14, 0.22, 0.15);
     box(leg, palette.rubber, 0, -0.18, 0.045, 0.16, 0.1, 0.23);
     box(leg, color, 0, -0.045, 0.08, 0.11, 0.065, 0.025);
+    cylinder(leg, "#adb9b3", 0, -0.12, 0, 0.074, 0.035);
     g.add(leg);
     legs.push(leg);
     const arm = new T.Group();
     arm.position.set(x * 0.23, 0.54, 0);
     sphere(arm, color, 0, -0.035, 0, 0.085);
     box(arm, suit, 0, -0.13, 0, 0.12, 0.19, 0.13);
+    cylinder(arm, "#adb9b3", 0, -0.2, 0, 0.071, 0.035);
     sphere(arm, palette.rubber, 0, -0.24, 0.025, 0.066);
     g.add(arm);
     arms.push(arm);
@@ -571,6 +612,12 @@ function dressBuilding(
         1.23,
       );
     parts.forEach((cart) => {
+      const nose = sphere(cart, palette.gold, 0, 0.01, 0.25, 0.32);
+      nose.scale.multiply(new T.Vector3(1, 0.5, 0.85));
+      for (const x of [-0.19, 0.19])
+        sphere(cart, palette.ivory, x, 0.04, 0.49, 0.04).material = glow(
+          palette.ivory,
+        );
       for (const x of [-0.33, 0.33]) {
         box(cart, palette.mint, x, 0.03, 0, 0.06, 0.2, 0.65);
         beam(
@@ -843,7 +890,8 @@ export function createBuilding(b: Building): AnimatedModel {
     h = base.h * SCALE;
   model.rotation.y = (-b.rotation * Math.PI) / 2;
   box(model, "#60667b", 0, 0.13, 0, w - 0.12, 0.26, h - 0.12);
-  box(model, "#d1d5d9", 0, 0.3, 0, w - 0.32, 0.1, h - 0.32);
+  box(model, "#d1d5d9", 0, 0.3, 0, w - 0.32, 0.1, h - 0.32).material =
+    platformMaterial(base.w, base.h, a.color);
   let curve: T.CatmullRomCurve3 | undefined;
   let moving: T.Group | undefined;
   if (b.kind === "bounce") {
@@ -916,17 +964,18 @@ export function createBuilding(b: Building): AnimatedModel {
       );
       const cabin = new T.Group();
       cabin.position.set(Math.cos(t) * 2.3, Math.sin(t) * 2.3, 0);
-      box(
+      const shell = sphere(
         cabin,
         ["#8eddd3", "#f6b6a0", "#b6a0ed"][i % 3],
         0,
         -0.22,
         0,
-        0.55,
-        0.6,
-        0.55,
+        0.37,
       );
-      box(cabin, "#253f54", 0, -0.12, 0.285, 0.42, 0.25, 0.02);
+      shell.scale.multiply(new T.Vector3(1, 0.9, 0.95));
+      const window = sphere(cabin, palette.navy, 0, -0.15, 0.26, 0.27);
+      window.scale.multiply(new T.Vector3(1, 0.66, 0.36));
+      window.material = glass;
       moving.add(cabin);
       parts.push(cabin);
     }
@@ -935,8 +984,8 @@ export function createBuilding(b: Building): AnimatedModel {
       [-0.34, 0.7, 0.36],
       [0.28, 0.8, 0.36],
       [0.38, 2.2, 0.05],
-      [0.29, 5.5, -0.32],
-      [-0.12, 4.9, -0.35],
+      [0.29, 9.2, -0.32],
+      [-0.12, 8.1, -0.35],
       [-0.4, 0.9, -0.16],
       [-0.2, 2.6, 0.1],
       [0.13, 2.1, -0.04],
@@ -1012,10 +1061,44 @@ export function createBuilding(b: Building): AnimatedModel {
       );
     }
     curve = new T.CatmullRomCurve3(points, true);
-    const track = new T.Mesh(
-      new T.TubeGeometry(curve, 64, 0.25, 8, true),
-      material("#6e6874"),
+    const road: number[] = [],
+      uv: number[] = [];
+    for (let i = 0; i < 96; i++) {
+      const corners = [
+        i / 96,
+        i / 96,
+        (i + 1) / 96,
+        i / 96,
+        (i + 1) / 96,
+        (i + 1) / 96,
+      ];
+      const sides = [-1, 1, -1, 1, 1, -1];
+      corners.forEach((u, j) => {
+        const p = curve!.getPointAt(u),
+          tangent = curve!.getTangentAt(u);
+        const cross = new T.Vector3(-tangent.z, 0, tangent.x)
+          .normalize()
+          .multiplyScalar(sides[j] * 0.42);
+        road.push(p.x + cross.x, p.y - 0.025, p.z + cross.z);
+        uv.push(u * 16, sides[j] * 0.5 + 0.5);
+      });
+    }
+    const roadGeometry = new T.BufferGeometry();
+    roadGeometry.setAttribute(
+      "position",
+      new T.Float32BufferAttribute(road, 3),
     );
+    roadGeometry.setAttribute("uv", new T.Float32BufferAttribute(uv, 2));
+    roadGeometry.computeVertexNormals();
+    const track = new T.Mesh(
+      roadGeometry,
+      new T.MeshStandardMaterial({
+        color: "#425761",
+        roughness: 0.85,
+        side: T.DoubleSide,
+      }),
+    );
+    track.receiveShadow = true;
     model.add(track);
     moving = new T.Group();
     model.add(moving);
