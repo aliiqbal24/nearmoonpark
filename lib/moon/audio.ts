@@ -1,87 +1,163 @@
+type Effect =
+  "build" | "cash" | "rocket" | "finish" | "error" | "reward" | "contract";
+const TRACKS = [
+  "lunar-day",
+  "build",
+  "cash",
+  "rocket",
+  "finish",
+  "error",
+  "reward",
+  "contract",
+] as const;
+
 export class MoonAudio {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
-  private timer: ReturnType<typeof setInterval> | null = null;
-  private step = 0;
+  private musicGain: GainNode | null = null;
+  private effectsGain: GainNode | null = null;
+  private music: AudioBufferSourceNode | null = null;
+  private buffers = new Map<string, AudioBuffer>();
+  private voices = new Set<AudioBufferSourceNode>();
+  private loading: Promise<void> | null = null;
+  private abort = new AbortController();
   private cinematic = false;
+  private disposed = false;
+  private lastEffect = new Map<Effect, number>();
+  muted = true;
+
+  private visibility = () => {
+    if (!this.context || this.disposed) return;
+    if (document.hidden) void this.context.suspend().catch(() => {});
+    else if (!this.muted) void this.context.resume().catch(() => {});
+  };
+
   setCinematic(value: boolean) {
     this.cinematic = value;
-  }
-  muted = true;
-  toggle() {
-    this.muted = !this.muted;
-    if (!this.context) {
-      this.context = new AudioContext();
-      this.master = this.context.createGain();
-      this.master.connect(this.context.destination);
-    }
-    void this.context.resume();
-    this.master!.gain.setTargetAtTime(
-      this.muted ? 0 : 0.18,
+    if (!this.context) return;
+    this.musicGain?.gain.setTargetAtTime(
+      value ? 0 : 0.32,
+      this.context.currentTime,
+      0.3,
+    );
+    this.effectsGain?.gain.setTargetAtTime(
+      value ? 0 : 0.68,
       this.context.currentTime,
       0.15,
     );
-    if (!this.timer) this.timer = setInterval(() => this.music(), 650);
+  }
+
+  toggle() {
+    if (this.disposed) return true;
+    try {
+      if (!this.context) {
+        const context = new AudioContext();
+        this.context = context;
+        this.master = context.createGain();
+        this.master.gain.value = 0;
+        this.musicGain = context.createGain();
+        this.effectsGain = context.createGain();
+        const limiter = context.createDynamicsCompressor();
+        limiter.threshold.value = -12;
+        limiter.knee.value = 12;
+        limiter.ratio.value = 4;
+        limiter.attack.value = 0.005;
+        limiter.release.value = 0.2;
+        this.musicGain.connect(this.master);
+        this.effectsGain.connect(this.master);
+        this.master.connect(limiter);
+        limiter.connect(context.destination);
+        this.setCinematic(this.cinematic);
+        document.addEventListener("visibilitychange", this.visibility);
+      }
+      this.muted = !this.muted;
+      if (!this.muted) void this.context.resume().catch(() => {});
+      this.master!.gain.setTargetAtTime(
+        this.muted ? 0 : 0.7,
+        this.context.currentTime,
+        0.12,
+      );
+      void this.load();
+    } catch {
+      // An unavailable audio device must never prevent opening a park.
+      this.muted = true;
+    }
     return this.muted;
   }
-  private tone(
-    f: number,
-    duration: number,
-    type: OscillatorType = "triangle",
-    volume = 0.4,
-  ) {
-    if (!this.context || !this.master || this.muted) return;
-    const ctx = this.context,
-      o = ctx.createOscillator(),
-      g = ctx.createGain();
-    o.type = type;
-    o.frequency.value = f;
-    g.gain.setValueAtTime(0, ctx.currentTime);
-    g.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    o.connect(g);
-    g.connect(this.master);
-    o.start();
-    o.stop(ctx.currentTime + duration + 0.05);
+
+  private load() {
+    if (this.loading || !this.context) return this.loading;
+    const context = this.context;
+    this.loading = Promise.allSettled(
+      TRACKS.map(async (name) => {
+        const response = await fetch(`/audio/${name}-v1.mp3`, {
+          signal: this.abort.signal,
+        });
+        if (!response.ok) return;
+        const buffer = await context.decodeAudioData(
+          await response.arrayBuffer(),
+        );
+        if (this.disposed) return;
+        this.buffers.set(name, buffer);
+        if (name === "lunar-day") {
+          this.music = context.createBufferSource();
+          this.music.buffer = buffer;
+          this.music.loop = true;
+          this.music.connect(this.musicGain!);
+          this.music.start();
+        }
+      }),
+    ).then(() => {});
+    return this.loading;
   }
-  private music() {
-    if (this.cinematic) return;
-    const notes = [
-      261.63, 329.63, 392, 440, 392, 329.63, 293.66, 329.63, 261.63, 392,
-      523.25, 440, 392, 329.63, 293.66, 196,
-    ];
-    if (this.step % 4 === 0)
-      this.tone(
-        [130.81, 110, 146.83, 98][Math.floor(this.step / 4) % 4],
-        2.4,
-        "sine",
-        0.35,
-      );
-    this.tone(notes[this.step % notes.length], 0.9, "triangle", 0.12);
-    this.step++;
+
+  effect(kind: Effect) {
+    const context = this.context;
+    const buffer = this.buffers.get(kind);
+    if (
+      !context ||
+      !buffer ||
+      !this.effectsGain ||
+      this.muted ||
+      this.cinematic ||
+      this.disposed ||
+      document.hidden
+    )
+      return;
+    const now = context.currentTime;
+    if (
+      now - (this.lastEffect.get(kind) ?? -10) <
+      (kind === "cash" ? 0.32 : 0.09)
+    )
+      return;
+    if (this.voices.size >= 12) return;
+    this.lastEffect.set(kind, now);
+    const voice = context.createBufferSource();
+    voice.buffer = buffer;
+    // Subtle variations keep repeated receipts and construction tactile.
+    voice.playbackRate.value =
+      kind === "cash" || kind === "build" ? 0.97 + Math.random() * 0.06 : 1;
+    const gain = context.createGain();
+    gain.gain.value = kind === "rocket" ? 0.48 : kind === "cash" ? 0.5 : 0.75;
+    voice.connect(gain);
+    gain.connect(this.effectsGain);
+    this.voices.add(voice);
+    voice.onended = () => {
+      this.voices.delete(voice);
+      voice.disconnect();
+      gain.disconnect();
+    };
+    voice.start();
   }
-  effect(
-    kind:
-      "build" | "cash" | "rocket" | "finish" | "error" | "reward" | "contract",
-  ) {
-    if (kind === "build") {
-      this.tone(392, 0.15);
-      setTimeout(() => this.tone(523, 0.25), 90);
-    } else if (kind === "rocket") {
-      this.tone(55, 2, "sawtooth", 0.07);
-      this.tone(82, 2, "sine", 0.2);
-    } else if (kind === "contract") {
-      this.tone(293.66, 0.16, "triangle", 0.25);
-      setTimeout(() => this.tone(440, 0.4, "sine", 0.3), 100);
-    } else if (kind === "finish" || kind === "reward") {
-      [261.63, 329.63, 392, 523.25].forEach((n, i) =>
-        setTimeout(() => this.tone(n, 1.5), i * 130),
-      );
-    } else if (kind === "error") this.tone(160, 0.14, "sine", 0.18);
-    else this.tone(880, 0.12, "sine", 0.06);
-  }
+
   dispose() {
-    if (this.timer) clearInterval(this.timer);
-    void this.context?.close();
+    this.disposed = true;
+    this.abort.abort();
+    document.removeEventListener("visibilitychange", this.visibility);
+    this.music?.stop();
+    for (const voice of this.voices) voice.stop();
+    this.voices.clear();
+    this.buffers.clear();
+    void this.context?.close().catch(() => {});
   }
 }

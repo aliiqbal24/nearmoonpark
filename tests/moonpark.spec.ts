@@ -948,3 +948,105 @@ test("practice refresh resumes automatically even after its old wall-clock deadl
   expect(restored.run.finished).toBe(false);
   expect(restored.deadline).toBeGreaterThan(Date.now());
 });
+
+test("landing presents NEAR ownership and keeps entry controls clear on compact screens", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Open your park", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Explore NEAR Protocol", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Your park. Your designs. Yours on NEAR.", { exact: true }),
+  ).toBeVisible();
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 1280, height: 720 },
+    { width: 390, height: 844 },
+    { width: 390, height: 667 },
+  ]) {
+    await page.setViewportSize(size);
+    const content = await page.locator(".mp-title-content").boundingBox();
+    const footer = await page.locator(".mp-title-footer").boundingBox();
+    const play = await page
+      .getByRole("button", { name: "Open your park", exact: true })
+      .boundingBox();
+    expect(content!.y + content!.height).toBeLessThan(footer!.y);
+    expect(play!.y + play!.height).toBeLessThan(size.height);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(size.width);
+  }
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await open(page);
+  await expect(
+    page.getByRole("button", { name: "Zoom in", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Zoom out", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Reset camera", exact: true }),
+  ).toBeVisible();
+});
+
+test("sound package decodes in stereo and the sound control stays consistent into play", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const checks: { duration: number; channels: number }[] = [];
+    Object.defineProperty(window, "moonAudioCheck", { value: checks });
+    const NativeContext = window.AudioContext;
+    window.AudioContext = class extends NativeContext {
+      override async decodeAudioData(bytes: ArrayBuffer) {
+        const buffer = await super.decodeAudioData(bytes);
+        checks.push({
+          duration: buffer.duration,
+          channels: buffer.numberOfChannels,
+        });
+        return buffer;
+      }
+    };
+  });
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Enable sound", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Enable sound", exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { moonAudioCheck: unknown[] }).moonAudioCheck
+            .length,
+      ),
+    )
+    .toBe(8);
+  const tracks = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          moonAudioCheck: { duration: number; channels: number }[];
+        }
+      ).moonAudioCheck,
+  );
+  expect(tracks.every((track) => track.channels === 2)).toBe(true);
+  expect(tracks.some((track) => Math.abs(track.duration - 80) < 0.1)).toBe(
+    true,
+  );
+  await page.getByRole("button", { name: "Mute sound", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Practice offline", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Skip intro", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Enable sound", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Enable sound", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Mute sound", exact: true }),
+  ).toBeVisible();
+});

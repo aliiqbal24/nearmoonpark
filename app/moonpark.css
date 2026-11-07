@@ -113,35 +113,6 @@
   border-radius: 20px;
   text-align: center;
 }
-.mp-title {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    #101b30f5 0%,
-    #101b30d9 29%,
-    #101b3060 48%,
-    transparent 69%
-  );
-  pointer-events: none;
-}
-.mp-title-content {
-  position: absolute;
-  left: 6%;
-  top: 7%;
-  width: 520px;
-  pointer-events: auto;
-  color: #f7f1df;
-}
-.mp-title-top {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  font-size: 9px;
-  letter-spacing: 1.8px;
-  color: #bcc9d7;
-  margin-bottom: 55px;
-}
 .mp-near {
   border: 1px solid #badad573;
   border-radius: 9px;
@@ -154,123 +125,500 @@
   color: #b1e4d4;
   transform: rotate(-5deg);
 }
-.mp-title .mp-eyebrow {
-  color: #a9d8ce;
+.mp-title {
+  position: absolute;
+  inset: 0;
+  color: #faf4df;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, #071822 0%, #07182200 24%),
+    linear-gradient(
+      90deg,
+      #071622f5 0%,
+      #091b2ce8 25%,
+      #091b2c8c 43%,
+      #091b2c08 67%
+    ),
+    linear-gradient(180deg, #030c19b0, transparent 22%);
+}
+.mp-title button {
+  pointer-events: auto;
+}
+.mp-title-masthead {
+  position: absolute;
+  inset: 30px 4.5% auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.moonpark .mp-title-protocol {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0;
+  color: #f8f5ea;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.mp-title-protocol .mp-near-mark {
+  gap: 10px;
+}
+.mp-title-protocol .mp-near-mark svg {
+  width: 29px;
+  height: 29px;
+}
+.mp-title-protocol .mp-near-mark b {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+}
+.mp-title-protocol > span:last-child {
+  padding-left: 14px;
+  border-left: 1px solid #d4e8e047;
   font-size: 10px;
-  margin-bottom: 18px;
+  letter-spacing: 2px;
+  line-height: 1.5;
+}
+.mp-title-protocol > span:last-child > span {
+  display: block;
+  color: #a6c7be;
+  font-size: 7px;
+  letter-spacing: 1.8px;
+}
+.mp-title-masthead nav {
+  display: flex;
+  gap: 10px;
+}
+.mp-title-masthead nav button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e0e9e2;
+  background: #06141e60;
+  border-color: #c6e3da2a;
+  padding: 9px 13px;
+  font-size: 11px;
+  backdrop-filter: blur(12px);
+}
+.mp-title-content {
+  position: absolute;
+  left: 4.5%;
+  top: 18%;
+  width: min(450px, 43%);
+  pointer-events: auto;
+}
+.mp-title .mp-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #addfcc;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin: 0 0 19px;
+}
+.mp-title .mp-eyebrow > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b4f5c7;
+  box-shadow: 0 0 14px #b4f5c75c;
 }
 .mp-title h1 {
-  font-size: clamp(70px, 7.8vw, 119px);
+  font-size: clamp(82px, 8.1vw, 132px);
+  line-height: 0.87;
   letter-spacing: -7px;
-  line-height: 0.88;
-  margin: 0 0 28px;
-  font-weight: 700;
-  text-shadow: 0 7px 28px #09142680;
+  margin: 0 0 25px;
+  text-shadow: 0 5px 32px #00000035;
 }
 .mp-title h1 > span {
   display: block;
-  color: #f5cf8b;
-  position: relative;
+  color: #f5ce82;
 }
 .mp-title-star {
   display: inline-block;
-  font-size: 55px;
+  color: #a8dfc8;
+  font-size: 0.43em;
+  margin: 0 0 0 12px;
   vertical-align: top;
-  margin: 5px 0 0 12px;
-  color: #b1e4d4;
+  line-height: 1.1;
 }
 .mp-title-tagline {
-  font-size: 25px;
-  line-height: 1.3 !important;
-  letter-spacing: -0.8px;
-  margin-bottom: 18px;
+  margin: 0 0 16px;
+  font-size: clamp(23px, 2.2vw, 33px);
+  line-height: 1.2 !important;
+  letter-spacing: -1px;
 }
 .mp-title-description {
-  font-size: 13px;
-  color: #c0c8d4;
+  max-width: 360px;
+  margin: 0 0 23px;
+  font-size: 12px;
+  color: #b7c6cd;
   line-height: 1.8 !important;
-  margin-bottom: 27px;
 }
 .mp-title-actions {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
-  max-width: 460px;
+  align-items: center;
+  gap: 11px;
 }
 .mp-title-actions .mp-primary {
-  min-width: 210px;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 50px;
+  min-width: 215px;
+  width: 215px;
+  background: #b8efcb;
+  border-color: #b8efcb;
+  box-shadow:
+    0 4px 0 #3e7664,
+    0 8px 25px #00000026;
+  border-radius: 9px;
+  font-size: 13px;
 }
 .mp-title .mp-secondary {
-  background: #e9f2f00b;
-  color: #dce7e5;
-  border-color: #b3c7d040;
+  min-height: 49px;
+  color: #e8eee4;
+  background: #ffffff06;
+  border-color: #b1cac344;
   box-shadow: none;
+  font-size: 11px;
+  padding: 12px 15px;
 }
 .mp-title .mp-resume {
+  width: 100%;
   border: 0;
-  background: none;
-  color: #b6e0d4;
+  background: transparent;
+  padding: 7px 0 0;
+  color: #a8e2c9;
+  text-align: left;
   font-size: 11px;
-  padding-left: 0;
 }
 .mp-title-details {
   display: flex;
-  gap: 18px;
-  margin: 27px 0 22px;
-  color: #acb8c7;
-  font-size: 10px;
+  flex-wrap: wrap;
+  gap: 9px 18px;
+  margin-top: 23px;
+  font-size: 9px;
+  color: #9caeb9;
 }
 .mp-title-details span {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+}
+.mp-title-details strong {
+  color: #e3e8d7;
+  font-weight: 500;
+}
+.mp-title-details svg {
+  color: #94b6af;
+  margin-right: 2px;
 }
 .mp-title-links {
   display: flex;
-  gap: 14px;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin-top: 18px;
 }
 .mp-title-links button {
-  padding: 8px 0;
-  border: 0 !important;
-  background: none !important;
-  font-size: 11px;
-  color: #e9dbb6;
-}
-.mp-title-built {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
-  margin-top: 28px;
-  font-size: 8px;
-  letter-spacing: 1.2px;
-  color: #8c9bb1;
-}
-.mp-title-built i {
-  width: 3px;
-  height: 3px;
-  background: #8c9bb1;
-  border-radius: 50%;
+  gap: 6px;
+  padding: 7px 0;
+  border: 0;
+  background: transparent;
+  color: #d8cda8;
+  font-size: 10px;
 }
 .mp-title-caption {
   position: absolute;
-  right: 5%;
-  bottom: 6%;
-  color: #f2eddf;
+  right: 4.5%;
+  bottom: 19%;
   text-align: right;
-  text-shadow: 0 2px 10px #0009;
+  text-shadow: 0 2px 14px #000;
 }
-.mp-title-caption span {
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: #b8ddda;
+.mp-title-caption > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 8px;
+  letter-spacing: 1.8px;
+  color: #bbdacc;
+}
+.mp-title-caption i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c7ebcd;
 }
 .mp-title-caption p {
-  font-size: 16px;
-  margin-top: 9px;
+  font-size: 17px;
   line-height: 1.5;
+  margin-top: 8px;
 }
+.mp-title-footer {
+  position: absolute;
+  bottom: 25px;
+  left: 4.5%;
+  right: 4.5%;
+  padding-top: 20px;
+  border-top: 1px solid #afcfc137;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
+}
+.mp-title-ownership {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.mp-title-ownership > .mp-near-mark {
+  color: #b2e8ce;
+}
+.mp-title-ownership > .mp-near-mark svg {
+  width: 30px;
+  height: 30px;
+}
+.mp-title-ownership strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.mp-title-ownership p {
+  margin: 4px 0 0;
+  color: #92a7af;
+  font-size: 10px;
+}
+.moonpark .mp-title-economy {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid #c3dec547;
+  background: #c3dec50a;
+  color: #d6e9d5;
+  padding: 11px 14px;
+  font-size: 11px;
+}
+.mp-title-built {
+  width: 100%;
+  color: #7f969e;
+  font-size: 7px;
+  letter-spacing: 1.4px;
+}
+@media (max-height: 820px) and (min-width: 721px) {
+  .mp-title-masthead {
+    top: 22px;
+  }
+  .mp-title-content {
+    top: 17%;
+  }
+  .mp-title h1 {
+    font-size: clamp(74px, 7.3vw, 100px);
+    margin-bottom: 18px;
+  }
+  .mp-title .mp-eyebrow {
+    margin-bottom: 13px;
+  }
+  .mp-title-tagline {
+    font-size: 25px;
+    margin-bottom: 12px;
+  }
+  .mp-title-description {
+    margin-bottom: 16px;
+  }
+  .mp-title-details {
+    margin-top: 16px;
+  }
+  .mp-title-links {
+    margin-top: 9px;
+  }
+  .mp-title-footer {
+    bottom: 18px;
+    padding-top: 14px;
+    gap: 10px;
+  }
+}
+@media (max-width: 1050px) and (min-width: 721px) {
+  .mp-title-content {
+    width: 47%;
+  }
+  .mp-title-actions {
+    gap: 8px;
+  }
+  .mp-title-actions .mp-primary {
+    min-width: 195px;
+    width: 195px;
+    gap: 9px;
+    padding: 13px 15px;
+  }
+  .mp-title .mp-secondary {
+    padding: 12px;
+  }
+  .mp-title-caption {
+    max-width: 260px;
+  }
+}
+@media (max-width: 720px) {
+  .mp-title {
+    background: linear-gradient(
+      0deg,
+      #071622 0%,
+      #071622f5 14%,
+      #071622a6 38%,
+      #071622c7 72%,
+      #07162285 100%
+    );
+  }
+  .mp-title-masthead {
+    inset: 22px 6% auto;
+    gap: 8px;
+  }
+  .mp-title-protocol .mp-near-mark svg {
+    width: 22px;
+    height: 22px;
+  }
+  .mp-title-protocol .mp-near-mark b {
+    font-size: 25px;
+  }
+  .mp-title-protocol > span:last-child {
+    display: none;
+  }
+  .mp-title-masthead nav {
+    gap: 7px;
+  }
+  .mp-title-masthead nav button {
+    font-size: 10px;
+    padding: 8px 9px;
+  }
+  .mp-title-masthead nav button:last-child > span {
+    display: none;
+  }
+  .mp-title-content {
+    top: 17%;
+    left: 6%;
+    width: 88%;
+  }
+  .mp-title .mp-eyebrow {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+    margin-bottom: 17px;
+  }
+  .mp-title h1 {
+    font-size: clamp(76px, 21vw, 110px);
+    letter-spacing: -5px;
+    margin-bottom: 22px;
+  }
+  .mp-title-tagline {
+    font-size: 25px;
+  }
+  .mp-title-description {
+    max-width: 305px;
+    font-size: 11px;
+    margin-bottom: 21px;
+  }
+  .mp-title-actions {
+    gap: 9px;
+  }
+  .mp-title-actions .mp-primary {
+    min-width: 195px;
+    width: 195px;
+    gap: 10px;
+    padding: 13px 15px;
+    font-size: 12px;
+  }
+  .mp-title .mp-secondary {
+    font-size: 10px;
+    padding: 12px;
+  }
+  .mp-title-details {
+    font-size: 8px;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .mp-title-details svg {
+    width: 11px;
+  }
+  .mp-title-links {
+    margin-top: 12px;
+    gap: 10px 18px;
+  }
+  .mp-title-links button {
+    font-size: 9px;
+  }
+  .mp-title-caption {
+    display: none;
+  }
+  .mp-title-footer {
+    left: 6%;
+    right: 6%;
+    bottom: 20px;
+    padding-top: 16px;
+    gap: 12px;
+  }
+  .mp-title-ownership {
+    gap: 10px;
+  }
+  .mp-title-ownership > .mp-near-mark svg {
+    width: 22px;
+    height: 22px;
+  }
+  .mp-title-ownership strong {
+    font-size: 11px;
+  }
+  .mp-title-ownership p {
+    max-width: 265px;
+    font-size: 9px;
+  }
+  .moonpark .mp-title-economy {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 10px;
+    margin-left: 32px;
+    gap: 10px;
+  }
+  .mp-title-built {
+    font-size: 6px;
+    letter-spacing: 0.8px;
+  }
+}
+@media (max-width: 720px) and (max-height: 760px) {
+  .mp-title-content {
+    top: 15%;
+  }
+  .mp-title h1 {
+    font-size: 72px;
+    margin-bottom: 15px;
+  }
+  .mp-title .mp-eyebrow {
+    margin-bottom: 11px;
+  }
+  .mp-title-tagline {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  .mp-title-description {
+    margin-bottom: 16px;
+  }
+  .mp-title-details {
+    margin-top: 14px;
+  }
+  .mp-title-links {
+    margin-top: 8px;
+  }
+  .mp-title-footer {
+    bottom: 15px;
+    padding-top: 12px;
+    gap: 9px;
+  }
+}
+
 .mp-hud {
   position: absolute;
   left: 16px;
@@ -1286,15 +1634,6 @@
   background: #b5e3d0;
 }
 @media (min-height: 1000px) {
-  .mp-title-content {
-    top: 12%;
-  }
-  .mp-title-top {
-    margin-bottom: 65px;
-  }
-  .mp-title-actions {
-    margin-top: 34px;
-  }
 }
 @media (max-width: 1100px) {
   .mp-hud-stat {
@@ -1309,16 +1648,6 @@
   }
   .mp-hud-stat strong {
     font-size: 21px;
-  }
-  .mp-title-content {
-    left: 5%;
-    width: 450px;
-  }
-  .mp-title h1 {
-    font-size: 95px;
-  }
-  .mp-title-top {
-    margin-bottom: 36px;
   }
   .mp-build-area {
     left: 68px;
@@ -1342,33 +1671,6 @@
   }
 }
 @media (max-height: 760px) and (min-width: 721px) {
-  .mp-title-content {
-    top: 5%;
-  }
-  .mp-title-top {
-    margin-bottom: 25px;
-  }
-  .mp-title h1 {
-    font-size: 83px;
-    margin-bottom: 18px;
-  }
-  .mp-title-tagline {
-    font-size: 21px;
-    margin-bottom: 12px;
-  }
-  .mp-title-description {
-    margin-bottom: 17px;
-    font-size: 12px;
-  }
-  .mp-title-details {
-    margin: 20px 0 12px;
-  }
-  .mp-title-built {
-    margin-top: 16px;
-  }
-  .mp-title-actions .mp-primary {
-    padding: 11px 16px;
-  }
   .mp-inspector {
     top: 125px;
     bottom: 15px;
@@ -1392,67 +1694,6 @@
   }
 }
 @media (max-width: 720px) {
-  .mp-title {
-    background: linear-gradient(90deg, #101b30ed, #101b3099 65%, #101b3040);
-  }
-  .mp-title-content {
-    left: 7%;
-    right: 7%;
-    width: auto;
-    top: 5%;
-  }
-  .mp-title-top {
-    font-size: 7px;
-    letter-spacing: 1.2px;
-    margin-bottom: 40px;
-  }
-  .mp-title h1 {
-    font-size: 92px;
-    letter-spacing: -6px;
-  }
-  .mp-title-star {
-    font-size: 40px;
-    margin-top: 5px;
-    margin-left: 9px;
-  }
-  .mp-title-tagline {
-    font-size: 22px;
-  }
-  .mp-title-description {
-    font-size: 12px;
-  }
-  .mp-title-actions {
-    max-width: 360px;
-  }
-  .mp-title-actions .mp-primary {
-    min-width: 185px;
-  }
-  .mp-title .mp-secondary {
-    font-size: 11px;
-  }
-  .mp-title-details {
-    font-size: 8px;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 25px;
-  }
-  .mp-title-details svg {
-    width: 12px;
-  }
-  .mp-title-links {
-    gap: 15px;
-  }
-  .mp-title-links button {
-    font-size: 10px;
-  }
-  .mp-title-built {
-    font-size: 6px;
-    letter-spacing: 0.8px;
-    margin-top: 18px;
-  }
-  .mp-title-caption {
-    display: none;
-  }
   .mp-hud {
     left: 8px;
     right: 8px;
@@ -2494,9 +2735,6 @@ button.mp-chain .mp-near-mark svg {
   width: 15px;
   height: 15px;
 }
-.mp-title-description .mp-near-mark {
-  font-size: 12px;
-}
 .mp-concession-income {
   padding: 10px 0;
   color: #397d6d;
@@ -2562,27 +2800,6 @@ button.mp-chain .mp-near-mark svg {
   .mp-near-economy > .mp-callout {
     flex-wrap: wrap;
   }
-}
-
-.mp-title-economy {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 18px;
-  font-size: 11px;
-  color: #eef6e5;
-  opacity: 0.85;
-}
-.mp-title-economy .mp-near-mark svg {
-  width: 15px;
-  height: 15px;
-}
-.mp-title-top .mp-near-mark {
-  color: #e8f2e4;
-}
-.mp-title-top .mp-near-mark b {
-  font-size: 18px;
-  letter-spacing: -0.8px;
 }
 .mp-subhud > button.mp-chain {
   background: #172938ee;
@@ -2654,23 +2871,6 @@ button.mp-chain .mp-near-mark svg {
   box-shadow:
     inset 0 1px 0 #fff7d9,
     0 2px 3px #b1a47f30;
-}
-.mp-title h1 {
-  text-shadow:
-    0 2px 0 #d1d9cb,
-    0 12px 45px #0005;
-}
-.mp-title h1 > span {
-  background: linear-gradient(180deg, #ffe6ac, #eeb965);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: none;
-  filter: drop-shadow(0 2px 0 #a98145);
-}
-.mp-title-star {
-  color: #a9e4d3;
-  filter: drop-shadow(0 0 14px #8ad9cc40);
 }
 .moonpark .mp-primary {
   background: linear-gradient(180deg, #c1f2db, #8bd3bb);
@@ -2843,13 +3043,6 @@ button.mp-chain .mp-near-mark svg {
   flex-shrink: 0;
 }
 @media (max-width: 720px) {
-  .mp-title {
-    background: linear-gradient(90deg, #101b30f0, #101b30bf 65%, #101b3080);
-  }
-  .mp-title-description {
-    color: #d7e3df;
-    text-shadow: 0 1px 6px #071622;
-  }
 }
 .mp-owner-portrait {
   overflow: hidden;
@@ -3282,4 +3475,43 @@ button.mp-chain .mp-near-mark svg {
 .mp-public-park:has(.mp-ride-return) .mp-visit-header,
 .mp-public-park:has(.mp-ride-return) .mp-visit-card {
   display: none;
+}
+
+/* Keep the entry controls and NEAR explanation reachable in short windows. */
+@media (max-height: 820px) {
+  .mp-title {
+    overflow-y: auto;
+    pointer-events: auto;
+  }
+  .mp-title-masthead {
+    position: relative;
+    inset: auto;
+    margin: 22px 4.5% 0;
+  }
+  .mp-title-content {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin: 38px 4.5% 36px;
+  }
+  .mp-title-footer {
+    position: relative;
+    inset: auto;
+    margin: 0 4.5% 20px;
+  }
+  .mp-title-caption {
+    display: none;
+  }
+}
+@media (max-height: 820px) and (max-width: 720px) {
+  .mp-title-masthead {
+    margin-left: 6%;
+    margin-right: 6%;
+  }
+  .mp-title-content {
+    margin: 40px 6% 36px;
+  }
+  .mp-title-footer {
+    margin: 0 6% 20px;
+  }
 }

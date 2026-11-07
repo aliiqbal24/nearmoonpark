@@ -1,3 +1,4 @@
+import { createSky, SUN_DIRECTION } from "./sky";
 import { PALETTES } from "./parks";
 import * as T from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -170,7 +171,7 @@ export class MoonWorld {
     this.scene.add(new T.HemisphereLight("#bfd6ff", "#55516c", 0.85));
     const sun = new T.DirectionalLight("#ffe4ba", 2.8);
     this.sun = sun;
-    sun.position.set(-24, 30, 20);
+    sun.position.copy(SUN_DIRECTION).multiplyScalar(60);
     sun.castShadow = true;
     const shadowSize = this.manual
       ? 4096
@@ -178,8 +179,9 @@ export class MoonWorld {
         ? 1024
         : 2048;
     sun.shadow.mapSize.set(shadowSize, shadowSize);
-    sun.shadow.camera.left = -30;
-    sun.shadow.camera.right = 30;
+    sun.target.position.set(0, 0, 0);
+    sun.shadow.camera.left = -36;
+    sun.shadow.camera.right = 36;
     sun.shadow.camera.top = 30;
     sun.shadow.camera.bottom = -30;
     sun.shadow.normalBias = 0.035;
@@ -312,71 +314,7 @@ export class MoonWorld {
   }
   private environment() {
     lunarTerrain(this.scene);
-    let seed = 4242;
-    const rand = () => {
-      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-      return seed / 4294967296;
-    };
-    const stars = new Float32Array(650 * 3);
-    for (let i = 0; i < 650; i++) {
-      const direction = new T.Vector3(
-        (rand() - 0.5) * 2,
-        rand(),
-        (rand() - 0.5) * 2,
-      )
-        .normalize()
-        .multiplyScalar(1800);
-      stars.set([direction.x, direction.y, direction.z], i * 3);
-    }
-    const geo = new T.BufferGeometry();
-    geo.setAttribute("position", new T.BufferAttribute(stars, 3));
-    this.sky.add(
-      new T.Points(
-        geo,
-        new T.PointsMaterial({
-          color: "#d9e8ff",
-          size: 1.35,
-          sizeAttenuation: true,
-          transparent: true,
-          opacity: 0.8,
-        }),
-      ),
-    );
-    const earth = new T.Mesh(
-      new T.SphereGeometry(24, 64, 48),
-      new T.MeshPhongMaterial({
-        color: "#ffffff",
-        shininess: 8,
-        specular: "#25394b",
-      }),
-    );
-    earth.position.copy(
-      new T.Vector3(-0.33, 0.12, -0.93).normalize().multiplyScalar(1400),
-    );
-    earth.rotation.y = -1.5;
-    this.sky.add(earth);
-    this.earth = earth;
-    new T.TextureLoader().load("/textures/earth.jpg", (tex) => {
-      tex.colorSpace = T.SRGBColorSpace;
-      (earth.material as T.MeshPhongMaterial).map = tex;
-      earth.material.needsUpdate = true;
-    });
-    const atmosphere = new T.Mesh(
-      new T.SphereGeometry(24.55, 48, 32),
-      new T.MeshBasicMaterial({
-        color: "#8ed8ff",
-        transparent: true,
-        opacity: 0.13,
-        side: T.BackSide,
-        depthWrite: false,
-      }),
-    );
-    atmosphere.position.copy(earth.position);
-    this.sky.add(atmosphere);
-    this.sky.add(new T.AmbientLight("#879dc0", 0.07));
-    const earthSun = new T.DirectionalLight("#fff7e8", 3);
-    earthSun.position.set(-600, 500, 700);
-    this.sky.add(earthSun);
+    this.earth = createSky(this.sky);
     observatory(this.scene);
   }
 
@@ -409,7 +347,8 @@ export class MoonWorld {
     this.cinematic = cinematic;
     this.cinematicAt = performance.now();
     this.rideId = rideId;
-    this.controls.enabled = cinematic === null && rideId === null;
+    this.controls.enabled =
+      cinematic === null && rideId === null && !this.attractMode;
     if (returnToPark) {
       this.home();
       this.renderer.toneMappingExposure = 1.05;
@@ -626,8 +565,7 @@ export class MoonWorld {
     )
       valid = false;
     const mesh = this.ghost.children[0] as
-      | T.Mesh<T.BoxGeometry, T.MeshBasicMaterial>
-      | undefined;
+      T.Mesh<T.BoxGeometry, T.MeshBasicMaterial> | undefined;
     mesh?.material.color.set(valid ? "#a5f6dd" : "#ed9b91");
   }
   private pointerDown = (e: PointerEvent) => {
@@ -704,7 +642,7 @@ export class MoonWorld {
     if (e.key === "Home") this.home();
   };
   private clampPan() {
-    if (this.manual) return;
+    if (this.manual || this.attractMode) return;
     const target = this.controls.target;
     const distance = this.camera.position.distanceTo(target);
     const reach = T.MathUtils.clamp(
@@ -1147,9 +1085,11 @@ export class MoonWorld {
   setAttractMode(value: boolean) {
     if (this.attractMode === value) return;
     this.attractMode = value;
+    this.controls.enabled =
+      !value && this.cinematic === null && this.rideId === null;
     if (value) {
-      this.camera.position.set(23, 12, 32);
-      this.controls.target.set(-6, 1, -2);
+      this.camera.position.set(29, 12, 39);
+      this.controls.target.set(-11, 1, -5);
       this.controls.update();
     } else this.home();
   }

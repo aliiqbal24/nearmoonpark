@@ -11,8 +11,6 @@ import {
   Trophy,
   Volume2,
   VolumeX,
-  Plus,
-  Minus,
   Home,
   BookOpen,
   ReceiptText,
@@ -450,6 +448,7 @@ export default function Game() {
         if (videoRef.current) videoRef.current.volume = 1;
       }, 650);
       audio.current?.setCinematic(false);
+      if (credentials) audio.current?.effect("contract");
       setWallLeft(540);
       setLaunching(false);
       worldRef.current?.home();
@@ -709,28 +708,52 @@ export default function Game() {
       )}
       <MoneyFeedback state={snapshot} worldRef={worldRef} audio={audio} />
       {screen === "title" && (
-        <div className="mp-title">
-          <div className="mp-title-content">
-            <div className="mp-title-top">
+        <section className="mp-title" aria-label="Welcome to Moonpark">
+          <header className="mp-title-masthead">
+            <button
+              className="mp-title-protocol"
+              onClick={() => setPanel("near")}
+              aria-label="Explore NEAR Protocol"
+            >
               <NearMark word />
-              <span>A LIVING ECONOMY ON NEAR</span>
-            </div>
-            <p className="mp-eyebrow">WELCOME TO YOUR NEXT GREAT IDEA</p>
+              <span>
+                PROTOCOL<span>BUILT ON NEAR</span>
+              </span>
+            </button>
+            <nav aria-label="Welcome menu">
+              <button disabled={!initial} onClick={() => setPanel("help")}>
+                <BookOpen size={15} /> How to play
+              </button>
+              <button
+                onClick={toggleAudio}
+                aria-label={muted ? "Enable sound" : "Mute sound"}
+              >
+                {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+                <span>{muted ? "Sound off" : "Sound on"}</span>
+              </button>
+            </nav>
+          </header>
+          <div className="mp-title-content">
+            <p className="mp-eyebrow">
+              <span /> THE MOON IS OPEN FOR BUSINESS
+            </p>
             <h1>
               MOON
               <span>
-                PARK<span className="mp-title-star">✦</span>
+                PARK
+                <span className="mp-title-star" aria-hidden="true">
+                  ✦
+                </span>
               </span>
             </h1>
             <p className="mp-title-tagline">
-              The Moon&apos;s best day out.
+              Low gravity.
               <br />
-              Built by you.
+              High expectations.
             </p>
             <p className="mp-title-description">
-              Launch a coaster. Welcome the rockets.
-              <br />
-              Design a signature ride. Make this little Moon your own.
+              Build extraordinary rides. Welcome rocketloads of guests. Turn a
+              little lunar plot into everyone&apos;s favourite escape.
             </p>
             <div className="mp-title-actions">
               <button
@@ -738,8 +761,8 @@ export default function Game() {
                 disabled={!initial || !cfg || launching}
                 onClick={() => start("near", !!player && challengeOpen)}
               >
-                <Play size={18} />
-                {initial ? "Open your park" : "Preparing your lunar plot…"}
+                <Play size={17} />
+                {initial ? "Open your park" : "Preparing…"}
                 <ArrowUpRight size={18} />
               </button>
               <button
@@ -747,7 +770,6 @@ export default function Game() {
                 disabled={!initial || launching}
                 onClick={() => start("practice")}
               >
-                <Play size={17} />
                 Practice offline
               </button>
               {resumeAvailable && (
@@ -762,13 +784,12 @@ export default function Game() {
             </div>
             <div className="mp-title-details">
               <span>
-                <Rocket size={15} /> Shuttles every 40 seconds
+                <Orbit size={14} />
+                <strong>9 minutes</strong> to make your mark
               </span>
               <span>
-                <Orbit size={15} /> Under 10 minutes
-              </span>
-              <span>
-                <Users size={15} /> A living NPC economy
+                <Rocket size={14} />
+                <strong>96 guests.</strong> One big dream.
               </span>
             </div>
             <div className="mp-title-links">
@@ -776,35 +797,47 @@ export default function Game() {
                 disabled={!initial}
                 onClick={() => setPanel("leaderboard")}
               >
-                <Trophy size={15} /> Top five & conditional prizes
-              </button>
-              <button disabled={!initial} onClick={() => setPanel("help")}>
-                How to play
+                <Trophy size={14} /> Top five & conditional prizes
               </button>
               <button disabled={!initial} onClick={() => setPanel("near")}>
-                My park & ride exchange
+                My park & ride exchange <ArrowUpRight size={13} />
               </button>
             </div>
-            <span className="mp-title-built">
-              NEAR ACCOUNT & GAS INCLUDED <i /> TESTNET · NO CASH VALUE
+          </div>
+          <aside className="mp-title-caption">
+            <span>
+              <i /> A LITTLE FARTHER FROM ORDINARY
             </span>
+            <p>
+              Your next great idea.
+              <br />
+              384,000 km from the everyday.
+            </p>
+          </aside>
+          <footer className="mp-title-footer">
+            <div className="mp-title-ownership">
+              <NearMark />
+              <div>
+                <strong>Your park. Your designs. Yours on NEAR.</strong>
+                <p>
+                  Own your park, license signature rides and leave a verified
+                  score.
+                </p>
+              </div>
+            </div>
             <button
               className="mp-title-economy"
+              aria-label="How NEAR drives your park"
               disabled={!initial}
               onClick={() => setPanel("near")}
             >
-              <NearMark /> How NEAR drives your park <ArrowUpRight size={13} />
+              Explore the economy <ArrowUpRight size={16} />
             </button>
-          </div>
-          <div className="mp-title-caption">
-            <span>YOUR FUTURE PARK</span>
-            <p>
-              One small step for guests.
-              <br />
-              One giant leap for the gift shop.
-            </p>
-          </div>
-        </div>
+            <span className="mp-title-built">
+              NEAR TESTNET · ACCOUNT & GAS INCLUDED · NO CASH VALUE
+            </span>
+          </footer>
+        </section>
       )}
       {screen === "intro" && (
         <div className="mp-intro">
@@ -870,7 +903,7 @@ export default function Game() {
             >
               <span>☾</span>
               <strong>
-                MOONPARK<small>A NEAR FUTURE</small>
+                MOONPARK<small>BUILT ON NEAR PROTOCOL</small>
               </strong>
             </button>
             <div className="mp-hud-stat mp-cash">
@@ -956,10 +989,10 @@ export default function Game() {
               />
               {snapshot?.mode === "near"
                 ? snapshot.pending
-                  ? `NEAR · ${snapshot.pending} saving`
+                  ? `NEAR Protocol · ${snapshot.pending} saving`
                   : snapshot.record?.ranked
-                    ? "NEAR · RANKED"
-                    : "NEAR · LIVE ECONOMY"
+                    ? "NEAR Protocol · RANKED"
+                    : "NEAR Protocol · LIVE ECONOMY"
                 : "LOCAL PRACTICE"}
             </button>
           </div>
@@ -1007,18 +1040,6 @@ export default function Game() {
               {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
             </button>
             <span />
-            <button
-              aria-label="Zoom in"
-              onClick={() => worldRef.current?.zoom(0.8)}
-            >
-              <Plus size={19} />
-            </button>
-            <button
-              aria-label="Zoom out"
-              onClick={() => worldRef.current?.zoom(1.25)}
-            >
-              <Minus size={19} />
-            </button>
             <button
               aria-label="Reset camera"
               onClick={() => worldRef.current?.home()}
@@ -1267,6 +1288,7 @@ export default function Game() {
                 action={(c) => void action(c)}
                 onPlay={() => start("near", !!player && challengeOpen)}
                 onUse={(b, receipt) => {
+                  if (receipt) audio.current?.effect("contract");
                   setPlacement({
                     kind: b.kind,
                     rotation: 0,

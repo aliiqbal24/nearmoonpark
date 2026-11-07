@@ -130,7 +130,9 @@ export function MoneyFeedback({
       return next.slice(-8);
     });
     if (performance.now() - lastSound.current > 650) {
-      audio.current?.effect("cash");
+      audio.current?.effect(
+        additions.some((burst) => burst.big) ? "reward" : "cash",
+      );
       lastSound.current = performance.now();
     }
   }, [state, worldRef, audio]);

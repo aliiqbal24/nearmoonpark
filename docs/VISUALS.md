@@ -22,6 +22,14 @@ The renderer uses HDR multisampling, ground-truth ambient occlusion, restrained 
 
 Actual positive ledger receipts produce coin trails and sounds. Partnership completion has a distinct larger reward. Nearby receipts merge at high speed, and the cash HUD counts smoothly. The park canvas stays mounted through decisions and closing.
 
+## In-game sound and sky
+
+The landing page uses a lunar-resort layout with a live staged park, clear play controls and prominent NEAR Protocol ownership information. The official NEAR symbol is reproduced from the [NEAR website](https://near.org/).
+
+The distant sky combines seeded star layers, a generated Milky Way texture, a solar disc with optical glare and a textured Earth. The visible sun and scene lighting share a direction. All celestial elements stay in the separate sky scene, preserving their apparent distance during camera movement.
+
+An original eighty-second stereo score uses a thirty-two-bar arrangement of warm pads, plucked chords, celesta, bass and quiet percussion. Construction, coins, engine rumble, closing and confirmed NEAR licenses have layered effects. The Web Audio mixer separates music and effects, ducks them during the opening film, limits peaks, bounds concurrent effects and suspends sound in background tabs. Run `python scripts/game/moon-audio.py` with NumPy and FFmpeg to rebuild the MP3 assets. Editable WAV masters are retained in ignored `outputs/moonpark-audio/`. The soundtrack master measures −17.1 LUFS with a −2.8 dBFS true peak before the in-game mix.
+
 ## Editable sources
 
 - `lib/moon/assets.ts` contains original rides, characters, spacecraft, service robots, signs and material batching.
