@@ -30,6 +30,8 @@ The distant sky combines seeded star layers, a generated Milky Way texture, a so
 
 An original eighty-second stereo score uses a thirty-two-bar arrangement of warm pads, plucked chords, celesta, bass and quiet percussion. Construction, coins, engine rumble, closing and confirmed NEAR licenses have layered effects. The Web Audio mixer separates music and effects, ducks them during the opening film, limits peaks, bounds concurrent effects and suspends sound in background tabs. Run `python scripts/game/moon-audio.py` with NumPy and FFmpeg to rebuild the MP3 assets. Editable WAV masters are retained in ignored `outputs/moonpark-audio/`. The soundtrack master measures −17.1 LUFS with a −2.8 dBFS true peak before the in-game mix.
 
+The landing, sky and audio refresh passed fifteen browser checks covering a complete practice day, compact layouts, first landing, film playback and fallback, published-park visits, recovery and audio controls. All eight audio assets decoded as stereo in the browser. Audio levels and peak headroom were checked technically. A subjective listening review remains outstanding.
+
 ## Editable sources
 
 - `lib/moon/assets.ts` contains original rides, characters, spacecraft, service robots, signs and material batching.
