@@ -135,8 +135,8 @@ export function createSky(sky: T.Scene) {
     new T.SphereGeometry(24, 64, 48),
     new T.MeshPhongMaterial({
       color: "#ffffff",
-      emissive: "#426387",
-      emissiveIntensity: 0.16,
+      emissive: "#ffffff",
+      emissiveIntensity: 0.23,
       shininess: 8,
       specular: "#25394b",
     }),
