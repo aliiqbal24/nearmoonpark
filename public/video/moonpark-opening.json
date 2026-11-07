@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "duration": 40,
   "fps": 30,
   "frames": 1200,
@@ -14,18 +14,18 @@
   "sceneSource": "lib/moon/world.ts",
   "variants": [
     {
-      "file": "/video/moonpark-opening-v2.mp4",
+      "file": "/video/moonpark-opening-v3.mp4",
       "width": 1920,
       "height": 1080,
-      "bytes": 13311218,
-      "sha256": "d947195da5c014bb7a8e9aaf30c54d84d3d317935355b529df5ae3f410d29e3e"
+      "bytes": 15845464,
+      "sha256": "ac1c888c84750d16dcca2e9db99cdc2cb2a408db6fcc75efc811ad971f3d03f6"
     },
     {
-      "file": "/video/moonpark-opening-v2-mobile.mp4",
-      "width": 1280,
-      "height": 720,
-      "bytes": 7032362,
-      "sha256": "e0a7cf8fece7601ed5195a145ee4708eed730674e357974a44ad647cdac1d76c"
+      "file": "/video/moonpark-opening-v3-mobile.mp4",
+      "width": 720,
+      "height": 1280,
+      "bytes": 8309758,
+      "sha256": "8af10046084a01cf0d73d616c5fcd6d493b60690b9d0ed052ac76dae8d5fbd84"
     }
   ]
 }

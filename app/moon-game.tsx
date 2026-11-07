@@ -3,11 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Rocket,
   Orbit,
-  FerrisWheel,
-  Car,
-  Store,
-  CupSoda,
-  Wrench,
   Zap,
   Route,
   Coins,
@@ -81,16 +76,6 @@ import {
 import type { MoonWorld as World } from "@/lib/moon/world";
 import "./moonpark.css";
 
-const ICONS = {
-  bounce: Orbit,
-  wheel: FerrisWheel,
-  rover: Car,
-  coaster: Rocket,
-  food: Store,
-  drink: CupSoda,
-  depot: Wrench,
-  solar: Zap,
-};
 type Player = { player_id: string; display_name: string };
 type Screen = "title" | "intro" | "playing" | "results";
 type Panel =
@@ -613,6 +598,7 @@ export default function Game() {
         selected={selectedBuilding?.id ?? null}
         cinematic={screen === "intro" && videoFailed ? introTime : null}
         paused={screen === "intro" && !videoFailed}
+        attractMode={screen === "title"}
         rideId={rideId}
         onPick={pick}
         onHover={setHover}
@@ -622,7 +608,7 @@ export default function Game() {
       <video
         ref={videoRef}
         className={`mp-opening-film ${screen === "intro" && !videoFailed ? "playing" : ""} ${introLeaving ? "leaving" : ""}`}
-        poster="/video/moonpark-opening-poster.jpg"
+        poster="/video/moonpark-opening-v3-poster.jpg"
         preload="auto"
         playsInline
         muted={muted}
@@ -637,12 +623,12 @@ export default function Game() {
         }}
       >
         <source
-          src="/video/moonpark-opening-v2-mobile.mp4"
+          src="/video/moonpark-opening-v3-mobile.mp4"
           media="(max-width: 800px)"
           type="video/mp4"
         />
         <source
-          src="/video/moonpark-opening-v2.mp4"
+          src="/video/moonpark-opening-v3.mp4"
           type="video/mp4"
           onError={() => setVideoFailed(true)}
         />
@@ -650,7 +636,7 @@ export default function Game() {
       {screen === "intro" && !videoFailed && (
         <img
           className="mp-opening-still"
-          src="/video/moonpark-opening-poster.jpg"
+          src="/video/moonpark-opening-v3-poster.jpg"
           alt="A lunar park under the stars"
         />
       )}
@@ -906,7 +892,9 @@ export default function Game() {
               </div>
             ) : (
               <div className="mp-advisor">
-                <span className="mp-advisor-avatar">◉</span>
+                <span className="mp-advisor-avatar">
+                  <img src="/art/advisor-v1.webp" alt="" />
+                </span>
                 <div>
                   <strong>MAKE IT A DAY TO REMEMBER</strong>
                   <p>{hint}</p>
@@ -1036,7 +1024,6 @@ export default function Game() {
               </div>
               <div className="mp-build-dock">
                 {CATALOG.map((a) => {
-                  const Icon = ICONS[a.kind];
                   return (
                     <button
                       className={`mp-blueprint ${placement?.kind === a.kind ? "selected" : ""}`}
@@ -1057,7 +1044,11 @@ export default function Game() {
                         className="mp-blueprint-art"
                         style={{ color: a.color }}
                       >
-                        <Icon size={27} />
+                        <img
+                          src={`/art/${a.kind}-v1.webp`}
+                          alt=""
+                          draggable={false}
+                        />
                       </span>
                       <strong>{a.name}</strong>
                       <small>

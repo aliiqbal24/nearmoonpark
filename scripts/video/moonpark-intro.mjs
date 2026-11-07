@@ -3,7 +3,8 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdir, writeFile } from "node:fs/promises";
 const base = process.env.GAME_URL || "http://127.0.0.1:5173",
-  sample = process.argv.includes("--sample");
+  sample = process.argv.includes("--sample"),
+  portrait = process.argv.includes("--portrait");
 await mkdir("outputs/moonpark-cinema", { recursive: true });
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
@@ -12,10 +13,15 @@ const browser = await chromium.launch({
     "--no-sandbox",
     "--enable-unsafe-swiftshader",
     "--disable-dev-shm-usage",
+    ...(process.env.MOON_CAPTURE_GPU === "1"
+      ? ["--enable-gpu", "--use-angle=vulkan", "--ignore-gpu-blocklist"]
+      : []),
   ],
 });
 const page = await browser.newPage({
-  viewport: { width: 1920, height: 1080 },
+  viewport: portrait
+    ? { width: 720, height: 1280 }
+    : { width: 1920, height: 1080 },
   deviceScaleFactor: 1,
 });
 try {
@@ -69,7 +75,7 @@ try {
     for (const t of [2, 8, 12, 16, 20, 23, 26, 30, 34, 38]) {
       await render(t);
       await page.screenshot({
-        path: `outputs/moonpark-cinema/sample-${t}.png`,
+        path: `outputs/moonpark-cinema/sample-${portrait ? "portrait-" : ""}${t}.png`,
       });
     }
     console.log("Cinematic samples captured");
@@ -98,7 +104,7 @@ try {
         "-an",
         "-movflags",
         "+faststart",
-        "outputs/moonpark-cinema/picture-master.mp4",
+        `outputs/moonpark-cinema/picture-${portrait ? "mobile-" : ""}master.mp4`,
       ],
       { stdio: ["pipe", "inherit", "inherit"] },
     );
@@ -114,7 +120,9 @@ try {
     ff.stdin.end();
     const [code] = await once(ff, "exit");
     if (code !== 0) throw Error(`FFmpeg exited ${code}`);
-    console.log("Rendered 1080p / 30fps picture master");
+    console.log(
+      `Rendered ${portrait ? "720×1280 portrait" : "1920×1080"} / 30fps picture master`,
+    );
   }
 } finally {
   await browser.close();

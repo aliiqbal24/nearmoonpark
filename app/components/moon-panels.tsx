@@ -166,7 +166,9 @@ export function Inspector({
             <X size={17} />
           </button>
         </div>
-        <div className={`mp-avatar group-${guest.group}`}>◉</div>
+        <div className={`mp-avatar group-${guest.group}`}>
+          <img src={`/art/guest-${guest.group}-v1.webp`} alt="" />
+        </div>
         <h2>{guestName(guest.id)}</h2>
         <p className="mp-subtle">
           {["Family explorer", "Colony worker", "Thrill seeker"][guest.group]} ·
@@ -232,15 +234,7 @@ export function Inspector({
         </button>
       </div>
       <div className="mp-building-icon" style={{ color: a.color }}>
-        {b.kind === "coaster"
-          ? "↗"
-          : b.kind === "wheel"
-            ? "◉"
-            : b.kind === "solar"
-              ? "☀"
-              : b.kind === "food"
-                ? "◒"
-                : "✦"}
+        <img src={`/art/${b.kind}-v1.webp`} alt="" />
       </div>
       <h2>{a.name}</h2>
       <span className={`mp-status ${b.powered ? "open" : ""}`}>{status}</span>

@@ -12,6 +12,14 @@ export default defineConfig({
         "--no-sandbox",
         "--enable-unsafe-swiftshader",
         "--disable-dev-shm-usage",
+        ...(process.env.MOON_CAPTURE_GPU === "1"
+          ? [
+              "--enable-gpu",
+              "--use-angle=vulkan",
+              "--ignore-gpu-blocklist",
+              "--disable-accelerated-video-decode",
+            ]
+          : []),
       ],
     },
   },

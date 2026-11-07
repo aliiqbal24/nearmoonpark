@@ -28,7 +28,25 @@ test("opening day: build, connect, tune, economy, ride camera and closing", asyn
   test.setTimeout(120000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (message) => {
+    if (message.text().includes("BufferGeometryUtils"))
+      errors.push(message.text());
+  });
   await open(page);
+  await expect(page.locator(".mp-blueprint-art img")).toHaveCount(8);
+  await expect
+    .poll(() =>
+      page
+        .locator(".mp-blueprint-art img")
+        .evaluateAll((images) =>
+          images.every(
+            (image) =>
+              (image as HTMLImageElement).complete &&
+              (image as HTMLImageElement).naturalWidth > 0,
+          ),
+        ),
+    )
+    .toBe(true);
   const canvas = page.locator('[data-testid="moon-world"] canvas');
   await expect(canvas).toBeVisible();
   await canvas.evaluate((e) =>
@@ -84,11 +102,12 @@ test("opening day: build, connect, tune, economy, ride camera and closing", asyn
   await page.screenshot({ path: "outputs/moon-gameplay.png" });
   await page.clock.install();
   await page.clock.fastForward(550000);
+  // The replay catches up through bounded async batches after this clock jump.
   await expect(
     page
       .locator(".mp-results")
       .getByText("OPENING DAY COMPLETE", { exact: false }),
-  ).toBeVisible({ timeout: 30000 });
+  ).toBeVisible({ timeout: 60000 });
   await expect(
     page.locator("canvas[data-session-canvas=original]"),
   ).toHaveCount(1);
@@ -447,6 +466,12 @@ test("merchant partnership reserves funding, rewards service, and shuttles carry
   ).toBe(18000);
   await page.getByRole("button", { name: "Close panel" }).click();
   await page.getByRole("button", { name: "4×", exact: true }).click();
+  // Observe the running timer before jumping it, so the speed effect is installed.
+  await expect
+    .poll(() =>
+      page.locator("main.moonpark").getAttribute("data-tick").then(Number),
+    )
+    .toBeGreaterThan(12);
   await page.clock.install();
   await page.clock.fastForward(60000);
   await expect

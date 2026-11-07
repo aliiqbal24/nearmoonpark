@@ -270,7 +270,7 @@ export function PartnershipCard({
     >
       <div className="mp-partner-heading">
         <span className="mp-owner-portrait">
-          {deal.owner[0]}
+          <img src={`/art/owner-${deal.kind}-v1.webp`} alt="" />
           <i>✦</i>
         </span>
         <div>

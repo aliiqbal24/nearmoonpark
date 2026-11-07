@@ -9,6 +9,7 @@ type Props = {
   selected: number | null;
   cinematic: number | null;
   paused?: boolean;
+  attractMode?: boolean;
   rideId: number | null;
   onPick: (d: Detail | null) => void;
   onHover: (d: Detail | null) => void;
@@ -46,6 +47,7 @@ export default function MoonWorld(props: Props) {
             p.rideId,
           );
         world.setPaused(!!p.paused);
+        world.setAttractMode(!!p.attractMode);
       } catch (e) {
         console.error(e);
         setFailed(true);
@@ -68,6 +70,7 @@ export default function MoonWorld(props: Props) {
         props.rideId,
       );
     props.worldRef.current?.setPaused(!!props.paused);
+    props.worldRef.current?.setAttractMode(!!props.attractMode);
   }, [
     props.run,
     props.speed,
@@ -77,6 +80,7 @@ export default function MoonWorld(props: Props) {
     props.rideId,
     props.worldRef,
     props.paused,
+    props.attractMode,
   ]);
   return (
     <div className="moon-world" data-testid="moon-world" ref={host}>

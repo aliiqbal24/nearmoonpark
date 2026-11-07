@@ -12,8 +12,8 @@ function run(args, capture = false) {
   return r.stdout;
 }
 await mkdir("public/video", { recursive: true });
-const desktop = "public/video/moonpark-opening-v2.mp4",
-  mobile = "public/video/moonpark-opening-v2-mobile.mp4";
+const desktop = "public/video/moonpark-opening-v3.mp4",
+  mobile = "public/video/moonpark-opening-v3-mobile.mp4";
 if (!process.argv.includes("--verify-only")) {
   run([
     "-i",
@@ -48,9 +48,13 @@ if (!process.argv.includes("--verify-only")) {
   ]);
   run([
     "-i",
+    "outputs/moonpark-cinema/picture-mobile-master.mp4",
+    "-i",
     desktop,
-    "-vf",
-    "scale=1280:720",
+    "-map",
+    "0:v:0",
+    "-map",
+    "1:a:0",
     "-c:v",
     "libx264",
     "-preset",
@@ -77,12 +81,12 @@ run([
   "1",
   "-q:v",
   "2",
-  "public/video/moonpark-opening-poster.jpg",
+  "public/video/moonpark-opening-v3-poster.jpg",
 ]);
 const variants = [];
 for (const [file, width, height] of [
   [desktop, 1920, 1080],
-  [mobile, 1280, 720],
+  [mobile, 720, 1280],
 ]) {
   const p = spawnSync(
     "ffprobe",
@@ -114,7 +118,7 @@ await writeFile(
   "public/video/moonpark-opening.json",
   JSON.stringify(
     {
-      version: 2,
+      version: 3,
       duration: 40,
       fps: 30,
       frames: 1200,

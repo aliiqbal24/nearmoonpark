@@ -1,5 +1,12 @@
 import * as T from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import {
+  lunarTerrain,
+  spaceport,
+  observatory,
+  walkwayMaterial,
+} from "./scenery";
 import {
   SCALE,
   box,
@@ -9,7 +16,9 @@ import {
   material,
   astronaut,
   rocket,
+  serviceRover,
   createBuilding,
+  disposeObject,
   type AnimatedModel,
 } from "./assets";
 import {
@@ -41,6 +50,7 @@ export class MoonWorld {
   private earth: T.Mesh | null = null;
   private manual = false;
   private paused = false;
+  private attractMode = false;
   private dust: T.Points | null = null;
   private gangway: T.Group;
 
@@ -85,6 +95,8 @@ export class MoonWorld {
   private updateTime = 0;
   private reducedMotion = matchMedia("(prefers-reduced-motion: reduce)")
     .matches;
+  private slowFrames = 0;
+  private sun: T.DirectionalLight;
   constructor(host: HTMLElement, opts: Options) {
     this.host = host;
     this.manual = opts.autoStart === false;
@@ -135,11 +147,10 @@ export class MoonWorld {
     box(this.rideNose, "#263a4d", 0, -0.55, -1.34, 1.35, 0.08, 0.08);
     this.rideNose.visible = false;
     this.camera.add(this.rideNose);
-    this.scene.add(
-      new T.HemisphereLight("#bfd6ff", "#55516c", this.manual ? 1.15 : 2.2),
-    );
+    this.scene.add(new T.HemisphereLight("#bfd6ff", "#55516c", 0.85));
     const sun = new T.DirectionalLight("#fff0d6", 3.8);
-    sun.position.set(-20, this.manual ? 22 : 40, 15);
+    this.sun = sun;
+    sun.position.set(-24, 30, 20);
     sun.castShadow = true;
     const shadowSize = this.manual
       ? 4096
@@ -151,15 +162,23 @@ export class MoonWorld {
     sun.shadow.camera.right = 30;
     sun.shadow.camera.top = 30;
     sun.shadow.camera.bottom = -30;
-    sun.shadow.normalBias = 0.06;
+    sun.shadow.normalBias = 0.035;
+    sun.shadow.bias = -0.00015;
+    sun.shadow.radius = 1.25;
     this.scene.add(sun);
     const rim = new T.DirectionalLight("#6db8ed", 1);
     rim.position.set(20, 8, -25);
     this.scene.add(rim);
+    const pmrem = new T.PMREMGenerator(this.renderer);
+    const room = new RoomEnvironment();
+    this.scene.environment = pmrem.fromScene(room, 0.04).texture;
+    this.scene.environmentIntensity = 0.38;
+    room.dispose();
+    pmrem.dispose();
     this.environment();
     this.paths = new T.InstancedMesh(
       new T.BoxGeometry(1.2, 0.065, 1.2),
-      material("#d8cbb2"),
+      walkwayMaterial(),
       WIDTH * HEIGHT,
     );
     this.paths.count = 0;
@@ -203,31 +222,14 @@ export class MoonWorld {
     );
     this.dust.position.set(0, 0.2, 22);
     this.scene.add(this.dust);
-    const pad = new T.Group();
-    cylinder(pad, "#343e55", 0, 0, 0, 4.3, 0.18);
-    const ring = new T.Mesh(
-      new T.TorusGeometry(3.5, 0.08, 6, 48),
-      new T.MeshBasicMaterial({ color: "#8eddd3" }),
-    );
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.12;
-    pad.add(ring);
-    pad.position.set(0, 0, 22);
-    this.scene.add(pad);
-    const gate = new T.Group();
-    box(gate, "#c4cbd6", -1.8, 1.6, 0, 0.3, 3.2, 0.5);
-    box(gate, "#c4cbd6", 1.8, 1.6, 0, 0.3, 3.2, 0.5);
-    const sign = label("MOONPARK", "#f6d991", 5);
-    sign.position.y = 3;
-    gate.add(sign);
-    gate.position.set(-0.6, 0, 15.1);
-    this.scene.add(gate);
+    spaceport(this.scene);
     this.founder = astronaut("#a9e4d3", 1.5);
     this.founder.position.set(2, 0.2, 15.7);
     this.scene.add(this.founder);
-    box(this.gagRobot, "#e4b17d", 0, 0.35, 0, 0.7, 0.5, 0.7);
-    sphere(this.gagRobot, "#334d64", 0, 0.8, 0, 0.3);
-    box(this.gagRobot, "#d6dde4", 0, 0.7, 0.4, 1, 0.08, 0.6);
+    this.gagRobot.add(serviceRover("#e4b17d"));
+    box(this.gagRobot, "#f7edd5", 0, 0.78, 0.44, 0.38, 0.38, 0.32);
+    for (const x of [-0.13, 0, 0.13])
+      box(this.gagRobot, "#d87f67", x, 0.78, 0.61, 0.055, 0.34, 0.02);
     for (let i = 0; i < 25; i++) {
       const piece = sphere(this.gagRobot, "#fff0c2", 0, 2, 0, 0.07);
       this.popcorn.push(piece);
@@ -235,8 +237,6 @@ export class MoonWorld {
     this.gagRobot.position.set(3, 0.2, 13.5);
     this.gagRobot.visible = false;
     this.scene.add(this.gagRobot);
-    for (let z = 15; z < 21; z++)
-      box(this.scene, "#c9c6bd", 0, 0.03, z, 2.5, 0.07, 0.9);
     this.resize = new ResizeObserver(() => this.layout());
     this.resize.observe(host);
     this.layout();
@@ -251,80 +251,12 @@ export class MoonWorld {
     opts.onReady();
   }
   private environment() {
-    const ground = new T.Mesh(
-      new T.PlaneGeometry(1800, 1800, 100, 100),
-      material("#8c8b9c"),
-    );
-    const terrain = ground.geometry.attributes.position;
-    for (let i = 0; i < terrain.count; i++) {
-      const x = terrain.getX(i),
-        z = terrain.getY(i),
-        distance = Math.hypot(x, z);
-      const hills = Math.max(0, Math.min(1, (distance - 55) / 120));
-      terrain.setZ(
-        i,
-        hills *
-          (5 +
-            Math.sin(x * 0.024) * Math.cos(z * 0.017) * 8 +
-            Math.sin(x * 0.047 + z * 0.019) * 3),
-      );
-    }
-    ground.geometry.computeVertexNormals();
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.2;
-    ground.receiveShadow = true;
-    this.scene.add(ground);
-    box(
-      this.scene,
-      "#555c73",
-      0,
-      -0.07,
-      0,
-      WIDTH * SCALE + 0.8,
-      0.25,
-      HEIGHT * SCALE + 0.8,
-    );
-    box(this.scene, "#9597a7", 0, 0.04, 0, WIDTH * SCALE, 0.08, HEIGHT * SCALE);
-    let seed = 90210;
+    lunarTerrain(this.scene);
+    let seed = 4242;
     const rand = () => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
       return seed / 4294967296;
     };
-    for (let i = 0; i < 110; i++) {
-      const x = (rand() - 0.5) * 140,
-        z = (rand() - 0.5) * 130;
-      if (Math.abs(x) < 23 && z > -19 && z < 28) continue;
-      const r = 0.3 + rand() * 1.8;
-      const rock = new T.Mesh(
-        new T.DodecahedronGeometry(r, 0),
-        material(i % 2 ? "#77798b" : "#a4a1ad"),
-      );
-      rock.position.set(x, r * 0.2 - 0.2, z);
-      rock.scale.y = 0.5 + rand() * 0.4;
-      rock.rotation.set(rand(), rand(), rand());
-      rock.castShadow = true;
-      this.scene.add(rock);
-    }
-    for (let i = 0; i < 9; i++) {
-      const crater = new T.Mesh(
-        new T.TorusGeometry(3 + rand() * 5, 0.3 + rand() * 0.5, 6, 32),
-        material("#72778c"),
-      );
-      crater.rotation.x = -Math.PI / 2;
-      crater.scale.z = 0.5;
-      crater.position.set((rand() - 0.5) * 120, -0.12, -24 - rand() * 50);
-      this.scene.add(crater);
-    }
-    for (let x = -20; x <= 20; x += 4)
-      for (const z of [-15.7, 15.7]) {
-        cylinder(this.scene, "#d2cbd1", x, 0.5, z, 0.055, 1);
-        sphere(this.scene, "#ffd591", x, 1, z, 0.1);
-      }
-    for (let z = -12; z < 14; z += 4)
-      for (const x of [-20.7, 20.7]) {
-        cylinder(this.scene, "#d2cbd1", x, 0.5, z, 0.055, 1);
-        sphere(this.scene, "#8eddd3", x, 1, z, 0.1);
-      }
     const stars = new Float32Array(650 * 3);
     for (let i = 0; i < 650; i++) {
       const direction = new T.Vector3(
@@ -359,7 +291,7 @@ export class MoonWorld {
       }),
     );
     earth.position.copy(
-      new T.Vector3(-0.33, 0.16, -0.93).normalize().multiplyScalar(1400),
+      new T.Vector3(-0.33, 0.12, -0.93).normalize().multiplyScalar(1400),
     );
     earth.rotation.y = -1.5;
     this.sky.add(earth);
@@ -385,16 +317,9 @@ export class MoonWorld {
     const earthSun = new T.DirectionalLight("#fff7e8", 3);
     earthSun.position.set(-600, 500, 700);
     this.sky.add(earthSun);
-    const observatory = new T.Group();
-    cylinder(observatory, "#d2d7dd", 0, 1, 0, 3, 2);
-    const dome = sphere(observatory, "#8bb1cf", 0, 2, 0, 3);
-    dome.scale.y = 0.6;
-    const sign = label("A NEAR FUTURE", "#adf0df", 4);
-    sign.position.set(0, 4, 0);
-    observatory.add(sign);
-    observatory.position.set(29, 0, -14);
-    this.scene.add(observatory);
+    observatory(this.scene);
   }
+
   private layout() {
     const { width, height } = this.host.getBoundingClientRect();
     if (!width || !height) return;
@@ -517,6 +442,7 @@ export class MoonWorld {
     for (const [id, m] of this.models)
       if (!ids.has(id)) {
         this.scene.remove(m.root);
+        disposeObject(m.root);
         this.models.delete(id);
       }
     for (const b of run.buildings) {
@@ -525,6 +451,7 @@ export class MoonWorld {
       const signature = `${b.kind}:${b.rotation}:${b.variant}:${b.x}:${b.z}`;
       if (m && m.root.userData.signature !== signature) {
         this.scene.remove(m.root);
+        disposeObject(m.root);
         this.models.delete(b.id);
         m = undefined;
       }
@@ -554,7 +481,7 @@ export class MoonWorld {
             0,
             (entry.z + 0.5 - b.z - h / 2) * SCALE,
           );
-          const name = label(merchantOwner(b.kind), "#d5f1e8", 1.15);
+          const name = label(merchantOwner(b.kind), "#d5f1e8", 1.15, true);
           name.position.y = 1.35;
           owner.add(name);
           m.root.add(owner);
@@ -613,7 +540,8 @@ export class MoonWorld {
     )
       valid = false;
     const mesh = this.ghost.children[0] as
-      T.Mesh<T.BoxGeometry, T.MeshBasicMaterial> | undefined;
+      | T.Mesh<T.BoxGeometry, T.MeshBasicMaterial>
+      | undefined;
     mesh?.material.color.set(valid ? "#a5f6dd" : "#ed9b91");
   }
   private pointerDown = (e: PointerEvent) => {
@@ -691,8 +619,13 @@ export class MoonWorld {
   home() {
     this.camera.fov = 50;
     this.camera.updateProjectionMatrix();
-    this.camera.position.set(32, 28, 44);
-    this.controls.target.set(0, 0, 0);
+    if (this.host.clientWidth < 720) {
+      this.camera.position.set(26, 30, 50);
+      this.controls.target.set(0, 0, 8);
+    } else {
+      this.camera.position.set(32, 28, 44);
+      this.controls.target.set(0, 0, 0);
+    }
     this.controls.update();
   }
   zoom(factor: number) {
@@ -715,6 +648,21 @@ export class MoonWorld {
   private animate = (now: number) => {
     if (!this.manual) this.frame = requestAnimationFrame(this.animate);
     if (this.paused) return;
+    const elapsed = now - this.last;
+    if (!this.manual && elapsed > 0 && elapsed < 1000) {
+      this.slowFrames =
+        elapsed > 48 ? this.slowFrames + 1 : Math.max(0, this.slowFrames - 1);
+      if (this.slowFrames >= 12 && this.renderer.getPixelRatio() > 0.75) {
+        this.renderer.setPixelRatio(
+          Math.max(0.75, this.renderer.getPixelRatio() * 0.75),
+        );
+        this.sun.shadow.mapSize.set(512, 512);
+        this.sun.shadow.map?.dispose();
+        this.sun.shadow.map = null;
+        this.slowFrames = 0;
+        this.layout();
+      }
+    }
     const dt = Math.min(0.06, (now - this.last) / 1000 || 0);
     this.last = now;
     this.time += dt;
@@ -753,10 +701,12 @@ export class MoonWorld {
       const visual =
         cinematic !== null
           ? 40 + cinematic
-          : run.finished
-            ? run.tick
-            : run.tick +
-              Math.min(1, ((now - this.updateTime) / 1000) * this.speed);
+          : this.attractMode
+            ? 40 + (this.reducedMotion ? 1 : this.time * 0.8)
+            : run.finished
+              ? run.tick
+              : run.tick +
+                Math.min(1, ((now - this.updateTime) / 1000) * this.speed);
       for (const b of run.buildings) {
         const m = this.models.get(b.id);
         if (m && !b.sold)
@@ -846,8 +796,19 @@ export class MoonWorld {
         else p.position.set(x, 0.2, z);
       }
       p.visible = true;
-      let x = ((g.cell % WIDTH) + 0.5 - WIDTH / 2) * SCALE,
-        z = (Math.floor(g.cell / WIDTH) + 0.5 - HEIGHT / 2) * SCALE;
+      let cell = g.cell;
+      if (
+        this.attractMode &&
+        !this.reducedMotion &&
+        g.status === "walking" &&
+        g.route.length > 1
+      ) {
+        const n = g.route.length,
+          index = (g.id * 3 + Math.floor(time * 0.8)) % (n * 2 - 2);
+        cell = g.route[index < n ? index : n * 2 - 2 - index];
+      }
+      let x = ((cell % WIDTH) + 0.5 - WIDTH / 2) * SCALE,
+        z = (Math.floor(cell / WIDTH) + 0.5 - HEIGHT / 2) * SCALE;
       if (g.status === "arriving") {
         const delay = Math.floor((g.id % 8) / 2) * 0.24;
         const u = T.MathUtils.clamp(
@@ -894,6 +855,16 @@ export class MoonWorld {
         ].includes(g.status)
           ? Math.sin(time * 6 + g.id + i * Math.PI) * 0.35
           : 0;
+        const walking = ["walking", "arriving", "leaving", "boarding"].includes(
+          g.status,
+        );
+        (p.userData.arms[i] as T.Object3D).rotation.x = walking
+          ? -Math.sin(time * 6 + g.id + i * Math.PI) * 0.25
+          : Math.sin(time * 1.7 + g.id + i) * 0.045;
+        (p.userData.arms[i] as T.Object3D).rotation.z =
+          g.status === "leaving" && g.satisfaction > 70
+            ? (i ? -0.8 : 0.15) + Math.sin(time * 4 + g.id) * 0.12
+            : (i ? -1 : 1) * 0.08;
       }
     }
   }
@@ -905,9 +876,9 @@ export class MoonWorld {
         continue;
       }
       if (!d) {
-        d = new T.Group();
-        box(d, "#c9d0d9", 0, 0.3, 0, 0.7, 0.35, 1);
-        box(d, "#8eddd3", 0, 0.65, -0.1, 0.65, 0.4, 0.5);
+        d = serviceRover();
+        box(d, "#d4c09b", 0, 0.7, -0.24, 0.52, 0.25, 0.35);
+        box(d, "#8eddd3", 0, 0.72, -0.25, 0.06, 0.28, 0.38);
         const n = label("NEAR", "#9ce8d6", 0.7);
         n.position.set(0, 1, 0);
         d.add(n);
@@ -998,7 +969,7 @@ export class MoonWorld {
     );
     this.lander.visible = phase < 38;
     this.gangway.visible = phase >= 10 && phase < 30;
-    const flame = this.lander.userData.flame as T.Mesh;
+    const flame = this.lander.userData.flame as T.Group;
     flame.visible = phase < 10 || (phase >= 30 && phase < 38);
     flame.scale.y =
       1.1 + Math.sin(this.time * 32) * 0.13 + (phase >= 30 ? 0.7 : 0);
@@ -1026,6 +997,15 @@ export class MoonWorld {
       this.renderer.toneMappingExposure = 1.15;
     }
   }
+  setAttractMode(value: boolean) {
+    if (this.attractMode === value) return;
+    this.attractMode = value;
+    if (value) {
+      this.camera.position.set(23, 12, 32);
+      this.controls.target.set(-6, 1, -2);
+      this.controls.update();
+    } else this.home();
+  }
   renderIntroAt(t: number) {
     this.manual = true;
     cancelAnimationFrame(this.frame);
@@ -1046,9 +1026,9 @@ export class MoonWorld {
     el.removeEventListener("pointerleave", this.pointerLeave);
     el.removeEventListener("contextmenu", this.contextMenu);
     window.removeEventListener("keydown", this.keyDown);
-    this.scene.traverse((o) => {
-      if (o instanceof T.Mesh) o.geometry?.dispose();
-    });
+    disposeObject(this.scene);
+    disposeObject(this.sky);
+    this.scene.environment?.dispose();
     this.renderer.dispose();
     el.remove();
   }
