@@ -372,7 +372,10 @@ export default function Game() {
       const fadeStart = performance.now();
       const fade = (now: number) => {
         if (videoRef.current)
-          videoRef.current.volume = Math.max(0, 1 - (now - fadeStart) / 650);
+          videoRef.current.volume = Math.min(
+            1,
+            Math.max(0, 1 - (now - fadeStart) / 650),
+          );
         if (now - fadeStart < 650) requestAnimationFrame(fade);
       };
       requestAnimationFrame(fade);
