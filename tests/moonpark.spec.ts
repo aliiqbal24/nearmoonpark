@@ -29,7 +29,10 @@ test("opening day: build, connect, tune, economy, ride camera and closing", asyn
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (message) => {
-    if (message.text().includes("BufferGeometryUtils"))
+    if (
+      message.text().includes("BufferGeometryUtils") ||
+      message.text().includes("Texture marked for update but no image data")
+    )
       errors.push(message.text());
   });
   await open(page);

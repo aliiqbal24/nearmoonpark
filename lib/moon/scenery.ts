@@ -43,12 +43,22 @@ export function walkwayMaterial() {
 }
 
 export function lunarTerrain(scene: T.Scene) {
-  const map = new T.TextureLoader().load("/art/lunar-regolith-v1.webp");
+  const bump = new T.Texture(),
+    dust = new T.Texture();
+  const map = new T.TextureLoader().load("/art/lunar-regolith-v1.webp", () => {
+    bump.needsUpdate = true;
+    dust.needsUpdate = true;
+  });
   map.colorSpace = T.SRGBColorSpace;
   map.wrapS = map.wrapT = T.RepeatWrapping;
   map.repeat.set(100, 100);
   map.anisotropy = 8;
-  const bump = map.clone();
+  for (const texture of [bump, dust]) {
+    texture.source = map.source;
+    texture.wrapS = texture.wrapT = T.RepeatWrapping;
+    texture.anisotropy = 8;
+  }
+  bump.repeat.copy(map.repeat);
   bump.colorSpace = T.NoColorSpace;
   const terrainMaterial = new T.MeshStandardMaterial({
     color: "#929ca1",
@@ -109,7 +119,7 @@ export function lunarTerrain(scene: T.Scene) {
     0.25,
     HEIGHT * SCALE + 0.8,
   );
-  const dust = map.clone();
+  dust.colorSpace = T.SRGBColorSpace;
   dust.repeat.set(4.5, 3.5);
   const floor = box(
     deck,
