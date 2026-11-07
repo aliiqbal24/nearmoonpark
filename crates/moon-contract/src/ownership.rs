@@ -59,7 +59,11 @@ impl Moonpark {
             .as_yoctonear()
             .saturating_sub(env::storage_usage() as u128 * env::storage_byte_cost().as_yoctonear());
         assert!(
-            liquid >= self.business_obligations + self.prize_obligations + SHARE_CAP,
+            liquid
+                >= self.business_obligations
+                    + self.prize_obligations
+                    + self.creator_obligations
+                    + SHARE_CAP,
             "The storage sponsor needs replenishing; reserved rewards remain protected"
         );
     }
@@ -129,8 +133,10 @@ impl Moonpark {
             .as_yoctonear()
             .saturating_sub(deposit)
             .saturating_sub(env::storage_usage() as u128 * env::storage_byte_cost().as_yoctonear());
-        let target =
-            self.business_obligations + self.prize_obligations + 2_000_000_000_000_000_000_000_000;
+        let target = self.business_obligations
+            + self.prize_obligations
+            + self.creator_obligations
+            + 2_000_000_000_000_000_000_000_000;
         let keep = deposit.min(target.saturating_sub(before));
         let refund = deposit - keep;
         if refund > 0 {
@@ -160,7 +166,7 @@ impl Moonpark {
         let liquid = env::account_balance()
             .as_yoctonear()
             .saturating_sub(env::storage_usage() as u128 * env::storage_byte_cost().as_yoctonear());
-        let owed = self.business_obligations + self.prize_obligations;
+        let owed = self.business_obligations + self.prize_obligations + self.creator_obligations;
         serde_json::json!({"liquid_yocto":liquid.to_string(),"business_obligations_yocto":self.business_obligations.to_string(),"prize_obligations_yocto":self.prize_obligations.to_string(),"storage_buffer_yocto":liquid.saturating_sub(owed).to_string(),"solvent":liquid>=owed})
     }
     pub fn get_business_share(&self, token_id: String) -> Option<serde_json::Value> {

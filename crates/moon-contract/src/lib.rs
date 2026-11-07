@@ -5,8 +5,10 @@ use near_sdk::{
     env, near, AccountId, PanicOnDefault,
 };
 mod ownership;
+mod parks;
 use near_contract_standards::non_fungible_token::NonFungibleToken;
 use ownership::{BusinessShare, PrizeClaim};
+use parks::{Earnings, Park, RideBlueprint};
 pub const CUTOFF: u64 = 1_795_046_340_000_000_000;
 // Bounded confirmation/handoff grace; it never adds simulation ticks or income.
 pub const CONFIRMATION_GRACE: u64 = 15;
@@ -24,6 +26,15 @@ pub struct Entry {
 #[derive(PanicOnDefault)]
 pub struct Moonpark {
     sponsor: AccountId,
+    parks: UnorderedMap<String, Park>,
+    park_owners: LookupMap<AccountId, String>,
+    park_operators: LookupMap<AccountId, String>,
+    park_ratings: LookupMap<String, u8>,
+    blueprints: UnorderedMap<String, RideBlueprint>,
+    licenses: LookupMap<String, bool>,
+    creator_earnings: LookupMap<AccountId, Earnings>,
+    creator_obligations: u128,
+    next_park: u64,
     runs: LookupMap<String, String>,
     players: LookupMap<AccountId, String>,
     requests: LookupMap<String, String>,
@@ -50,6 +61,15 @@ impl Moonpark {
     pub fn new(sponsor: AccountId) -> Self {
         Self {
             sponsor,
+            parks: UnorderedMap::new(b"v4p".to_vec()),
+            park_owners: LookupMap::new(b"v4o".to_vec()),
+            park_operators: LookupMap::new(b"v4s".to_vec()),
+            park_ratings: LookupMap::new(b"v4r".to_vec()),
+            blueprints: UnorderedMap::new(b"v4b".to_vec()),
+            licenses: LookupMap::new(b"v4l".to_vec()),
+            creator_earnings: LookupMap::new(b"v4e".to_vec()),
+            creator_obligations: 0,
+            next_park: 0,
             runs: LookupMap::new(b"r"),
             players: LookupMap::new(b"p"),
             requests: LookupMap::new(b"q"),
@@ -154,8 +174,9 @@ impl Moonpark {
         let id = self.next.to_string();
         let ranked = player["ranked"].as_bool().unwrap() && self.launch_at > 0;
         let now = env::block_timestamp();
+        let park_id = self.ensure_park(&owner);
         let run = Run::new();
-        let record = serde_json::json!({"run_id":id,"owner":owner,"player_id":player["player_id"],"display_name":name,"ranked":ranked,"started_at":now.to_string(),"deadline":(now+(END as u64+CONFIRMATION_GRACE)*1_000_000_000).to_string(),"last_request":"","run":run});
+        let record = serde_json::json!({"run_id":id,"park_id":park_id,"owner":owner,"player_id":player["player_id"],"display_name":name,"ranked":ranked,"started_at":now.to_string(),"deadline":(now+(END as u64+CONFIRMATION_GRACE)*1_000_000_000).to_string(),"last_request":"","run":run});
         self.runs.insert(&id, &record.to_string());
         self.requests.insert(&req, &id);
         self.assert_collateral();
@@ -188,6 +209,7 @@ impl Moonpark {
         let started: u64 = record["started_at"].as_str().unwrap().parse().unwrap();
         assert!(
             commands.is_empty()
+                || commands.iter().all(|c| run.is_cosmetic(c))
                 || now <= record["deadline"].as_str().unwrap().parse::<u64>().unwrap(),
             "Opening day time limit reached"
         );
@@ -197,7 +219,20 @@ impl Moonpark {
             run.tick.saturating_add(ticks).min(END) <= allowed,
             "Simulation is ahead of the clock"
         );
+        let was_finished = run.finished;
+        if !commands.is_empty() {
+            let park = self
+                .parks
+                .get(&record["park_id"].as_str().unwrap().to_string())
+                .expect("Park not found");
+            assert_eq!(
+                park.operator,
+                env::predecessor_account_id(),
+                "Park operator authorization has changed"
+            );
+        }
         let previous_deals: Vec<_> = run.partnerships.iter().map(|p| p.status.clone()).collect();
+        self.validate_licenses(&env::predecessor_account_id(), &commands);
         run.apply(&commands, ticks)
             .unwrap_or_else(|e| env::panic_str(&e));
         for (i, p) in run.partnerships.iter().enumerate() {
@@ -216,11 +251,15 @@ impl Moonpark {
         }
         record["last_request"] = request_id.into();
         record["run"] = serde_json::to_value(&run).unwrap();
-        if run.finished {
+        if run.finished && !was_finished {
             let entry = Entry {
                 player_id: record["player_id"].as_str().unwrap().into(),
                 display_name: record["display_name"].as_str().unwrap().into(),
-                owner: env::predecessor_account_id(),
+                owner: self
+                    .parks
+                    .get(&record["park_id"].as_str().unwrap().to_string())
+                    .map(|p| p.owner)
+                    .unwrap_or_else(env::predecessor_account_id),
                 run_id: run_id.clone(),
                 score: run.score.clone(),
                 completed_at: now.to_string(),

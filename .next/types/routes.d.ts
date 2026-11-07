@@ -20,10 +20,10 @@ declare global {
 }
 
 declare namespace VinextRouteTypes {
-  type PageRoute = "/" | "/legacy" | "/privacy" | "/terms";
+  type PageRoute = "/" | "/legacy" | "/legacy-claims" | "/park/[account]" | "/privacy" | "/terms";
   type LayoutRoute = "/";
   type RouteHandlerRoute = "/api/auth/[...all]" | "/api/moon/profile" | "/api/moon/provision" | "/api/provision";
-  type AppRoute = "/" | "/api/auth/[...all]" | "/api/moon/profile" | "/api/moon/provision" | "/api/provision" | "/legacy" | "/privacy" | "/terms";
+  type AppRoute = "/" | "/api/auth/[...all]" | "/api/moon/profile" | "/api/moon/provision" | "/api/provision" | "/legacy" | "/legacy-claims" | "/park/[account]" | "/privacy" | "/terms";
 
   interface ParamMap {
     "/": {};
@@ -32,6 +32,8 @@ declare namespace VinextRouteTypes {
     "/api/moon/provision": {};
     "/api/provision": {};
     "/legacy": {};
+    "/legacy-claims": {};
+    "/park/[account]": { account: string; };
     "/privacy": {};
     "/terms": {};
   }

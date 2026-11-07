@@ -1,8 +1,8 @@
 {
-  "contractId": "economy.moonpark-mw5uef63.testnet",
+  "contractId": "game.moonpark-mw65jiya.testnet",
   "rpcUrl": "https://test.rpc.fastnear.com",
   "fallbackRpcUrl": "https://rpc.testnet.near.org",
-  "codeHash": "2aWWsedhvw8pCVUFuTf4yCN4YfTc2CBZfrU7oFXthpy5",
+  "codeHash": "HXVUbBWAQLD4znnbzs97RdPz2y664QCYRBmKCkHJVHWy",
   "network": "testnet",
   "immutable": true
 }

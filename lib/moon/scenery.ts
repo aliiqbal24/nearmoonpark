@@ -257,6 +257,7 @@ export function spaceport(scene: T.Scene) {
   box(gate, palette.ivory, 0, 2.95, 0, 4.6, 0.68, 0.52);
   box(gate, palette.navy, 0, 2.97, 0.29, 4.35, 0.47, 0.09);
   const sign = label("M O O N P A R K", "#fce3ab", 4.1);
+  sign.name = "park-gate-sign";
   sign.scale.y *= 0.5;
   sign.position.set(0, 2.98, 0.36);
   gate.add(sign);

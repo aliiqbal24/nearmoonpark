@@ -1,45 +1,59 @@
 # Why Moonpark uses NEAR
 
-The player makes park decisions; NEAR supplies transferable ownership, public economic rules and funded settlement. Extra crypto screens are optional. One click to back a merchant issues the concession; the closing screen leads to collection. The normal game loop uses sponsored accounts and restricted keys without wallet extensions, seed-phrase entry or gas prompts.
+Moonpark v4 makes a player’s park and signature ride designs persistent economic objects. Players can publish a guest-tested ride, license a design from another park and collect creator income. NEAR records ownership, verifies the design’s source and settles actual testnet payments. Ordinary construction uses sponsored accounts and responsive local prediction.
 
-## What a concession owns
+## Persistent park ownership
 
-A NEP-171 token identifies one merchant agreement in one opening day (`run_id:partnership_id`). Accepting invests 100 lunar park credits, fixes a 20% sales share and protects those terms against rent changes or demolition. The game records actual post-agreement income. An independent testnet pool reserves up to 0.02 tNEAR for the token, subject to available backing. Its claim accrues at 0.0001 tNEAR per earned lunar credit, capped by that reserve.
+Every admitted game account gets a park registry entry when it starts its first opening day. The entry records a stable park ID, owner account ID, authorized game operator, name, emblem, published opening day and signature designs. New scored days use standardized resources. Publishing a finished day gives that persistent park a public layout at `/park/OWNER_ACCOUNT`, with a stable alternative at `/park/p-PARK_ID`.
 
-The NFT owner controls the uncollected testnet claim. Standard `nft_transfer`, `nft_transfer_call`, approval, metadata and enumeration methods work independently of the Moonpark interface. The founder still operates the park and retains its game credits and score; ownership transfer cannot buy a ranked advantage. NFT ownership does not promise future opening days or cash value.
+The generated account initially owns its park. Claiming connects a supported wallet through NEAR Connect on testnet, nominates its account and requires that account to sign `accept_park`. A nomination alone does not transfer ownership. The recipient cannot already own another park. The game operator can update and publish the park. Its owner can replace that operator, including when restoring on a new browser.
 
-Claims transfer actual testnet NEAR from the contract, with pending and paid accounting. Private callbacks make a failed transfer retryable. Transfer-call acceptance locks prevent temporary receivers from collecting before ownership resolves. At closing, unused reserves return to the business pool and earned unclaimed funds remain reserved.
+A depleted sponsored operator can rotate to a fresh admitted account without changing the park ID, owner, licenses or published layout. Ranked operators must retain the same admitted player identity. Generated account keys remain browser-held. The park desk exports a private backup containing operator and locally held owner credentials, and verifies imported recovery keys against NEAR before storing them. An external wallet owner can authorize another browser without sharing a seed phrase.
 
-## Competition and the conditional giveaway
+## Signature rides and licenses
 
-The contract validates each command and computes scores from its own state. Guest exhibitions can appear on the public board; only admitted signed-in identities in the opened challenge enter the separate provisional prize snapshot. All runs have the same resources, arrivals and rules. Each identity has one best result. The cutoff is November 18, 2026 at 23:59 UTC.
+A signature blueprint is published from a completed, contract-verified opening day and a ride that actually served guests. Its immutable record includes kind, footprint variant, launch setting, height, curated palette, design style, lighting, name and original creator attribution. Inherited colors are resolved at publication, so the design keeps its creator’s appearance in another park. A park can publish five designs. Licensed rides retain source attribution and cannot be republished as original blueprints through the contract.
 
-A separate **0.5 tNEAR demonstration escrow** has been deposited. After the cutoff, the sponsor can attest a qualifying track or grand-prize award once. The contract chooses the first four frozen ranked accounts and allocates 40/30/20/10, normalized if fewer qualify. Winner accounts collect directly. The sponsor cannot pick another payout recipient, rewrite an allocated tier, or withdraw the deposited prize pool. Successful/pending claims cannot pay twice; failed transfers remain retryable.
+Each park pays once for a permanent license. The exact fee is **0.005 testnet NEAR**, taken from its sponsored account. The contract credits **90%** to the creator park’s owner at the time of purchase. The remaining **10%** supports storage. Game construction still costs the normal number of lunar credits, including the Skyline height upgrade. Buying a license provides the published configuration and its onchain provenance.
 
-The external hackathon award still needs human attestation. Social admission, human eligibility review and availability of gas sponsorship are trust boundaries; they are not magically decentralized by the scoring contract. The **US$1K/US$5K personal pledge remains conditional and unfunded**, with mainnet payment and eligibility review separate from this testnet mechanism. Testnet tokens do not fund that USD pledge.
+Repeated license submissions refund the new deposit and credit the creator once. Licensed construction is checked against both the buyer’s entitlement and the immutable design. Creator earnings accumulate as liabilities. A pending withdrawal cannot be spent again. A failed transfer restores availability through a private callback. Accrued earnings stay with their recipient if park ownership subsequently changes.
 
-## Who can change the rules or take funds?
+Published designs can be independently inspected through NEAR. A player could manually recreate visual choices. The contract records a paid license and attribution for builds declaring that provenance.
 
-The v3 economy account has no access keys and exposes no upgrade or general withdrawal method. The sponsor is a separate account. The owner cannot replace the economy code through that sponsor key. The reproducible deploy script compares local and deployed code hashes and asserts an empty access-key list.
+## Visitors and competition
 
-Business and prize obligations are tracked separately. Before writing growing run/player state, the contract checks that liquid balance still covers both obligations plus headroom. Game storage cannot consume reserved rewards. The sponsor checks headroom before admitting new accounts and can top it up. `fund_storage` can refund only the unneeded part of its caller's new deposit; it cannot extract previously held funds.
+NPCs have finite virtual budgets, cash, inventory, preferences and deterministic decision policies. Departing visitors’ satisfaction affects later rocket occupancy. Community park reviews are separate signed records, with one editable rating per reviewing park. Public park pages animate ambient visitors around the published layout and expose the actual closing score.
+
+The contract validates gameplay commands and calculates scores. Signed-in identities get one best eligible result, while guest exhibitions appear on the public board. Park ownership, licenses and cosmetics persist across attempts. Each scored attempt starts with the same resources and guest schedule, with recommendations responding deterministically to that attempt’s decisions. Cosmetic edits remain available after closing and preserve score and finances.
+
+The current immutable challenge is **moonpark-v4**. The prior v3 eligible prize board was empty when v4 opened. Historical concession ownership and funded claims are available at `/legacy-claims` on the earlier immutable contract.
+
+A separate **0.5 tNEAR** competition escrow demonstrates payouts. After the November 18, 2026, 23:59 UTC cutoff, the sponsor may attest a qualifying hackathon award once. The contract allocates the first four frozen accounts at weights 40/30/20/10, normalized if fewer qualify. The park owner at completion receives the winner entitlement. Eligible accounts collect directly. The external award requires human attestation.
+
+The personal **US$1K track / US$5K grand-prize pledge** remains conditional and unfunded. Its eligibility review and eventual payment are separate from testnet. Testnet tokens have no cash value. Lunar game credits are virtual simulation currency.
+
+## Contract and custody boundaries
+
+The v4 contract is a keyless child account with no upgrade or general withdrawal method. Its separate sponsor creates game accounts and supplies storage funding. The deploy script compares code hashes and verifies the empty access-key list. Creator and prize liabilities are protected from storage growth. `fund_storage` refunds only the unneeded part of a new deposit.
+
+The server receives public keys. Ordinary gameplay uses a restricted session key. Park administration and testnet license deposits use the browser-held generated recovery key. Wallet claiming and external-owner administration use NEAR Connect with testnet-capable wallets. Sponsorship, identity admission, browser key storage, wallet availability and external-award attestation remain operational trust boundaries.
 
 ## Public interfaces
 
 | Method | Purpose |
 | --- | --- |
-| `get_run`, `get_challenge` | Canonical economy, score and fixed rules |
-| `get_merchant_wallets` | Contract-managed merchant cash, inventory, pricing and reasoning |
-| `get_concessions`, `get_business_share` | Ownership-linked reserves, earned/paid/pending rewards |
-| `nft_token`, `nft_tokens_for_owner`, `nft_metadata` | Standard discoverable ownership and metadata |
-| `nft_transfer`, `nft_transfer_call` | Standard ownership transfer; one yocto deposit |
-| `claim_business_reward` | Current owner collects its unclaimed reward |
-| `get_prize_snapshot`, `get_prize_claim` | Frozen ranking, funded escrow and winner entitlement |
-| `claim_prize` | Allocated winner collects its prize |
-| `get_fund_safety` | Liquid backing, obligations and storage headroom |
+| `get_park`, `get_park_by_owner`, `get_park_by_operator`, `list_parks` | Persistent ownership and published park identity |
+| `save_park` | Revision-checked identity and verified layout publication |
+| `nominate_park_owner`, `accept_park` | Two-step signed ownership claim |
+| `set_park_operator`, `rotate_park_operator` | Owner recovery and sponsored session rotation |
+| `publish_blueprint`, `get_blueprint`, `list_blueprints` | Guest-tested immutable ride designs |
+| `license_blueprint`, `has_license` | Deposit-backed permanent licensing |
+| `get_creator_earnings`, `claim_creator_earnings` | Backed creator balances and retryable payments |
+| `rate_park` | One editable signed review per reviewing park |
+| `get_run`, `get_challenge`, `get_merchant_wallets` | Canonical simulation and NPC treasuries |
+| `get_prize_snapshot`, `get_prize_claim`, `claim_prize` | Frozen eligible standings and prize collection |
+| `get_fund_safety` | Solvency and storage headroom |
 
-NPC wallets are contract-managed simulation balances. NPCs have no independent signing keys. Lunar credits and stock are game state, not NEP-245 assets. There are no NEAR Intents swaps or LLM-controlled agents. An original NEAR contract fitting the track is explicitly allowed by official Q-011; the named protocols and sample prompt are suggestions. See [the rules](https://nearhackathon.com/HACKATHON.md).
+NEAR Connect filters for testnet support. MyNearWallet’s retired connection flow is excluded. Wallet credentials are handled by the selected wallet.
 
-## Evidence
-
-[Sandbox evidence](moon-sandbox-smoke.json) includes an actual ownership transfer, rejection of the former owner, collection by the new owner, successful frozen-prize settlement and duplicate/private-callback rejection. [Public testnet evidence](moon-testnet-smoke.json) records the full replay, ownership/payment receipts and backing checks. [Browser evidence](moon-browser-smoke.json) records the complete player flow. Historical v1/v2 evidence is retained under its versioned filenames.
+The game uses an original NEAR contract. Official Q-011 permits this implementation for the track. [Official hackathon rules](https://nearhackathon.com/HACKATHON.md)

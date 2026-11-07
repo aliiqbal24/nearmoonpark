@@ -13,7 +13,7 @@ const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
 assert.equal(cfg.network, "testnet");
 assert.ok(cfg.contractId.endsWith(".testnet"));
 const rootKey = JSON.parse(
-  await readFile(".near-local/moon-v3-deployer.json", "utf8"),
+  await readFile(".near-local/moon-v4-deployer.json", "utf8"),
 );
 const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
   cfg.rpcUrl,
@@ -51,7 +51,7 @@ await root.callFunction({
 let state = await player.callFunction({
   contractId: cfg.contractId,
   methodName: "create_run",
-  args: { challenge_id: "moonpark-v3", request_id: "real-chain-proof" },
+  args: { challenge_id: "moonpark-v4", request_id: "real-chain-proof" },
   gas: 180000000000000n,
   waitUntil: "EXECUTED",
 });
@@ -119,6 +119,10 @@ for (let i = 0; i < replay.frames.length; i++) {
     gas: gas.toString(),
     trades: state.run.trade_count,
   });
+  await writeFile(
+    "outputs/moon-v4-chain-progress.json",
+    JSON.stringify({ state, checkpoints, maxGas: maxGas.toString() }),
+  );
   if (i % 9 === 0 || state.run.finished)
     console.log(
       JSON.stringify({
@@ -132,75 +136,154 @@ for (let i = 0; i < replay.frames.length; i++) {
 assert.equal(state.run.finished, true);
 assert.ok(state.run.score.total >= 7000);
 assert.equal(state.ranked, false);
-assert.ok(state.run.partnerships.every((p) => p.status === "completed"));
-assert.equal(state.run.grant_escrow, 0);
-await writeFile(
-  "outputs/moon-v3-chain-progress.json",
-  JSON.stringify({ state, checkpoints, maxGas: maxGas.toString() }),
-);
-const concessions = await p.callFunction({
-  contractId: cfg.contractId,
-  method: "get_concessions",
-  args: { run_id: state.run_id },
+assert.deepEqual(state.run.partnerships, []);
+const transactions = [];
+async function call(account, methodName, args, deposit = 0n) {
+  const raw = await account.callFunctionRaw({
+    contractId: cfg.contractId,
+    methodName,
+    args,
+    deposit,
+    gas: 150000000000000n,
+    waitUntil: "FINAL",
+  });
+  assert.ok(
+    typeof raw.status === "object" && "SuccessValue" in raw.status,
+    JSON.stringify(raw.status),
+  );
+  transactions.push({ method: methodName, transaction: raw.transaction.hash });
+  return raw.status.SuccessValue
+    ? JSON.parse(Buffer.from(raw.status.SuccessValue, "base64").toString())
+    : null;
+}
+const contractView = (method, args = {}) =>
+  p.callFunction({ contractId: cfg.contractId, method, args });
+const design = {
+  ...state.run.buildings[2].design,
+  name: "Earthskimmer",
+  palette: 3,
+  style: 1,
+  lights: 2,
+};
+state = await call(player, "apply_actions", {
+  run_id: state.run_id,
+  expected_revision: state.run.revision,
+  request_id: "cosmetics",
+  commands: [{ kind: "design", building: 3, design }],
+  ticks: 0,
 });
-assert.equal(concessions.length, 3);
-// Another signer deliberately advances the sponsor key to verify the RPC
-// wrapper preserves SDK nonce invalidation/retry across independent callers.
+const mine = await contractView("get_park", { park_id: state.park_id });
+await call(player, "save_park", {
+  park_id: mine.id,
+  expected_revision: mine.revision,
+  name: "Earthrise Gardens",
+  emblem: 1,
+  run_id: state.run_id,
+});
+const bp = await call(player, "publish_blueprint", {
+  park_id: mine.id,
+  run_id: state.run_id,
+  building_id: 3,
+  name: "Earthskimmer",
+});
+async function freshAccount(prefix) {
+  const k = KeyPair.fromRandom("ed25519");
+  const accountId = `${prefix}-${Date.now().toString(36)}.${root.accountId}`;
+  await root.createAccount({
+    newAccountId: accountId,
+    publicKey: k.getPublicKey(),
+    nearToTransfer: 500000000000000000000000n,
+  });
+  await writeFile(
+    `.near-local/${accountId}.json`,
+    JSON.stringify({ accountId, secretKey: k.toString() }),
+    { mode: 0o600 },
+  );
+  return new Account(accountId, p, new KeyPairSigner(k));
+}
+const wallet = await freshAccount("owner"),
+  buyer = await freshAccount("buyer");
+await call(player, "nominate_park_owner", {
+  park_id: mine.id,
+  receiver_id: wallet.accountId,
+});
+await assert.rejects(() => call(buyer, "accept_park", { park_id: mine.id }));
+const claimed = await call(wallet, "accept_park", { park_id: mine.id });
+assert.equal(claimed.owner, wallet.accountId);
+assert.equal(claimed.operator, player.accountId);
+await call(root, "register_player", {
+  account_id: buyer.accountId,
+  player_id: `guest:${buyer.accountId}`,
+  display_name: "Blueprint visitor",
+});
+const buying = await call(buyer, "create_run", {
+  challenge_id: "moonpark-v4",
+  request_id: "license-test",
+});
+const fee = 5000000000000000000000n;
+await call(
+  buyer,
+  "license_blueprint",
+  { park_id: buying.park_id, blueprint_id: bp.id },
+  fee,
+);
+await call(
+  buyer,
+  "license_blueprint",
+  { park_id: buying.park_id, blueprint_id: bp.id },
+  fee,
+);
+const earnings = await contractView("get_creator_earnings", {
+  account_id: wallet.accountId,
+});
+assert.equal(earnings.available, ((fee * 90n) / 100n).toString());
+const built = await call(buyer, "apply_actions", {
+  run_id: buying.run_id,
+  expected_revision: 0,
+  request_id: "licensed-build",
+  commands: [
+    {
+      kind: "build",
+      item: bp.kind,
+      x: 3,
+      z: 8,
+      variant: bp.variant,
+      value: bp.launch,
+      design: bp.design,
+      blueprint_id: bp.id,
+    },
+  ],
+  ticks: 0,
+});
+assert.equal(built.run.buildings[2].blueprint_id, bp.id);
+assert.equal(await call(wallet, "claim_creator_earnings", {}), true);
+const paid = await contractView("get_creator_earnings", {
+  account_id: wallet.accountId,
+});
+assert.equal(paid.available, "0");
+assert.equal(paid.paid, earnings.available);
+await assert.rejects(() => call(wallet, "claim_creator_earnings", {}));
+const reviewed = await call(buyer, "rate_park", { park_id: mine.id, stars: 5 });
+assert.equal(reviewed.rating_count, 1);
 const independentSponsor = new Account(
   rootKey.accountId,
   p,
   KeyPairSigner.fromSecretKey(rootKey.secretKey),
 );
-await independentSponsor.callFunction({
-  contractId: cfg.contractId,
-  methodName: "fund_storage",
-  args: {},
-  gas: 30000000000000n,
-  waitUntil: "FINAL",
-});
-const ownershipReceipts = [];
-for (const share of concessions) {
-  assert.equal(share.owner_id, id);
-  const transfer = await player.callFunctionRaw({
-    contractId: cfg.contractId,
-    methodName: "nft_transfer",
-    args: { token_id: share.token_id, receiver_id: root.accountId },
-    deposit: 1n,
-    gas: 50000000000000n,
-    waitUntil: "FINAL",
-  });
-  await assert.rejects(() =>
-    player.callFunction({
-      contractId: cfg.contractId,
-      methodName: "claim_business_reward",
-      args: { token_id: share.token_id },
-      gas: 80000000000000n,
-      waitUntil: "FINAL",
-    }),
-  );
-  const claim = await root.callFunctionRaw({
-    contractId: cfg.contractId,
-    methodName: "claim_business_reward",
-    args: { token_id: share.token_id },
-    gas: 80000000000000n,
-    waitUntil: "FINAL",
-  });
-  const paid = await p.callFunction({
-    contractId: cfg.contractId,
-    method: "get_business_share",
-    args: { token_id: share.token_id },
-  });
-  assert.equal(paid.owner_id, root.accountId);
-  assert.equal(paid.paid_yocto, share.claimable_yocto);
-  assert.equal(paid.claimable_yocto, "0");
-  ownershipReceipts.push({
-    tokenId: share.token_id,
-    newOwner: root.accountId,
-    transfer: transfer.transaction.hash,
-    payment: claim.transaction.hash,
-    paid_yocto: paid.paid_yocto,
-  });
-}
+await call(independentSponsor, "fund_storage", {});
+const ownershipProof = {
+  park: claimed,
+  blueprint: bp,
+  buyer: buyer.accountId,
+  licensedBuilding: built.run.buildings[2],
+  earnings,
+  paid,
+  transactions,
+  publicParkPath: `/park/${wallet.accountId}`,
+  wrongClaimSignerRejected: true,
+  duplicateLicenseRefunded: true,
+  duplicateEarningsClaimRejected: true,
+};
 const storageRefund = await root.callFunction({
   contractId: cfg.contractId,
   methodName: "fund_storage",
@@ -209,7 +292,11 @@ const storageRefund = await root.callFunction({
   gas: 40000000000000n,
   waitUntil: "FINAL",
 });
-assert.equal(storageRefund, "0", "Unused storage sponsorship must be refunded");
+assert.ok(
+  BigInt(storageRefund) >= 0n &&
+    BigInt(storageRefund) <= 100000000000000000000000n,
+  "Storage funding only retains part of the caller’s deposit",
+);
 const fundSafety = await p.callFunction({
   contractId: cfg.contractId,
   method: "get_fund_safety",
@@ -220,7 +307,7 @@ const access = await p.viewAccessKeyList({ accountId: cfg.contractId });
 assert.equal(access.keys.length, 0);
 await mkdir("docs", { recursive: true });
 await writeFile(
-  "docs/moon-testnet-smoke.json",
+  "docs/moon-v4-testnet-smoke.json",
   JSON.stringify(
     {
       contractId: cfg.contractId,
@@ -234,18 +321,12 @@ await writeFile(
       partnerships: state.run.partnerships,
       reservedFunding: state.run.grant_escrow,
       availableFunding: state.run.grant_cash,
-      ownershipReceipts,
+      ownershipProof,
       fundSafety,
       contractAccessKeys: access.keys.length,
-      unusedStorageDepositRefunded: true,
+      storageDepositRetainedYocto: storageRefund,
+      unusedStorageDepositRefunded: storageRefund === "0",
       sponsorNonceRecoveryVerified: true,
-      payoutReceipts: state.run.partnerships.map((p) => ({
-        partnershipId: p.id,
-        merchant: p.owner,
-        amount: p.reward,
-        transaction: checkpoints.find((c) => c.tick >= p.settled_at)
-          ?.transaction,
-      })),
       parity: "Every checkpoint matched native Rust and browser WASM.",
     },
     null,

@@ -53,16 +53,20 @@ export default function Terms() {
         eligibility review and mainnet payment described above.
       </p>
       <p>
-        Backing a merchant creates a NEP-171 concession certificate. It carries
-        the claim to a funded, capped testnet reward calculated from that
-        business's opening-day revenue share: 0.0001 testnet NEAR per earned
-        lunar credit, up to the amount reserved when issued (at most 0.02
-        testnet NEAR). Backing can be lower if the finite pool is depleted.
-        Unused reserves return to the merchant reward pool at closing. The
-        current certificate owner can collect unclaimed rewards; a transfer
-        passes that right to the new owner. Park operation, game credits and the
-        ranked score remain with the original player. No future income or cash
-        redemption is promised.
+        Parks are recorded on the current Moonpark v4 NEAR testnet contract. A
+        generated game account initially owns its park. Claiming requires the
+        nominated wallet account to sign acceptance onchain. The authorized game
+        account may update the park, publish designs and rotate its sponsored
+        session. Its owner can replace that operator. Private browser keys must
+        be backed up for account recovery. Each blueprint license costs 0.005
+        testnet NEAR, funded from the buyer’s sponsored account. The creator
+        park’s owner at purchase receives 90%, and 10% supports storage. A
+        permanent license records attribution for that park. Accrued earnings
+        stay with their recipient when park ownership changes. These testnet
+        tokens have no cash value. Earlier v3 concession ownership and funded
+        claims remain accessible through the earlier-claims page. At the v4
+        transition, the v3 eligible prize board was empty. The current giveaway
+        uses the separate v4 challenge and its published rules.
       </p>
       <a href="/">Return to Moonpark</a>
     </main>

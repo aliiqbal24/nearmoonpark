@@ -22,18 +22,16 @@ import {
   Play,
   ShieldCheck,
   Eye,
-  Handshake,
+  Palette,
 } from "lucide-react";
 import {
   CashNumber,
   MoneyFeedback,
   ShuttleStatus,
-  PartnershipCard,
-  PartnershipDesk,
-  nextPartnership,
 } from "./components/moon-experience";
 import MoonWorld from "./components/moon-world";
-import { NearEconomy, NearMark } from "./components/near-economy";
+import { ParkHub, type ParkIdentity } from "./components/park-hub";
+import { NearMark } from "./components/near-economy";
 import {
   Dialog,
   Inspector,
@@ -78,14 +76,7 @@ import "./moonpark.css";
 
 type Player = { player_id: string; display_name: string };
 type Screen = "title" | "intro" | "playing" | "results";
-type Panel =
-  | "leaderboard"
-  | "ledger"
-  | "help"
-  | "score"
-  | "partnerships"
-  | "near"
-  | null;
+type Panel = "leaderboard" | "ledger" | "help" | "score" | "near" | null;
 function download(value: unknown, name: string) {
   const u = URL.createObjectURL(
     new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
@@ -106,7 +97,7 @@ export default function Game() {
     [selection, setSelection] = useState<Detail | null>(null),
     [hover, setHover] = useState<Detail | null>(null),
     [panel, setPanel] = useState<Panel>(null),
-    [toast, setToast] = useState(""),
+    [toast, setToast] = useState<React.ReactNode>(""),
     [muted, setMuted] = useState(true),
     [introTime, setIntroTime] = useState(0),
     [videoFailed, setVideoFailed] = useState(false),
@@ -128,6 +119,10 @@ export default function Game() {
     [wallLeft, setWallLeft] = useState(540);
   const [cfg, setCfg] = useState<Config | null>(null),
     [chosenMode, setChosenMode] = useState<"practice" | "near">("practice");
+  const [parkIdentity, setParkIdentity] = useState<ParkIdentity>({
+    name: "My Moonpark",
+    emblem: 0,
+  });
   const videoRef = useRef<HTMLVideoElement>(null);
   const worldRef = useRef<World | null>(null),
     session = useRef<ParkSession | null>(null),
@@ -162,6 +157,13 @@ export default function Game() {
   }, []);
   useEffect(() => {
     audio.current = new MoonAudio();
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("moonpark-identity") || "null",
+      );
+      if (saved?.name) setParkIdentity(saved);
+    } catch {}
+    if (new URLSearchParams(location.search).has("parkdesk")) setPanel("near");
     void simulate({ op: "new" })
       .then((run) => {
         setInitial(run);
@@ -428,11 +430,14 @@ export default function Game() {
     }
   };
   const action = async (command: Command) => {
-    if (!session.current || screen !== "playing") return;
+    if (
+      !session.current ||
+      (screen !== "playing" && !["design", "theme"].includes(command.kind))
+    )
+      return;
     try {
       await session.current.action(command);
       if (command.kind === "build") audio.current?.effect("build");
-      else if (command.kind === "partner") audio.current?.effect("contract");
       if (command.kind === "build") {
         const b = session.current.state.run.buildings.at(-1)!;
         setSelection({ kind: "building", id: b.id, x: 0, y: 0 });
@@ -455,6 +460,9 @@ export default function Game() {
             z,
             rotation: placement.rotation,
             variant: placement.variant,
+            design: placement.design,
+            blueprint_id: placement.blueprint_id,
+            value: placement.launch,
           },
     );
   };
@@ -500,8 +508,9 @@ export default function Game() {
       (b) => hover?.kind === "building" && b.id === hover.id && !b.sold,
     );
   const active =
-    run?.guests.filter((g) => !["upcoming", "gone"].includes(g.status))
-      .length ?? 0;
+    run?.guests.filter(
+      (g) => !["upcoming", "gone", "cancelled"].includes(g.status),
+    ).length ?? 0;
   const power = useMemo(() => {
     if (!run) return { used: 0, cap: 8 };
     return {
@@ -510,7 +519,9 @@ export default function Game() {
         .reduce(
           (n, b) =>
             n +
-            (b.kind === "coaster" ? b.launch + 1 : blueprint(b.kind).power) +
+            (b.kind === "coaster"
+              ? b.launch + 1 + (b.design?.height === 2 ? 1 : 0)
+              : blueprint(b.kind).power) +
             b.level,
           0,
         ),
@@ -526,7 +537,6 @@ export default function Game() {
           4,
     };
   }, [run]);
-  const partnership = run ? nextPartnership(run) : undefined;
   const hint = run
     ? !run.buildings.some((b) => b.kind === "coaster" && !b.sold)
       ? "Build a mass-driver coaster. Your first visitors deserve a story to take home."
@@ -593,6 +603,7 @@ export default function Game() {
     >
       <MoonWorld
         run={worldRun}
+        identity={parkIdentity}
         speed={screen === "playing" ? speed : 0.4}
         placement={screen === "playing" ? placement : null}
         selected={selectedBuilding?.id ?? null}
@@ -663,7 +674,7 @@ export default function Game() {
             <p className="mp-title-description">
               Launch a coaster. Welcome the rockets.
               <br />
-              Back independent businesses. Own a share of their success.
+              Design a signature ride. Make this little Moon your own.
             </p>
             <div className="mp-title-actions">
               <button
@@ -705,16 +716,25 @@ export default function Game() {
               </span>
             </div>
             <div className="mp-title-links">
-              <button onClick={() => setPanel("leaderboard")}>
+              <button
+                disabled={!initial}
+                onClick={() => setPanel("leaderboard")}
+              >
                 <Trophy size={15} /> Top five & conditional prizes
               </button>
-              <button onClick={() => setPanel("help")}>How to play</button>
+              <button disabled={!initial} onClick={() => setPanel("help")}>
+                How to play
+              </button>
+              <button disabled={!initial} onClick={() => setPanel("near")}>
+                My park & ride exchange
+              </button>
             </div>
             <span className="mp-title-built">
               NEAR ACCOUNT & GAS INCLUDED <i /> TESTNET · NO CASH VALUE
             </span>
             <button
               className="mp-title-economy"
+              disabled={!initial}
               onClick={() => setPanel("near")}
             >
               <NearMark /> How NEAR drives your park <ArrowUpRight size={13} />
@@ -854,6 +874,12 @@ export default function Game() {
               {power.used}/{power.cap} power
             </span>
             <ShuttleStatus run={run} />
+            <span
+              className="mp-reputation"
+              title="Departing visitors influence later rocket bookings"
+            >
+              ★ {run.reputation ?? 65}% word of mouth
+            </span>
             <button
               className="mp-chain"
               aria-label="View NEAR economy"
@@ -876,21 +902,7 @@ export default function Game() {
             !selection &&
             !placement &&
             !rideId &&
-            !panel &&
-            (partnership && snapshot ? (
-              <div className="mp-partnership-preview">
-                <PartnershipCard
-                  compact
-                  run={run}
-                  deal={partnership}
-                  near={snapshot.mode === "near"}
-                  pending={snapshot.pending}
-                  action={(c) => void action(c)}
-                  onDetails={() => setPanel("partnerships")}
-                  receipt={snapshot.receipts?.[partnership.id]}
-                />
-              </div>
-            ) : (
+            !panel && (
               <div className="mp-advisor">
                 <span className="mp-advisor-avatar">
                   <img src="/art/advisor-v1.webp" alt="" />
@@ -900,13 +912,13 @@ export default function Game() {
                   <p>{hint}</p>
                 </div>
               </div>
-            ))}
+            )}
           <nav className="mp-map-tools" aria-label="Park tools">
             <button
-              aria-label="Merchant partnerships"
-              onClick={() => setPanel("partnerships")}
+              aria-label="My park and ride exchange"
+              onClick={() => setPanel("near")}
             >
-              <Handshake size={20} />
+              <Palette size={20} />
             </button>
             <button
               aria-label="Leaderboard"
@@ -1148,7 +1160,6 @@ export default function Game() {
                       run: snapshot.run,
                       record: snapshot.record,
                       transactions: snapshot.txs,
-                      partnershipReceipts: snapshot.receipts,
                     },
                     "moonpark-opening-day.json",
                   )
@@ -1171,32 +1182,76 @@ export default function Game() {
           title={
             panel === "near"
               ? "Your economy. Secured by NEAR."
-              : panel === "partnerships"
-                ? "Build a future together"
-                : panel === "leaderboard"
-                  ? "The Moon's finest five"
-                  : panel === "ledger"
-                    ? "Follow the lunar credits"
-                    : panel === "score"
-                      ? "A great park earns its stars"
-                      : "Your first day on the Moon"
+              : panel === "leaderboard"
+                ? "The Moon's finest five"
+                : panel === "ledger"
+                  ? "Follow the lunar credits"
+                  : panel === "score"
+                    ? "A great park earns its stars"
+                    : "Your first day on the Moon"
           }
           onClose={closePanel}
         >
           {panel === "near" ? (
-            <NearEconomy
-              state={snapshot}
-              cfg={cfg}
-              owner={session.current?.ownerId ?? null}
-              owners={session.current?.ownerIds ?? []}
-              onPlay={() => start("near", !!player && challengeOpen)}
-              onAction={async (method, args) => {
-                if (!session.current) throw Error("Open a NEAR park first.");
-                return session.current.ownership(method, args);
-              }}
-            />
-          ) : panel === "partnerships" && snapshot ? (
-            <PartnershipDesk state={snapshot} action={(c) => void action(c)} />
+            <>
+              <ParkHub
+                cfg={cfg}
+                state={snapshot}
+                identity={parkIdentity}
+                onIdentity={setParkIdentity}
+                action={(c) => void action(c)}
+                onPlay={() => start("near", !!player && challengeOpen)}
+                onUse={(b, receipt) => {
+                  setPlacement({
+                    kind: b.kind,
+                    rotation: 0,
+                    variant: b.variant,
+                    design: b.design,
+                    launch: b.launch,
+                    blueprint_id: b.id,
+                  });
+                  setPanel(null);
+                  setSelection(null);
+                  setToast(
+                    receipt ? (
+                      <>
+                        NEAR license confirmed. 90% credited to its creator.{" "}
+                        <a
+                          href={`https://testnet.nearblocks.io/txns/${receipt}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View receipt
+                        </a>{" "}
+                        · Place {b.name}.
+                      </>
+                    ) : (
+                      `Place ${b.name}. Construction uses your park-credit budget.`
+                    ),
+                  );
+                }}
+              />
+              <div className="mp-hub-footer">
+                <button
+                  className="mp-secondary"
+                  onClick={() => setPanel("leaderboard")}
+                >
+                  <Trophy size={16} /> Rankings & prize escrow
+                </button>
+                <a href="/legacy-claims">Earlier concession claims</a>
+                <a
+                  href={
+                    cfg
+                      ? `https://testnet.nearblocks.io/address/${cfg.contractId}`
+                      : "https://near.org"
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  NEAR contract <ArrowUpRight size={13} />
+                </a>
+              </div>
+            </>
           ) : panel === "leaderboard" ? (
             <Leaderboard
               key={player?.display_name ?? "guest"}
@@ -1293,12 +1348,12 @@ export default function Game() {
               </p>
               <div className="mp-callout">
                 <div>
-                  <strong>Small businesses. Big dreams.</strong>
+                  <strong>Your park can start something bigger.</strong>
                   <p>
-                    Back a merchant with park credits to own a fixed 20% sales
-                    share. NEAR issues your transferable concession and settles
-                    its rewards. Click the NEAR badge to see your ownership,
-                    funded testnet rewards and the competition escrow.
+                    Give your park its own identity and claim it with your NEAR
+                    account. Customize a signature ride, then publish it on the
+                    ride exchange after closing. Other parks can license the
+                    design. NEAR records the license and credits its creator.
                   </p>
                 </div>
               </div>

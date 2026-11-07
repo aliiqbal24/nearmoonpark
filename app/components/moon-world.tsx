@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MoonWorld as World } from "@/lib/moon/world";
 import type { Run, Placement, Detail } from "@/lib/moon/model";
 type Props = {
+  identity?: { name: string; emblem: number };
   run: Run | null;
   speed: number;
   placement: Placement | null;
@@ -46,6 +47,12 @@ export default function MoonWorld(props: Props) {
             p.cinematic,
             p.rideId,
           );
+        if (p.identity)
+          world.setParkIdentity(
+            p.identity.name,
+            p.identity.emblem,
+            p.run?.palette ?? 0,
+          );
         world.setPaused(!!p.paused);
         world.setAttractMode(!!p.attractMode);
       } catch (e) {
@@ -69,10 +76,17 @@ export default function MoonWorld(props: Props) {
         props.cinematic,
         props.rideId,
       );
+    if (props.identity)
+      props.worldRef.current?.setParkIdentity(
+        props.identity.name,
+        props.identity.emblem,
+        props.run?.palette ?? 0,
+      );
     props.worldRef.current?.setPaused(!!props.paused);
     props.worldRef.current?.setAttractMode(!!props.attractMode);
   }, [
     props.run,
+    props.identity,
     props.speed,
     props.placement,
     props.selected,

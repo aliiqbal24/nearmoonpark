@@ -24,11 +24,11 @@ fn main() {
     let price = std::env::args()
         .nth(2)
         .and_then(|v| v.parse::<i64>().ok())
-        .unwrap_or(if strategy == "gold" { 1400 } else { 1000 });
+        .unwrap_or(1000);
     let launch = std::env::args()
         .nth(3)
         .and_then(|v| v.parse::<i64>().ok())
-        .unwrap_or(if strategy == "gold" { 3 } else { 2 });
+        .unwrap_or(2);
     while !run.finished {
         let mut commands = vec![];
         let has = |k: &str| run.buildings.iter().any(|b| b.kind == k && !b.sold);
@@ -71,25 +71,6 @@ fn main() {
             let id = run.buildings.len() as u32 + 1;
             commands.push(action("price", id, price));
             commands.push(action("launch", id, launch));
-        }
-        if strategy == "gold"
-            && commands.is_empty()
-            && run.cash >= 20000
-            && !run.partnerships.iter().any(|p| p.status == "active")
-        {
-            if let Some((id, b)) = run
-                .partnerships
-                .iter()
-                .filter(|p| p.status == "offered" && p.available_at <= run.tick && run.tick <= 495)
-                .find_map(|p| {
-                    run.buildings
-                        .iter()
-                        .find(|b| b.kind == p.kind && !b.sold)
-                        .map(|b| (p.id, b.id))
-                })
-            {
-                commands.push(action("partner", b, id as i64));
-            }
         }
         let before = run.clone();
         if let Err(e) = run.apply(&commands, 10) {

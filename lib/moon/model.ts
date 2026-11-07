@@ -1,4 +1,4 @@
-export const VERSION = "moonpark-v3";
+export const VERSION = "moonpark-v4";
 export const LANDING = 10;
 export const END = 550;
 export const DAY_SECONDS = END - LANDING;
@@ -147,7 +147,24 @@ export const resaleValue = (b: Building) =>
       (isRide(b.kind) ? Math.max(0, Math.min(100, b.condition)) : 100)) /
       10000,
   );
+export type Design = {
+  name: string;
+  palette: number;
+  style: number;
+  lights: number;
+  height: number;
+};
+export const defaultDesign = (): Design => ({
+  name: "",
+  palette: 255,
+  style: 0,
+  lights: 0,
+  height: 1,
+});
 export type Building = {
+  blueprint_id?: string;
+  design?: Design;
+  height_paid?: number;
   id: number;
   kind: Kind;
   x: number;
@@ -234,6 +251,9 @@ export type Partnership = {
 };
 export type Run = {
   version: string;
+  palette?: number;
+  bookings?: number[];
+  reputation?: number;
   tick: number;
   revision: number;
   cash: number;
@@ -271,7 +291,11 @@ export type Command = {
     | "rent"
     | "invest"
     | "partner"
+    | "design"
+    | "theme"
     | "sell";
+  blueprint_id?: string;
+  design?: Design;
   building?: number;
   item?: Kind;
   x?: number;
@@ -280,6 +304,14 @@ export type Command = {
   variant?: number;
   value?: number;
 };
+export function isCosmeticCommand(run: Run, command: Command): boolean {
+  if (command.kind === "theme") return true;
+  if (command.kind !== "design" || !command.design) return false;
+  const building = run.buildings.find(
+    (b) => b.id === command.building && !b.sold,
+  );
+  return !!building && command.design.height === (building.design?.height ?? 1);
+}
 export const merchantOwner = (kind: string) =>
   ({ food: "Omar", drink: "Mina", depot: "Nia" })[kind] ?? "Lunar Logistics";
 export const partnershipGoal = (p: Partnership) =>
@@ -296,6 +328,7 @@ export type Entry = {
 };
 export type RecordState = {
   run_id: string;
+  park_id?: string;
   owner: string;
   player_id: string;
   display_name: string;
@@ -333,6 +366,9 @@ export type Placement = {
   kind: Kind | "path" | "erase";
   rotation: number;
   variant: number;
+  design?: Design;
+  blueprint_id?: string;
+  launch?: number;
 };
 export type Detail = {
   kind: "building" | "guest";

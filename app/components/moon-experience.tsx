@@ -1,28 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowUpRight,
-  Check,
-  Handshake,
-  ShieldCheck,
-  Timer,
-  Coins,
-  Rocket,
-} from "lucide-react";
-import {
-  blueprint,
-  footprint,
-  money,
-  clock,
-  partnershipGoal,
-  type Run,
-  type Partnership,
-  type Command,
-} from "@/lib/moon/model";
+import { Coins, Rocket } from "lucide-react";
+import { footprint, money, type Run } from "@/lib/moon/model";
 import type { Snapshot } from "@/lib/moon/session";
 import type { MoonWorld } from "@/lib/moon/world";
 import type { MoonAudio } from "@/lib/moon/audio";
-import { NearMark } from "./near-economy";
 
 export function CashNumber({ value }: { value: number }) {
   const [display, setDisplay] = useState(value),
@@ -87,32 +69,25 @@ export function MoneyFeedback({
     seen.current.count = Math.max(seen.current.count, r.trade_count);
     const groups = new Map<
       string,
-      { amount: number; building: number; big: boolean; label: string }
+      { amount: number; building: number; label: string }
     >();
     for (const t of fresh) {
       if (t.to !== "Park" || t.amount <= 0) continue;
-      const big = t.good === "partnership reward";
       const building = t.from.startsWith("business:")
         ? Number(t.from.split(":")[1])
         : t.from.startsWith("guest:")
           ? (r.guests[Number(t.from.split(":")[1])]?.target ?? 0)
           : 0;
-      const key = big ? "partnership" : `${building}:${t.good}`;
-      const deal = big
-        ? r.partnerships.find(
-            (p) => p.status === "completed" && p.settled_at === t.tick,
-          )
-        : null;
-      const label = big
-        ? `${deal?.owner ?? "Your partner"} delivered!`
-        : t.good === "revenue share"
+      const key = `${building}:${t.good}`;
+      const label =
+        t.good === "revenue share"
           ? "Your revenue share"
           : t.good === "resale"
             ? "Ride sold"
             : "Tickets sold";
       const old = groups.get(key);
       if (old) old.amount += t.amount;
-      else groups.set(key, { amount: t.amount, building, big, label });
+      else groups.set(key, { amount: t.amount, building, label });
     }
     if (!groups.size) return;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -136,7 +111,7 @@ export function MoneyFeedback({
         y,
         dx: (hud ? hud.left + hud.width * 0.6 : innerWidth * 0.3) - x,
         dy: (hud ? hud.top + hud.height * 0.55 : 50) - y,
-        big: g.big && !reduced,
+        big: !reduced && g.amount >= 3000,
         group: `${g.building}:${g.label}`,
         created: performance.now(),
       };
@@ -154,9 +129,8 @@ export function MoneyFeedback({
       }
       return next.slice(-8);
     });
-    const reward = additions.some((b) => b.label.includes("delivered"));
-    if (reward || performance.now() - lastSound.current > 650) {
-      audio.current?.effect(reward ? "reward" : "cash");
+    if (performance.now() - lastSound.current > 650) {
+      audio.current?.effect("cash");
       lastSound.current = performance.now();
     }
   }, [state, worldRef, audio]);
@@ -206,7 +180,7 @@ export function ShuttleStatus({ run }: { run: Run }) {
     : phase < 10
       ? `Shuttle inbound · docking in ${10 - phase}s`
       : phase < 30
-        ? `${flight < 12 ? "8 new explorers" : "Return shuttle"} · ${waiting} homebound`
+        ? `${flight < 12 ? `${run.bookings?.[flight] ?? 8} new explorers` : "Return shuttle"} · ${waiting} homebound`
         : phase < 38
           ? `Shuttle departing · ${run.departures[flight] ?? 0} aboard`
           : `Next shuttle in ${40 - phase}s`;
@@ -217,233 +191,5 @@ export function ShuttleStatus({ run }: { run: Run }) {
       <Rocket size={14} />
       {text}
     </span>
-  );
-}
-export function nextPartnership(run: Run) {
-  if (run.tick < 25 && !run.partnerships.some((p) => p.status === "active"))
-    return undefined;
-  return (
-    run.partnerships.find((p) => p.status === "active") ??
-    run.partnerships.find(
-      (p) =>
-        p.status === "offered" &&
-        p.available_at <= run.tick &&
-        run.tick <= 495 &&
-        run.buildings.some((b) => b.kind === p.kind && !b.sold),
-    )
-  );
-}
-const requests: Record<string, string> = {
-  food: "A busy park needs a proper lunch. Back my kitchen and I’ll keep our explorers fed.",
-  drink:
-    "Happy riders are thirsty riders. Help me build a business that can keep up.",
-  depot: "Your mass driver deserves a pit crew. Let’s keep this dream running.",
-};
-export function PartnershipCard({
-  run,
-  deal,
-  near,
-  pending,
-  action,
-  onDetails,
-  compact = false,
-  receipt,
-}: {
-  run: Run;
-  deal: Partnership;
-  near: boolean;
-  pending: number;
-  action: (c: Command) => void;
-  onDetails?: () => void;
-  compact?: boolean;
-  receipt?: { reservation?: string; payment?: string };
-}) {
-  const b = run.buildings.find((b) => b.kind === deal.kind && !b.sold),
-    active = deal.status === "active",
-    done = deal.status === "completed",
-    expired = deal.status === "expired",
-    locked = run.tick < deal.available_at || !b || run.tick > 495;
-  return (
-    <article
-      className={`mp-partnership ${compact ? "compact" : ""} merchant-${deal.kind}`}
-      data-testid={`partnership-${deal.id}`}
-    >
-      <div className="mp-partner-heading">
-        <span className="mp-owner-portrait">
-          <img src={`/art/owner-${deal.kind}-v1.webp`} alt="" />
-          <i>✦</i>
-        </span>
-        <div>
-          <small>
-            {active
-              ? "YOUR PARTNER"
-              : done
-                ? "A PROMISE KEPT"
-                : expired
-                  ? "NEXT TIME, A NEW PLAN"
-                  : "A MESSAGE FROM YOUR NEIGHBOUR"}
-          </small>
-          <strong>
-            {deal.owner}
-            <em>{blueprint(deal.kind).name}</em>
-          </strong>
-        </div>
-        {near ? <NearMark /> : <Handshake size={18} />}
-      </div>
-      {!compact && <h3>{deal.title}</h3>}
-      <p>
-        {active
-          ? `We’re working on ${partnershipGoal(deal)}. Your investment is buying real stock and keeping the business open.`
-          : done
-            ? `We did it. The Tourism Board paid ${money(deal.reward)} credits into your park.`
-            : expired
-              ? "The target wasn’t met in time. The unused grant returned to the Board; your signed sales share continues until closing."
-              : compact
-                ? `Back my business. Your ${deal.share_percent}% sales share helps us build this dream together.`
-                : requests[deal.kind]}
-      </p>
-      {deal.building !== null && (
-        <div className="mp-concession-income">
-          Your signed share: {deal.share_percent}% · earned {money(deal.earned)}{" "}
-          credits
-          {near
-            ? receipt?.reservation || !pending
-              ? " · owned on NEAR"
-              : " · NEAR confirmation pending"
-            : " · practice"}
-        </div>
-      )}
-      {active ? (
-        <>
-          <div className="mp-contract-progress">
-            <span>
-              {deal.progress}/{deal.target}{" "}
-              {deal.kind === "depot" ? "repairs" : "sales"}
-            </span>
-            <span>
-              <Timer size={12} />
-              {clock(deal.deadline - run.tick)}
-            </span>
-          </div>
-          <progress value={deal.progress} max={deal.target} />
-          <div className="mp-contract-reward">
-            <Coins size={14} />
-            {money(deal.reward)} credits reserved
-            {near ? " on NEAR" : " in practice"}
-            {pending > 0 && near ? " · saving…" : ""}
-          </div>
-        </>
-      ) : done ? (
-        <div className="mp-contract-reward">
-          <Check size={16} />
-          Paid +{money(deal.reward)}
-        </div>
-      ) : !expired ? (
-        <>
-          <div className="mp-deal-terms">
-            <span>
-              Invest <b>{money(deal.investment)}</b>
-            </span>
-            <ArrowUpRight size={15} />
-            <span>
-              Grant <b>{money(deal.reward)}</b>
-            </span>
-          </div>
-          <small className="mp-deal-goal">
-            {partnershipGoal(deal)} in{" "}
-            {clock(Math.min(deal.duration, 550 - run.tick))}. Investment stays
-            with the merchant if time runs out.
-          </small>
-          {!compact && (
-            <small className="mp-deal-goal">
-              Includes a {deal.share_percent}% sales share for opening day
-              {near ? " and a transferable NEAR concession" : ""}. Agreed terms
-              stay fixed.
-            </small>
-          )}
-          <button
-            className="mp-primary"
-            disabled={
-              locked ||
-              run.cash < deal.investment ||
-              run.partnerships.some((p) => p.status === "active")
-            }
-            onClick={() =>
-              b && action({ kind: "partner", value: deal.id, building: b.id })
-            }
-            aria-label={`Partner with ${deal.owner}`}
-          >
-            <Handshake size={15} />
-            {!b
-              ? `Build ${blueprint(deal.kind).name} first`
-              : run.tick < deal.available_at
-                ? `Offer opens in ${clock(deal.available_at - run.tick)}`
-                : `Back ${deal.owner} · ${money(deal.investment)}`}
-          </button>
-        </>
-      ) : null}
-      {onDetails && (
-        <button className="mp-contract-details" onClick={onDetails}>
-          All partnerships <ArrowUpRight size={12} />
-        </button>
-      )}
-      {near && receipt && (receipt.payment || receipt.reservation) && (
-        <a
-          className="mp-settlement-link"
-          href={`https://testnet.nearblocks.io/txns/${receipt.payment ?? receipt.reservation}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <ShieldCheck size={12} />
-          {receipt.payment
-            ? "View NEAR payout receipt"
-            : "View signed NEAR agreement"}
-          <ArrowUpRight size={12} />
-        </a>
-      )}
-    </article>
-  );
-}
-export function PartnershipDesk({
-  state,
-  action,
-}: {
-  state: Snapshot;
-  action: (c: Command) => void;
-}) {
-  return (
-    <>
-      <p className="mp-subtle">
-        Back a neighbour with 100 park credits. Own 20% of their opening-day
-        sales, and help them meet a target for an extra grant. They keep their
-        own treasury and buy their own stock.
-      </p>
-      <div className="mp-partnership-grid">
-        {state.run.partnerships.map((p) => (
-          <PartnershipCard
-            key={p.id}
-            run={state.run}
-            deal={p}
-            near={state.mode === "near"}
-            pending={state.pending}
-            action={action}
-            receipt={state.receipts?.[p.id]}
-          />
-        ))}
-      </div>
-      <div className="mp-funding-note">
-        <ShieldCheck size={18} />
-        <p>
-          {state.mode === "near"
-            ? "NEAR records your concession ownership and fixes its terms. Sales pay your park automatically; a separate funded testnet pool backs the certificate’s capped reward. Find your certificate and collect after closing in the NEAR economy panel."
-            : "Local practice uses the same partnership rules. Choose Open your park for signed NEAR ownership and onchain settlement."}
-          <small>
-            Tourism fund: {money(state.run.grant_cash)} available ·{" "}
-            {money(state.run.grant_escrow)} reserved. These are virtual game
-            credits, with no cash redemption.
-          </small>
-        </p>
-      </div>
-    </>
   );
 }

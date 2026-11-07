@@ -1,3 +1,4 @@
+import { PALETTES } from "./parks";
 import * as T from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -486,6 +487,24 @@ export class MoonWorld {
       }
     }
   }
+  setParkIdentity(name: string, emblem: number, paletteIndex: number) {
+    const old = this.scene.getObjectByName("park-gate-sign");
+    if (!old?.parent) return;
+    const signature = `${name}:${emblem}:${paletteIndex}`;
+    if (old.userData.identity === signature) return;
+    const sign = label(
+      `${["☾", "✦", "◎"][emblem] ?? "☾"}  ${name}`,
+      PALETTES[paletteIndex]?.accent ?? "#fce3ab",
+      4.1,
+    );
+    sign.name = "park-gate-sign";
+    sign.userData.identity = signature;
+    sign.position.copy(old.position);
+    sign.scale.copy(old.scale);
+    old.parent.add(sign);
+    old.removeFromParent();
+    disposeObject(old);
+  }
   private sync() {
     if (!this.run) return;
     const run = this.run;
@@ -514,7 +533,7 @@ export class MoonWorld {
     for (const b of run.buildings) {
       if (b.sold) continue;
       let m = this.models.get(b.id);
-      const signature = `${b.kind}:${b.rotation}:${b.variant}:${b.x}:${b.z}`;
+      const signature = `${b.kind}:${b.rotation}:${b.variant}:${b.x}:${b.z}:${run.palette ?? 0}:${JSON.stringify(b.design)}`;
       if (m && m.root.userData.signature !== signature) {
         this.scene.remove(m.root);
         disposeObject(m.root);
@@ -522,7 +541,7 @@ export class MoonWorld {
         m = undefined;
       }
       if (!m) {
-        m = createBuilding(b);
+        m = createBuilding(b, run.palette ?? 0);
         m.root.userData.signature = signature;
         const { w, h } = footprint(b);
         m.root.position.set(
@@ -732,7 +751,7 @@ export class MoonWorld {
         this.layout();
       }
     }
-    const dt = Math.min(0.06, (now - this.last) / 1000 || 0);
+    const dt = Math.max(0, Math.min(0.06, (now - this.last) / 1000 || 0));
     this.last = now;
     this.time += dt;
     const run = this.run;
@@ -843,7 +862,9 @@ export class MoonWorld {
   };
   private animateGuests(run: Run, dt: number, time: number) {
     for (const g of run.guests) {
-      const visible = !["upcoming", "gone", "riding"].includes(g.status);
+      const visible = !["upcoming", "gone", "riding", "cancelled"].includes(
+        g.status,
+      );
       let p = this.people.get(g.id);
       if (!visible) {
         if (p) p.visible = false;
@@ -1063,6 +1084,7 @@ export class MoonWorld {
     }
   }
   setPaused(value: boolean) {
+    if (this.paused === value) return;
     this.paused = value;
     if (!value) {
       this.last = performance.now();

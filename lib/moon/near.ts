@@ -75,6 +75,7 @@ export async function provision(
   const m = await api();
   const key = `moonpark-keys:${identity}:${c.contractId}`;
   const saved = localStorage.getItem(key);
+  let previousAccount = "";
   if (saved) {
     const credentials = JSON.parse(saved) as Credentials;
     const p = failoverRpc(m, [c.rpcUrl, c.fallbackRpcUrl]);
@@ -109,8 +110,14 @@ export async function provision(
       allowance >= 320000000000000000000000n
     ) {
       credentials.displayName = displayName;
+      localStorage.setItem(
+        `moonpark-active:${c.contractId}`,
+        credentials.accountId,
+      );
+      await restoreRotatedPark(c, credentials);
       return credentials;
     }
+    previousAccount = credentials.accountId;
     localStorage.setItem(
       `moonpark-retired-keys:${credentials.accountId}`,
       saved,
@@ -122,6 +129,8 @@ export async function provision(
     recovery: m.KeyPair.fromRandom("ed25519").toString(),
     session: m.KeyPair.fromRandom("ed25519").toString(),
   };
+  if (previousAccount) pending.previousAccount = previousAccount;
+  else previousAccount = pending.previousAccount ?? "";
   localStorage.setItem(pendingKey, JSON.stringify(pending));
   const r = await fetch("/api/moon/provision", {
     method: "POST",
@@ -148,8 +157,37 @@ export async function provision(
     displayName,
   };
   localStorage.setItem(key, JSON.stringify(credentials));
+  if (previousAccount)
+    localStorage.setItem(
+      `moonpark-rotation:${credentials.accountId}`,
+      previousAccount,
+    );
   localStorage.removeItem(pendingKey);
+  localStorage.setItem(
+    `moonpark-active:${c.contractId}`,
+    credentials.accountId,
+  );
+  await restoreRotatedPark(c, credentials);
   return credentials;
+}
+async function restoreRotatedPark(cfg: Config, credentials: Credentials) {
+  const key = `moonpark-rotation:${credentials.accountId}`;
+  const previous = localStorage.getItem(key);
+  if (!previous) return;
+  const old = JSON.parse(
+    localStorage.getItem(`moonpark-retired-keys:${previous}`) || "null",
+  ) as Credentials | null;
+  const park = await view<{ id: string } | null>(cfg, "get_park_by_operator", {
+    account_id: previous,
+  });
+  if (park && old) {
+    const { parkAction } = await import("./parks");
+    await parkAction(cfg, old, "rotate_park_operator", {
+      park_id: park.id,
+      operator: credentials.accountId,
+    });
+  }
+  localStorage.removeItem(key);
 }
 const clients = new WeakMap<
   Credentials,

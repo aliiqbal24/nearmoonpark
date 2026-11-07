@@ -1,7 +1,8 @@
 import * as T from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { blueprint, footprint, type Building } from "./model";
+import { PALETTES } from "./parks";
+import { blueprint, footprint, defaultDesign, type Building } from "./model";
 export const SCALE = 1.25;
 const materials = new Map<string, T.MeshStandardMaterial>();
 export function material(color: string | number) {
@@ -879,7 +880,7 @@ function dressBuilding(
     }
   }
 }
-export function createBuilding(b: Building): AnimatedModel {
+export function createBuilding(b: Building, parkPalette = 0): AnimatedModel {
   const a = blueprint(b.kind),
     root = new T.Group(),
     model = new T.Group(),
@@ -1174,6 +1175,133 @@ export function createBuilding(b: Building): AnimatedModel {
     model.add(sign);
   }
   dressBuilding(model, b, w, h, parts);
+  const design = b.design ?? defaultDesign();
+  const chosen = design.palette === 255 ? parkPalette : design.palette;
+  const colors = PALETTES[chosen] ?? PALETTES[0];
+  const custom = chosen !== 0;
+  if (custom) {
+    const primary = new Set(
+      [a.color, "#8eddd3", "#70d5bd", "#b6a0ed", "#8c80b5", "#f6b6a0"].map(
+        (c) => new T.Color(c).getHex(),
+      ),
+    );
+    const accents = new Set(
+      ["#f8cf76", "#f3ba59", "#f2d28d", "#e2d8bd"].map((c) =>
+        new T.Color(c).getHex(),
+      ),
+    );
+    const replacements = new Map<T.Material, T.Material>();
+    model.traverse((o) => {
+      if (
+        !(o instanceof T.Mesh) ||
+        !(o.material instanceof T.MeshStandardMaterial) ||
+        o.material === glass
+      )
+        return;
+      const original = o.material;
+      let replacement = replacements.get(original);
+      if (!replacement) {
+        const hex = original.color.getHex();
+        const color = primary.has(hex)
+          ? colors.primary
+          : accents.has(hex)
+            ? colors.accent
+            : null;
+        if (!color) return;
+        const copy = original.clone();
+        copy.color.set(color);
+        if (copy.emissiveIntensity > 0 && original.emissive.getHex() !== 0)
+          copy.emissive.set(color);
+        replacement = copy;
+        replacements.set(original, copy);
+      }
+      o.material = replacement;
+    });
+  }
+  if (b.kind === "coaster" && curve && design.height !== 1) {
+    // Animated cars inherit model height. The front-seat camera gets the same scale below.
+    model.scale.y = [0.72, 1, 1.22][design.height];
+  }
+  if (design.style === 1) {
+    const halo = new T.Mesh(
+      new T.TorusGeometry(
+        b.kind === "wheel" ? 2.55 : Math.min(w, h) * 0.28,
+        0.045,
+        8,
+        64,
+      ),
+      material(colors.accent),
+    );
+    halo.position.set(
+      0,
+      b.kind === "wheel" ? 3.2 : 2.5,
+      b.kind === "wheel" ? -0.18 : 0,
+    );
+    if (b.kind !== "wheel") halo.rotation.x = Math.PI / 2;
+    halo.castShadow = true;
+    model.add(halo);
+    for (const x of [-1, 1]) {
+      const flag = label("✦", colors.primary, 0.45);
+      flag.position.set(x * (w * 0.36), 1.35, h * 0.4);
+      model.add(flag);
+    }
+  } else if (design.style === 2) {
+    for (const x of [-1, 1]) {
+      box(model, colors.dark, x * (w * 0.38), 0.7, h * 0.36, 0.22, 0.7, 0.28);
+      for (let i = 0; i < 3; i++) {
+        const stripe = box(
+          model,
+          colors.accent,
+          x * (w * 0.38),
+          0.49 + i * 0.16,
+          h * 0.36 + 0.15,
+          0.24,
+          0.055,
+          0.025,
+        );
+        stripe.rotation.z = -0.3;
+      }
+    }
+    const badge = label(
+      "LUNAR EXPEDITION",
+      colors.accent,
+      Math.min(1.5, w * 0.55),
+    );
+    badge.position.set(0, 1.05, h * 0.4);
+    model.add(badge);
+  }
+  if (design.lights > 0) {
+    const light = design.lights === 1 ? "#ffd48c" : colors.primary;
+    for (const x of [-1, 1])
+      for (const z of [-1, 1]) {
+        cylinder(
+          model,
+          colors.dark,
+          x * (w / 2 - 0.35),
+          0.85,
+          z * (h / 2 - 0.35),
+          0.045,
+          1,
+        );
+        sphere(
+          model,
+          light,
+          x * (w / 2 - 0.35),
+          1.38,
+          z * (h / 2 - 0.35),
+          0.11,
+        ).material = glow(light);
+      }
+  }
+  if (design.name) {
+    const customSign = label(
+      design.name,
+      custom ? colors.accent : a.color,
+      Math.min(w * 0.65, 2.8),
+    );
+    customSign.position.set(0, 1.7, h / 2 - 0.1);
+    model.add(customSign);
+  }
   batch(model);
   const lamp = sphere(model, a.color, w * 0.35, 0.6, h * 0.35, 0.12);
   lamp.material = new T.MeshStandardMaterial({

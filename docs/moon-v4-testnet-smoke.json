@@ -1,0 +1,566 @@
+{
+  "contractId": "game.moonpark-mw65jiya.testnet",
+  "codeHash": "HXVUbBWAQLD4znnbzs97RdPz2y664QCYRBmKCkHJVHWy",
+  "runId": "1",
+  "owner": "proof-mw66oilc.moonpark-mw65jiya.testnet",
+  "ranked": false,
+  "checkpoints": [
+    {
+      "tick": 10,
+      "hash": "1e8094db81879391f0e7966c5d99fb6df383d1cc55097cec30a4642e265c2495",
+      "transaction": "BXXpxXLnpp4ZY3c1mgfYmCcCL1JD3E3h3AChzs7ZNLAj",
+      "gas": "34086648563332",
+      "trades": 0
+    },
+    {
+      "tick": 20,
+      "hash": "39ed6c21624039135984383c0ef7f58d9f17f9de17805567d3c6b763889df90f",
+      "transaction": "Ct5P8Dh6NEAri2Te6Vs7jCbRKGv5GRXvBqFDowuuCPG",
+      "gas": "35634764989375",
+      "trades": 1
+    },
+    {
+      "tick": 30,
+      "hash": "4983136362ed2f4f4939546873051ccf559ed06eead005db25056eb4b4b69210",
+      "transaction": "3MCvzHY3c9AzDtZriAmVSwQ7biQ3DfAkuRRgV41idwkw",
+      "gas": "35206729643067",
+      "trades": 10
+    },
+    {
+      "tick": 40,
+      "hash": "c5f299e38675dd84718fae31750074e16b76688bbb9afa9440e4d33c61601466",
+      "transaction": "9Q3SSGoPPuA3k9rz22SLMx4LpCZGP5NeeZR6LwxzDcki",
+      "gas": "35678372042409",
+      "trades": 13
+    },
+    {
+      "tick": 50,
+      "hash": "5d371d2608e402f51aecce49eca05839e555718d5a6947f6d191259090c4c41d",
+      "transaction": "3TQQyAq1f4EMq8ouetduXSgYSQgZ9D13BhQV9KjKnX1R",
+      "gas": "36847383711045",
+      "trades": 18
+    },
+    {
+      "tick": 60,
+      "hash": "83c04f284d665d9a3016e87998423c6b56804c659a0514ccac4e3cf7899f074e",
+      "transaction": "4DadunGipVTmg2gDiU2e4Z2f1wiWyjwZxSRKLJDND8Am",
+      "gas": "37825551054744",
+      "trades": 22
+    },
+    {
+      "tick": 70,
+      "hash": "6c8d55905a4707ad3ce32837af9997108541eb924d081dc1710c611e931effca",
+      "transaction": "BtrLjBWJmqCPhdmxuGFgX9URHkPcVDv8v6aobiPNKgDX",
+      "gas": "38734041905529",
+      "trades": 35
+    },
+    {
+      "tick": 80,
+      "hash": "ec4e3387f79cdcd457613039e2839f8fcca4172ed626f27b562faa6e8da3be30",
+      "transaction": "5gszqG3HVT8DKyfFupGUSiAswq99F65osD8f4emBppS8",
+      "gas": "39641856992706",
+      "trades": 41
+    },
+    {
+      "tick": 90,
+      "hash": "3ccfe85c5479ab06e4e9540fd87d95381c7f67329ddb1f5648b95176ea438279",
+      "transaction": "CZGZSpCVQHk5a4NhgjNVu37wsApxzFihVxLt6udVcKtF",
+      "gas": "39833805569271",
+      "trades": 47
+    },
+    {
+      "tick": 100,
+      "hash": "c009112aea4f56adf7bfd2756c9f9972a35fa720116ba5cd007c3206562887f8",
+      "transaction": "6iX6GtG9AFWbq2ZEhh1sqWs2SE57sagDdLQ9JSw6K2sh",
+      "gas": "43022865855042",
+      "trades": 59
+    },
+    {
+      "tick": 110,
+      "hash": "20c4ceeced70b97e1619c5f649ee934f339c11b880a6888b4b8bab9579a89a5d",
+      "transaction": "BuX1ni2Yf3g3Z5yVUSFBvZ7bNUxVPNYuaHa3Xabaqd1G",
+      "gas": "42522704607572",
+      "trades": 72
+    },
+    {
+      "tick": 120,
+      "hash": "262741a4c28d1403605cb19f2e423601183a8c25d09a2c992e1815d5f5890953",
+      "transaction": "F8mnhzEdRXqMWgNNgy6djcGuws6GKHNFSQRqNWrYeSXM",
+      "gas": "42781355932403",
+      "trades": 86
+    },
+    {
+      "tick": 130,
+      "hash": "4e232c5c9810ad6fa16e4caedc667c70b43a84a9bd9dfa0802dc01b4deeb3c98",
+      "transaction": "EQY5kVRmjx38uwbpyrvx3s67bpAJ4UDognTLzwQLRZ16",
+      "gas": "43054906217345",
+      "trades": 96
+    },
+    {
+      "tick": 140,
+      "hash": "d6bf4c3d6e005884217c7de1560e93c02f0b9fdc53caa34382bcecef1836ec61",
+      "transaction": "8ckpUVw6BX6yGwDP6L8hxn989fbs2j9X82V3HvTiBQVr",
+      "gas": "44355454979798",
+      "trades": 107
+    },
+    {
+      "tick": 150,
+      "hash": "65f4b3ba06ff8cccfa00dbbd1acfcea7869bb61e0ee8750aedf72ed864bbec7f",
+      "transaction": "7yYp6fC4nWGxH4Dog3yTUfARwm1nkhaQdtJKZGihgguw",
+      "gas": "42860244860606",
+      "trades": 117
+    },
+    {
+      "tick": 160,
+      "hash": "8b1f5918056afa0b1c92a63a82ef3a6f980ca66114e2dda2b2ea14b8e806de3c",
+      "transaction": "GYDgnjFNB7SPT78deLv253TE8zgqNB3ncBu6e8KBi1xh",
+      "gas": "44821287966032",
+      "trades": 136
+    },
+    {
+      "tick": 170,
+      "hash": "56b627ac7ab483f021187f861fe966d38a683bedbe68cbfae6b5b4464e4bd86c",
+      "transaction": "B5G6pXNnUhQ2Ri4ZSck2Ho6bhwLHxKSRau6pK4qBdkDC",
+      "gas": "43386386002670",
+      "trades": 150
+    },
+    {
+      "tick": 180,
+      "hash": "9c94032c21444c990177e2deeeec5b738d8962d1c4a175ddc1f768c946fa6afb",
+      "transaction": "GSzTvFY17T3jHWdnC1Dg6wLUDc6VDNWpNdpQj3aT1vpF",
+      "gas": "45468385904759",
+      "trades": 165
+    },
+    {
+      "tick": 190,
+      "hash": "d9e5c42da7e5dc7a0f736c1eef6631965c79c6d8a657bc685d11291ef111274a",
+      "transaction": "8iZMYyehGyzLLQJNyJGQ3vhhCzBmW3RBNXBZ2kmtJY8B",
+      "gas": "44096839598708",
+      "trades": 182
+    },
+    {
+      "tick": 200,
+      "hash": "aa717913bced30d2a0206cacdec1a4f74db10629041997023ebcb792a4205cef",
+      "transaction": "CSGYwzsoqN5yBdGjJ3AziQNDniWN7sCB9grLSSc89Je4",
+      "gas": "44431827135125",
+      "trades": 201
+    },
+    {
+      "tick": 210,
+      "hash": "92301c123aae68b1319f4c7a8861536323a650fc0cfc0f5b1bcc7745acd734f0",
+      "transaction": "6iR67jSTPgiLWhaEfx1pBsfbBeGmGQwnJwTQ1g2CsS1o",
+      "gas": "43807190179154",
+      "trades": 211
+    },
+    {
+      "tick": 220,
+      "hash": "15144dcb2f2970ab3635969330f90268ed2ad3fef7980404f4634c68c7297af4",
+      "transaction": "4rtXojvN4zanZZnX2TkJYvU64B4GYRGuPxosbPy26GHP",
+      "gas": "45858825844106",
+      "trades": 230
+    },
+    {
+      "tick": 230,
+      "hash": "5884a6f827124ec123331862dbe90b23db03dc70d2dd72440bd1f1d99bbd1cc7",
+      "transaction": "C6Ar4jsW1yFzmmiC8fUPVJFisgnvNKDmeh8vUaEkuzA4",
+      "gas": "45568912175124",
+      "trades": 245
+    },
+    {
+      "tick": 240,
+      "hash": "f572784cf19b0f16844347ff10a2dd0982a925cf2be774a5bdcab163ad822a11",
+      "transaction": "DMQnC2ZbWQn2aAW4Pz9rdhLgRawF8pbRUEooz64xuZRh",
+      "gas": "45452700690896",
+      "trades": 256
+    },
+    {
+      "tick": 250,
+      "hash": "b6b3f3e9121a3398e1daacae59388ac57acc2d8d9b1090973a814d84aaed662e",
+      "transaction": "sUGMkSfZjQcvzRomBFB6itA6h5cnvKKquCHgyo43qzb",
+      "gas": "45509126773565",
+      "trades": 269
+    },
+    {
+      "tick": 260,
+      "hash": "a0b8e199192b7e4dd8b5e3a6d36c42a8d355cd39f3c46dcbb84896012b1c3763",
+      "transaction": "5D2fkNvG7yoESTxHcr7E3ZiXuvNTa4D9CLXYG58vsRBt",
+      "gas": "47131345304411",
+      "trades": 288
+    },
+    {
+      "tick": 270,
+      "hash": "76558471c09ca0453c49835d73a19e22bfac4750405f417168ccb4d2edc43719",
+      "transaction": "Dzo2AkDpB3AnodR2HWki3thNBFhzj1btr7hZdvNV9WYs",
+      "gas": "45310704370928",
+      "trades": 298
+    },
+    {
+      "tick": 280,
+      "hash": "fa4e25ea301ecb66a25a97d3a14038e86966f91d9297ca46a5d845f4557e9840",
+      "transaction": "joUfJHLmFCBNeWTkEz8bQansFxpKUUutaBQQ2c7WcA9",
+      "gas": "46593222947129",
+      "trades": 318
+    },
+    {
+      "tick": 290,
+      "hash": "c97ba383430095c2ac3b77bf923175e64725453fc564b63c039bdef230e59e97",
+      "transaction": "Had1j2meuhzQaH6KGGbM4mULqasUyMRKuVFHJ4VrdW5P",
+      "gas": "45222038271287",
+      "trades": 328
+    },
+    {
+      "tick": 300,
+      "hash": "bcfc97bb69cee9785501334c8fc3905cc0a6c6121f4a8bffe7071a1673d1ccdd",
+      "transaction": "2JNKPwX2CSSo8A6MS5VhWnrNjNwEqN2wM2uQwrUbGK3w",
+      "gas": "47345477064992",
+      "trades": 353
+    },
+    {
+      "tick": 310,
+      "hash": "e86230659c3a77800140117d70df735a176dcfc3c2514ef7334c5c82c3641bde",
+      "transaction": "D7LFweRwDuM1ZjTz6gLXJX5hLhGNnspTxbihgeTWRhfC",
+      "gas": "46315705558745",
+      "trades": 364
+    },
+    {
+      "tick": 320,
+      "hash": "9a60b014c6f8adbbf25b25849aa35ddcfc0f051d389ee79094bfd00236e9c0ea",
+      "transaction": "BrbFMgZCBuWqgUT4W73UaicRhymq6FHQDX4ivEg6ommq",
+      "gas": "46350537641114",
+      "trades": 382
+    },
+    {
+      "tick": 330,
+      "hash": "8e631fda8bdcd0da728a42a322b386fde7102df406ba906de000e0bff7771b80",
+      "transaction": "AV8epFg1eHZF4fN77iWofVdn4W27hfSMFFMGif1swPi7",
+      "gas": "45606947229698",
+      "trades": 392
+    },
+    {
+      "tick": 340,
+      "hash": "6a5a7b6fc0175136d55dc92a1dbefbe01410877008c8fe852460b3f1aa354e20",
+      "transaction": "5n1WKGybzZ5S93V7BhbdXxfZJEMHKaB4LFbivC2h7VbT",
+      "gas": "48139732607138",
+      "trades": 417
+    },
+    {
+      "tick": 350,
+      "hash": "b5e1b41df4786f0f73414dece1904a5cfc03c94b397f979da8b64ea4d0bd0bdc",
+      "transaction": "3VFSAQneRbs9S4v5E2bG16T532EwHpShDSmvMsy9kL8C",
+      "gas": "50603823471998",
+      "trades": 432
+    },
+    {
+      "tick": 360,
+      "hash": "d3b2e112820ca0232053d030f1b2effc081069ff59fae0f64207c3f4c4902b42",
+      "transaction": "3Zt5BMUYhWR23zA5ayK4Rc5wFGcf3yEECgLAZFRdS9F6",
+      "gas": "47977210840142",
+      "trades": 453
+    },
+    {
+      "tick": 370,
+      "hash": "fd26e75fe7fc8f3f991c2b1a59db0dc90bb46b3ee9d86a5878e1bd90a0dc73da",
+      "transaction": "BuEKYbNQYD3d4mvxS6cvsH54Bi2k4VjWNdyAkmmviZHU",
+      "gas": "47445312217913",
+      "trades": 460
+    },
+    {
+      "tick": 380,
+      "hash": "e9d1ac428f517a0e1ea37d3ca09f8335fcb3e387a788854bcc95ce69f0060335",
+      "transaction": "2L1JVM5sVwA8G8EM7GNV1rXSFLra2eRfhdm6C5oM1KdW",
+      "gas": "48241949491712",
+      "trades": 478
+    },
+    {
+      "tick": 390,
+      "hash": "c834775211399fbf91586b2461fcfd8490ebd58a1cad6b27002e267c4d64738f",
+      "transaction": "4DaPdbpbBE3bWZxbgaVpH2qTxEGfAqT5waUzPQpqYR2h",
+      "gas": "48337136575130",
+      "trades": 488
+    },
+    {
+      "tick": 400,
+      "hash": "83ed000305ff9a881a518982d5dedf2f6b9e76657ee242a42c992e75c7cbafab",
+      "transaction": "8TqSHq67qDMRZ7ufYcw7B7Ck91UQVUnev4ZRm2kLshd6",
+      "gas": "49323715630523",
+      "trades": 506
+    },
+    {
+      "tick": 410,
+      "hash": "938ce539ab16fa0016cc07db256aa495bc357bffc4ea598b49dc6dcd70875177",
+      "transaction": "4bt2b6uGFt6dwShjcHeha9DoyYJnKNwMd6E2FyMqcaWs",
+      "gas": "47746931081693",
+      "trades": 519
+    },
+    {
+      "tick": 420,
+      "hash": "aaf0fecfd88e5c5a8955e5cecc2a67f96bb5ad06564ecaa5856e167d1d2508e3",
+      "transaction": "Ejv3GMTvE7q7u5uKLSzN2hFuNet81ZATT6fZU6HR9bso",
+      "gas": "49128659381717",
+      "trades": 545
+    },
+    {
+      "tick": 430,
+      "hash": "b762cb93e9e89d3b2e409646877ca56c51a94353003b17617b1871fd6ebb3806",
+      "transaction": "5htRy7m54SM6WLWrfC7di6KaugZkS5pqB94rTZah6pHC",
+      "gas": "50708898019887",
+      "trades": 555
+    },
+    {
+      "tick": 440,
+      "hash": "293e4566985e8883f767b8ae79fb2dd9335600d88f9ad59510fbc276f355ffad",
+      "transaction": "66L5NTE7FcmgPCjmJcGSPQK2CtMrzvfsGrGTf9zE77y1",
+      "gas": "50321687070008",
+      "trades": 573
+    },
+    {
+      "tick": 450,
+      "hash": "06bee10648c8d743c85b3898e51f26a15a68917ac89a3a94cfa79867e9af2a93",
+      "transaction": "7ShwYpQygqwKmAoH3giV2u5GrmXDRNZQ9cZ45UE2xHcA",
+      "gas": "48993894467876",
+      "trades": 584
+    },
+    {
+      "tick": 460,
+      "hash": "963948f1cbd6c93f77d770b775c451d991df218e59acb52eea407eac465e81ea",
+      "transaction": "CKDUHc78esybftFkKXySs5shxEvBocBxidfyE2YAoZ3V",
+      "gas": "50332158694616",
+      "trades": 606
+    },
+    {
+      "tick": 470,
+      "hash": "dd3e725a4ce91f7a1cac663e6f601dc61816e8289d13ef4c3534bab2dcb3e9ae",
+      "transaction": "GMrN3otDNYdbGN6vXoA12CZMRBSQMRGm9BsVCQ7aDxuc",
+      "gas": "50192344132448",
+      "trades": 616
+    },
+    {
+      "tick": 480,
+      "hash": "034a459b01dfce5e03165b07961cc376ef669dfa3d9b9754a31189f3c9640ec9",
+      "transaction": "4KyhSKPSmjqT8bybXgcuafz8Wz7m1xKJ8fEwZfWkT8Mp",
+      "gas": "50834087201648",
+      "trades": 641
+    },
+    {
+      "tick": 490,
+      "hash": "c728cac52377e9ba874416d602abe26f73a36f8f85b8fac0c6181f875c3de058",
+      "transaction": "ExRo1eWn8c1YZNu6neeWaCkLZj77UvsFrRgesmSZUH3L",
+      "gas": "49132495835534",
+      "trades": 649
+    },
+    {
+      "tick": 500,
+      "hash": "e510efb031c0533eb66ea162768fbdb0a74982752db7adeed5b4319a070e1972",
+      "transaction": "5S2oGP2zxKMtJbzwxaGnEV2xehkia1QXnvYWDr4CRjTZ",
+      "gas": "50068851963851",
+      "trades": 670
+    },
+    {
+      "tick": 510,
+      "hash": "4bc73fcb302b4b43224fb04ab8c7f542511c29aa1de8161020c2932b1b0deec6",
+      "transaction": "54rsVmFF5uRwERL1mqcigKBYwiXm1DWjkUfHA32xWvd7",
+      "gas": "51011762650310",
+      "trades": 689
+    },
+    {
+      "tick": 520,
+      "hash": "998e2d7a54b13b7011fc03b27a04d0c8c5feb239be661ad861bac877fb447782",
+      "transaction": "gAxjcmu5rrBiCf6CAZTANwCF64uTxFN9YduZEpNHAnk",
+      "gas": "50259874165238",
+      "trades": 704
+    },
+    {
+      "tick": 530,
+      "hash": "30db63bd384bedcb2e2edbeae52c4096abe7e4164d841ac8af8357c1fcc53583",
+      "transaction": "99w7YUcHj59qHipH3a9hgCt4BqwX32f1ryxngGRet8XZ",
+      "gas": "49316120398274",
+      "trades": 711
+    },
+    {
+      "tick": 540,
+      "hash": "6fb136b20260484f4817a6c97a3a087d09d27f6d3088b8de9dcdc00b94680a77",
+      "transaction": "2QWPF1r2k33ULWZFtoWG5Fd6xbpJ1qEibZABWReD1Lhr",
+      "gas": "50300970114674",
+      "trades": 734
+    },
+    {
+      "tick": 550,
+      "hash": "9316f202bc7f6a2e58fb8351db11e9158f4a1a2b74bb1d0304b3ea97eb02c2ce",
+      "transaction": "HmudYJnoj7JXBACe6riitsKWwMhFVDJphsSoDLQdgA5N",
+      "gas": "50751033031722",
+      "trades": 738
+    }
+  ],
+  "maxGas": "51011762650310",
+  "score": {
+    "guests": 5735,
+    "finance": 525,
+    "variety": 901,
+    "total": 7161,
+    "happy": 94,
+    "equity_gain": 31540,
+    "unique": 173,
+    "satisfaction": 9177
+  },
+  "partnerships": [],
+  "reservedFunding": 0,
+  "availableFunding": 0,
+  "ownershipProof": {
+    "park": {
+      "id": "1",
+      "owner": "owner-mw66te1i.moonpark-mw65jiya.testnet",
+      "operator": "proof-mw66oilc.moonpark-mw65jiya.testnet",
+      "pending_owner": null,
+      "name": "Earthrise Gardens",
+      "emblem": 1,
+      "revision": 4,
+      "run_id": "1",
+      "blueprint_ids": [
+        "1:3"
+      ],
+      "rating_sum": 0,
+      "rating_count": 0,
+      "license_count": 0
+    },
+    "blueprint": {
+      "id": "1:3",
+      "park_id": "1",
+      "creator": "proof-mw66oilc.moonpark-mw65jiya.testnet",
+      "name": "Earthskimmer",
+      "kind": "coaster",
+      "variant": 0,
+      "launch": 2,
+      "design": {
+        "name": "Earthskimmer",
+        "palette": 3,
+        "style": 1,
+        "lights": 2,
+        "height": 1
+      },
+      "source_run": "1",
+      "source_building": 3,
+      "licenses": 0
+    },
+    "buyer": "buyer-mw66tild.moonpark-mw65jiya.testnet",
+    "licensedBuilding": {
+      "id": 3,
+      "design": {
+        "name": "Earthskimmer",
+        "palette": 3,
+        "style": 1,
+        "lights": 2,
+        "height": 1
+      },
+      "blueprint_id": "1:3",
+      "height_paid": 1,
+      "kind": "coaster",
+      "x": 3,
+      "z": 8,
+      "rotation": 0,
+      "variant": 0,
+      "price": 1000,
+      "invested": 120000,
+      "level": 0,
+      "launch": 2,
+      "enabled": true,
+      "sold": false,
+      "ready_at": 15,
+      "connected": false,
+      "powered": false,
+      "condition": 100,
+      "queue": [],
+      "riders": [],
+      "cycle_left": 0,
+      "served": 0,
+      "revenue": 0,
+      "cash": 0,
+      "stock": 0,
+      "rent": 10,
+      "delivery_qty": 0,
+      "delivery_at": 0,
+      "recent": 0,
+      "reason": "Waiting for the first customers.",
+      "insolvent": false
+    },
+    "earnings": {
+      "available": "4500000000000000000000",
+      "pending": "0",
+      "paid": "0"
+    },
+    "paid": {
+      "available": "0",
+      "pending": "0",
+      "paid": "4500000000000000000000"
+    },
+    "transactions": [
+      {
+        "method": "apply_actions",
+        "transaction": "Bb6NPfQ55S5EzLSc7L5cLDq9oUSdKmWrQjehGwMYmeJA"
+      },
+      {
+        "method": "save_park",
+        "transaction": "HZMDWgy4PPpdtTSuUge1xQmwJKr7XoShePUc5BNqesxR"
+      },
+      {
+        "method": "publish_blueprint",
+        "transaction": "7rtY3CPasv7Lpc6Ma81JkWnUaRnfW4yefjgqfsK1LTH4"
+      },
+      {
+        "method": "nominate_park_owner",
+        "transaction": "5q5XwLq5gdVi32Cd9p2boADsHSFSi8MSF8MJJqqozBGY"
+      },
+      {
+        "method": "accept_park",
+        "transaction": "6ayZfP35MditMeKLSF1d4GeGATPLLrBDSgyrvu4HThFn"
+      },
+      {
+        "method": "register_player",
+        "transaction": "mG7RJP8F2VLW4FKXNu2QprvdLq3c259YvRkLfd1oxu4"
+      },
+      {
+        "method": "create_run",
+        "transaction": "7UPH45EHUycKQ8yc7TLoCfBXDmXdrP7sMi7vWXUgpKah"
+      },
+      {
+        "method": "license_blueprint",
+        "transaction": "CBEbvP3bBWonbkTpx8CrNAzAAsEiPvcQhaLgREJdRZKg"
+      },
+      {
+        "method": "license_blueprint",
+        "transaction": "9rAmbc2aL4PiYZts8CFCYGV3J1CupFXEibLgQfsJHfET"
+      },
+      {
+        "method": "apply_actions",
+        "transaction": "cmzjS5uetDSppa4B5pAdxJsJxSsXvEErhV5qj4Gf11Y"
+      },
+      {
+        "method": "claim_creator_earnings",
+        "transaction": "FhfU2AaXZtmMNXuJT1SpiaJAqEBvo82dut2BKmL1G6eZ"
+      },
+      {
+        "method": "rate_park",
+        "transaction": "Fygp8kxwx3yoANGxyemtRtiC8S6pRhn83gppjgW4xNkf"
+      },
+      {
+        "method": "fund_storage",
+        "transaction": "GYSDfnie1Rp34TdaKKQfqMgo4idgJ2yJteNq1ydPxL6W"
+      }
+    ],
+    "publicParkPath": "/park/owner-mw66te1i.moonpark-mw65jiya.testnet",
+    "wrongClaimSignerRejected": true,
+    "duplicateLicenseRefunded": true,
+    "duplicateEarningsClaimRejected": true
+  },
+  "fundSafety": {
+    "liquid_yocto": "1944640000000000000000000",
+    "business_obligations_yocto": "0",
+    "prize_obligations_yocto": "500000000000000000000000",
+    "storage_buffer_yocto": "1444640000000000000000000",
+    "solvent": true
+  },
+  "contractAccessKeys": 0,
+  "storageDepositRetainedYocto": "100000000000000000000000",
+  "unusedStorageDepositRefunded": false,
+  "sponsorNonceRecoveryVerified": true,
+  "parity": "Every checkpoint matched native Rust and browser WASM."
+}

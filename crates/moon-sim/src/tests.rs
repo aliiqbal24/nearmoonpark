@@ -155,79 +155,6 @@ fn launch_settings_have_a_real_throughput_tradeoff() {
 }
 
 #[test]
-fn partnerships_reserve_finite_funding_and_pay_once() {
-    let mut r = Run::new();
-    r.buildings[1].served = 10;
-    let supply = r.total_money();
-    let cash = r.cash;
-    r.apply(
-        &[Command {
-            kind: "partner".into(),
-            building: 2,
-            value: 1,
-            ..Default::default()
-        }],
-        0,
-    )
-    .unwrap();
-    assert_eq!(r.cash, cash - 10000);
-    assert_eq!(r.grant_cash, 42000);
-    assert_eq!(r.grant_escrow, 18000);
-    assert_eq!(r.partnerships[0].progress, 0); // Old sales cannot earn the grant.
-    assert_eq!(r.total_money(), supply);
-    assert!(r
-        .apply(
-            &[Command {
-                kind: "partner".into(),
-                building: 2,
-                value: 1,
-                ..Default::default()
-            }],
-            0
-        )
-        .is_err());
-    r.buildings[1].served += 8;
-    r.settle_partnerships();
-    assert_eq!(r.partnerships[0].status, "completed");
-    assert_eq!(r.cash, cash + 8000);
-    assert_eq!(r.grant_escrow, 0);
-    let paid = r.cash;
-    r.settle_partnerships();
-    assert_eq!(r.cash, paid);
-    assert_eq!(r.total_money(), supply);
-}
-#[test]
-fn failed_partnership_releases_grant_without_refunding_investment() {
-    let mut r = Run::new();
-    r.apply(
-        &[
-            cmd("toggle", 2),
-            Command {
-                kind: "partner".into(),
-                building: 2,
-                value: 1,
-                ..Default::default()
-            },
-        ],
-        0,
-    )
-    .unwrap();
-    for _ in 0..16 {
-        r.apply(&[], 10).unwrap();
-        assert_eq!(r.total_money(), r.money_supply);
-    }
-    assert_eq!(r.partnerships[0].status, "expired");
-    assert_eq!(r.grant_cash, 60000);
-    assert_eq!(r.grant_escrow, 0);
-    assert_eq!(
-        r.trades
-            .iter()
-            .filter(|t| t.good == "partnership reward")
-            .count(),
-        0
-    );
-}
-#[test]
 fn shuttles_deliver_small_groups_and_take_boarded_guests_home() {
     let mut r = Run::new();
     r.apply(&[], 10).unwrap();
@@ -248,27 +175,6 @@ fn shuttles_deliver_small_groups_and_take_boarded_guests_home() {
 }
 
 #[test]
-fn signed_concession_protects_terms_and_tracks_actual_income() {
-    let mut r = Run::new();
-    let mut partner = cmd("partner", 2);
-    partner.value = 1;
-    r.apply(&[partner], 0).unwrap();
-    assert_eq!(r.buildings[1].rent, 20);
-    let mut rent = cmd("rent", 2);
-    rent.value = 30;
-    assert!(r
-        .apply(&[rent], 0)
-        .unwrap_err()
-        .contains("signed concession"));
-    assert!(r.apply(&[cmd("sell", 2)], 0).is_err());
-    while !r.finished {
-        r.apply(&[], 10).unwrap();
-        assert_eq!(r.total_money(), r.money_supply);
-    }
-    assert!(r.partnerships[0].earned > 0);
-    assert_eq!(r.partnerships[0].earned, r.buildings[1].revenue * 20 / 100);
-}
-#[test]
 fn first_landing_has_a_full_opening_day_remaining() {
     let mut r = Run::new();
     r.apply(&[], LANDING).unwrap();
@@ -279,4 +185,148 @@ fn first_landing_has_a_full_opening_day_remaining() {
         r.guests.iter().filter(|g| g.status == "arriving").count(),
         8
     );
+}
+
+#[test]
+fn park_design_is_free_and_height_construction_is_charged_once() {
+    let mut r = Run::new();
+    r.apply(&[build("coaster", 3, 8)], 0).unwrap();
+    let cash = r.cash;
+    let design = Design {
+        name: "Earthskimmer".into(),
+        palette: 3,
+        style: 1,
+        lights: 2,
+        height: 2,
+    };
+    r.apply(
+        &[Command {
+            kind: "design".into(),
+            building: 3,
+            design: Some(design.clone()),
+            ..Default::default()
+        }],
+        0,
+    )
+    .unwrap();
+    assert_eq!(r.cash, cash - 20000);
+    assert_eq!(r.buildings[2].power(), 4);
+    let mut low = design.clone();
+    low.height = 0;
+    r.apply(
+        &[Command {
+            kind: "design".into(),
+            building: 3,
+            design: Some(low),
+            ..Default::default()
+        }],
+        0,
+    )
+    .unwrap();
+    r.apply(
+        &[Command {
+            kind: "design".into(),
+            building: 3,
+            design: Some(design),
+            ..Default::default()
+        }],
+        0,
+    )
+    .unwrap();
+    assert_eq!(r.cash, cash - 20000);
+    assert_eq!(r.total_money(), r.money_supply);
+}
+#[test]
+fn colors_remain_editable_after_closing_without_changing_score() {
+    let mut r = Run::new();
+    while !r.finished {
+        r.apply(&[], 10).unwrap();
+    }
+    let score = r.score.clone();
+    let cash = r.cash;
+    r.apply(
+        &[
+            Command {
+                kind: "theme".into(),
+                value: 3,
+                ..Default::default()
+            },
+            Command {
+                kind: "design".into(),
+                building: 1,
+                design: Some(Design {
+                    name: "Moonbeam".into(),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+        ],
+        0,
+    )
+    .unwrap();
+    assert_eq!(r.score, score);
+    assert_eq!(r.cash, cash);
+    assert_eq!(r.tick, END);
+    assert!(r.apply(&[build("wheel", 22, 12)], 0).is_err());
+}
+#[test]
+fn invalid_design_batch_is_atomic_and_old_saves_have_defaults() {
+    let mut r = Run::new();
+    let before = r.hash.clone();
+    assert!(r
+        .apply(
+            &[
+                Command {
+                    kind: "theme".into(),
+                    value: 3,
+                    ..Default::default()
+                },
+                Command {
+                    kind: "design".into(),
+                    building: 1,
+                    design: Some(Design {
+                        palette: 254,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }
+            ],
+            0
+        )
+        .is_err());
+    assert_eq!(r.hash, before);
+    assert_eq!(r.palette, 0);
+    let mut old = serde_json::to_value(&r).unwrap();
+    old["buildings"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("design");
+    let restored: Run = serde_json::from_value(old).unwrap();
+    assert_eq!(restored.buildings[0].design, Design::default());
+    assert!(r.partnerships.is_empty());
+    assert!(r.apply(&[cmd("partner", 2)], 0).is_err());
+}
+#[test]
+fn recommendations_change_bookings_and_conserve_guest_budgets() {
+    let mut good = Run::new();
+    let mut poor = Run::new();
+    for r in [&mut good, &mut poor] {
+        r.tick = 119;
+        r.guests[0].status = "gone".into();
+        r.guests[0].visits = 1;
+    }
+    good.guests[0].satisfaction = 100;
+    poor.guests[0].satisfaction = 20;
+    good.apply(&[], 1).unwrap();
+    poor.apply(&[], 1).unwrap();
+    assert_eq!(good.bookings[3], 8);
+    assert_eq!(poor.bookings[3], 4);
+    assert_eq!(
+        poor.guests
+            .iter()
+            .filter(|g| g.status == "cancelled")
+            .count(),
+        4
+    );
+    assert_eq!(poor.total_money(), poor.money_supply);
 }

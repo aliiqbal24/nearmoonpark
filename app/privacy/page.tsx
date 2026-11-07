@@ -18,11 +18,11 @@ export default function Privacy() {
         session supplied by that provider.
       </p>
       <p>
-        NEAR runs, concession ownership, reward claims and transfers are public
-        blockchain records. We link them to a random public player identifier.
-        Browser-generated gameplay and recovery keys stay in your browser. Local
-        game saves contain these private credentials; do not share browser
-        storage or private recovery exports.
+        NEAR runs, park ownership, published names, designs, reviews, licenses,
+        earnings and transfers are public blockchain records. We link them to a
+        random public player identifier. Browser-generated gameplay and recovery
+        keys stay in your browser. Local game saves contain these private
+        credentials; do not share browser storage or private recovery exports.
       </p>
       <p>
         Account sponsorship records public keys, account identifiers and

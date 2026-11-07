@@ -54,52 +54,6 @@ pub fn offers() -> Vec<Partnership> {
     .collect()
 }
 impl Run {
-    pub(crate) fn accept_partnership(&mut self, id: i64, building: u32) -> Result<(), String> {
-        let index = self
-            .partnerships
-            .iter()
-            .position(|p| p.id as i64 == id)
-            .ok_or("Partnership not found.")?;
-        let p = self.partnerships[index].clone();
-        if p.status != "offered" || self.tick < p.available_at || self.tick > crate::END - 45 {
-            return Err("This offer is not available now.".into());
-        }
-        if self.partnerships.iter().any(|p| p.status == "active") {
-            return Err("Finish your current partnership first.".into());
-        }
-        let b = self
-            .buildings
-            .iter()
-            .position(|b| b.id == building && b.kind == p.kind && !b.sold)
-            .ok_or("Build this merchant's business before partnering.")?;
-        if self.cash < p.investment || self.grant_cash < p.reward {
-            return Err("Not enough working capital or grant funding.".into());
-        }
-        self.cash -= p.investment;
-        self.buildings[b].cash += p.investment;
-        self.buildings[b].insolvent = false;
-        self.buildings[b].rent = p.share_percent;
-        self.grant_cash -= p.reward;
-        self.grant_escrow += p.reward;
-        let deal = &mut self.partnerships[index];
-        deal.status = "active".into();
-        deal.building = Some(building);
-        deal.baseline = self.buildings[b].served;
-        deal.deadline = (self.tick + p.duration).min(crate::END);
-        self.trade(
-            "Park",
-            format!("business:{building}"),
-            p.investment,
-            "partnership capital",
-            1,
-        );
-        self.event(format!(
-            "Partnered with {}. {} credits reserved by the Lunar Tourism Board.",
-            p.owner,
-            p.reward / 100
-        ));
-        Ok(())
-    }
     pub(crate) fn settle_partnerships(&mut self) {
         for i in 0..self.partnerships.len() {
             if self.partnerships[i].status != "active" {

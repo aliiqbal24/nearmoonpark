@@ -34,7 +34,9 @@ for (const strategy of ["idle", "coaster", "balanced", "family", "gold"]) {
     assert.deepEqual(run, f.run);
     maxActive = Math.max(
       maxActive,
-      run.guests.filter((g) => !["upcoming", "gone"].includes(g.status)).length,
+      run.guests.filter(
+        (g) => !["upcoming", "gone", "cancelled"].includes(g.status),
+      ).length,
     );
   }
   assert.equal(run.finished, true);

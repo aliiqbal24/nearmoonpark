@@ -195,12 +195,7 @@ export async function POST(request: Request) {
           actions.addFunctionCallAccessKey(
             PublicKey.fromString(body.sessionPublicKey),
             e.MOON_CONTRACT_ID!,
-            [
-              "create_run",
-              "apply_actions",
-              "claim_business_reward",
-              "claim_prize",
-            ],
+            ["create_run", "apply_actions", "claim_prize"],
             400000000000000000000000n,
           ),
         ],

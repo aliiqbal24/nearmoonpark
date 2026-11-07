@@ -24,7 +24,7 @@ try {
       KeyPairSigner.fromSecretKey(DEFAULT_PRIVATE_KEY),
     );
   const accounts = [];
-  for (const name of ["moon", "alice", "bob"]) {
+  for (const name of ["moon", "alice", "bob", "charlie"]) {
     const key = KeyPair.fromRandom("ed25519"),
       id = `${name}.${root.accountId}`;
     await root.createAccount({
@@ -34,7 +34,7 @@ try {
     });
     accounts.push(new Account(id, p, new KeyPairSigner(key)));
   }
-  const [contract, alice, bob] = accounts;
+  const [contract, alice, bob, charlie] = accounts;
   await contract.deployContract(
     new Uint8Array(
       await readFile(
@@ -52,7 +52,6 @@ try {
       waitUntil: "FINAL",
     });
   await call(root, "new", { sponsor: root.accountId });
-  await call(root, "fund_business_rewards", {}, 1000000000000000000000000n);
   await call(root, "fund_prizes", {}, 500000000000000000000000n);
   await call(root, "register_player", {
     account_id: alice.accountId,
@@ -61,13 +60,13 @@ try {
   });
   await call(root, "open_challenge", {});
   let state = await call(alice, "create_run", {
-    challenge_id: "moonpark-v3",
+    challenge_id: "moonpark-v4",
     request_id: "sandbox",
   });
   assert.deepEqual(
     state,
     await call(alice, "create_run", {
-      challenge_id: "moonpark-v3",
+      challenge_id: "moonpark-v4",
       request_id: "sandbox",
     }),
   );
@@ -176,72 +175,124 @@ try {
       console.log(`Sandbox: ${state.run.tick}/550, ${Number(gas) / 1e12} TGas`);
   }
   assert.equal(state.run.finished, true);
-  assert.ok(state.run.partnerships.every((p) => p.status === "completed"));
-  const deals = await p.callFunction({
-    contractId: contract.accountId,
-    method: "get_partnerships",
-    args: { run_id: state.run_id },
-  });
-  assert.equal(deals.reserved_funding, 0);
-  assert.equal(deals.available_funding, 0);
+  assert.deepEqual(state.run.partnerships, []);
   const board = await p.callFunction({
     contractId: contract.accountId,
     method: "get_leaderboard",
     args: {},
   });
   assert.equal(board.entries[0].score.total, state.run.score.total);
-  assert.equal(board.entries[0].player_id, "opaque-alice");
-  const concessions = await p.callFunction({
-    contractId: contract.accountId,
-    method: "get_concessions",
-    args: { run_id: state.run_id },
+  const design = {
+    ...state.run.buildings[2].design,
+    name: "Earthskimmer",
+    palette: 3,
+    style: 1,
+    lights: 2,
+  };
+  state = await call(alice, "apply_actions", {
+    run_id: state.run_id,
+    expected_revision: state.run.revision,
+    request_id: "cosmetics",
+    commands: [{ kind: "design", building: 3, design }],
+    ticks: 0,
   });
-  assert.equal(concessions.length, 3);
-  assert.ok(
-    concessions.every(
-      (c) => c.owner_id === alice.accountId && BigInt(c.reserved_yocto) > 0n,
-    ),
-  );
-  const token = concessions[0].token_id;
-  const expectedReward = BigInt(concessions[0].claimable_yocto);
-  assert.ok(expectedReward > 0n);
-  await call(
-    alice,
-    "nft_transfer",
-    { token_id: token, receiver_id: bob.accountId },
-    1n,
-  );
-  await assert.rejects(() =>
-    call(alice, "claim_business_reward", { token_id: token }),
-  );
-  const beforeBob = (await bob.getState()).balance.total;
-  assert.equal(
-    await call(bob, "claim_business_reward", { token_id: token }),
-    true,
-  );
-  const afterBob = (await bob.getState()).balance.total;
-  assert.ok(
-    afterBob > beforeBob,
-    "Actual testnet-style transfer must exceed gas cost",
-  );
-  const paid = await p.callFunction({
+  const mine = await p.callFunction({
     contractId: contract.accountId,
-    method: "get_business_share",
-    args: { token_id: token },
+    method: "get_park",
+    args: { park_id: state.park_id },
   });
-  assert.equal(paid.owner_id, bob.accountId);
-  assert.equal(paid.paid_yocto, expectedReward.toString());
-  assert.equal(paid.claimable_yocto, "0");
+  const published = await call(alice, "save_park", {
+    park_id: mine.id,
+    expected_revision: mine.revision,
+    name: "Earthrise Gardens",
+    emblem: 1,
+    run_id: state.run_id,
+  });
+  const bp = await call(alice, "publish_blueprint", {
+    park_id: mine.id,
+    run_id: state.run_id,
+    building_id: 3,
+    name: "Earthskimmer",
+  });
+  await call(alice, "nominate_park_owner", {
+    park_id: mine.id,
+    receiver_id: charlie.accountId,
+  });
+  await assert.rejects(() => call(bob, "accept_park", { park_id: mine.id }));
+  const claimed = await call(charlie, "accept_park", { park_id: mine.id });
+  assert.equal(claimed.owner, charlie.accountId);
+  assert.equal(claimed.operator, alice.accountId);
+  await call(root, "register_player", {
+    account_id: bob.accountId,
+    player_id: "guest:bob",
+    display_name: "Bob",
+  });
+  const buyer = await call(bob, "create_run", {
+    challenge_id: "moonpark-v4",
+    request_id: "buyer",
+  });
   await assert.rejects(() =>
-    call(bob, "claim_business_reward", { token_id: token }),
-  );
-  await assert.rejects(() =>
-    call(bob, "on_business_reward", {
-      token_id: token,
-      recipient: bob.accountId,
-      amount: "1",
+    call(bob, "license_blueprint", {
+      park_id: buyer.park_id,
+      blueprint_id: bp.id,
     }),
   );
+  const fee = 5000000000000000000000n;
+  await call(
+    bob,
+    "license_blueprint",
+    { park_id: buyer.park_id, blueprint_id: bp.id },
+    fee,
+  );
+  await call(
+    bob,
+    "license_blueprint",
+    { park_id: buyer.park_id, blueprint_id: bp.id },
+    fee,
+  );
+  const earned = await p.callFunction({
+    contractId: contract.accountId,
+    method: "get_creator_earnings",
+    args: { account_id: charlie.accountId },
+  });
+  assert.equal(earned.available, ((fee * 90n) / 100n).toString());
+  const built = await call(bob, "apply_actions", {
+    run_id: buyer.run_id,
+    expected_revision: 0,
+    request_id: "licensed-build",
+    commands: [
+      {
+        kind: "build",
+        item: bp.kind,
+        x: 3,
+        z: 8,
+        variant: bp.variant,
+        value: bp.launch,
+        design: bp.design,
+        blueprint_id: bp.id,
+      },
+    ],
+    ticks: 0,
+  });
+  assert.equal(built.run.buildings[2].blueprint_id, bp.id);
+  const beforeCreator = (await charlie.getState()).balance.total;
+  assert.equal(await call(charlie, "claim_creator_earnings", {}), true);
+  assert.ok((await charlie.getState()).balance.total > beforeCreator);
+  await assert.rejects(() => call(charlie, "claim_creator_earnings", {}));
+  await assert.rejects(() =>
+    call(bob, "on_creator_paid", { owner: charlie.accountId, amount: "1" }),
+  );
+  const reviewed = await call(bob, "rate_park", { park_id: mine.id, stars: 5 });
+  assert.equal(reviewed.rating_count, 1);
+  const ownershipProof = {
+    published,
+    blueprint: bp,
+    claimed,
+    licensedBuilding: built.run.buildings[2],
+    creatorEarnings: earned,
+    privateCallbackRejected: true,
+    duplicateLicenseRefunded: true,
+  };
   const cutoff = 1795046340000000000n;
   let finalHeader = (await p.viewBlock({ finality: "final" })).header;
   for (
@@ -299,14 +350,7 @@ try {
   });
   assert.equal(collectedPrize.paid_yocto, "500000000000000000000000");
   assert.equal(collectedPrize.claimable_yocto, "0");
-  const ownershipProof = {
-    concessions,
-    transfer: { token_id: token, from: alice.accountId, to: bob.accountId },
-    collectedBusinessReward: paid,
-    collectedPrize,
-    privateCallbackRejected: true,
-    duplicateClaimsRejected: true,
-  };
+  ownershipProof.collectedPrize = collectedPrize;
   await assert.rejects(() =>
     call(alice, "apply_actions", {
       run_id: state.run_id,

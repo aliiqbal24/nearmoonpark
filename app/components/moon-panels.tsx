@@ -1,4 +1,5 @@
 "use client";
+import { AttractionDesign } from "./attraction-design";
 import { useEffect, useRef, useState } from "react";
 import {
   X,
@@ -109,6 +110,7 @@ export function Inspector({
   action,
   onClose,
   onRide,
+  readOnly = false,
 }: {
   run: Run;
   building?: Building;
@@ -116,6 +118,7 @@ export function Inspector({
   action: (c: Command) => void;
   onClose: () => void;
   onRide: (id: number) => void;
+  readOnly?: boolean;
 }) {
   const actionRef = useRef(action);
   useEffect(() => {
@@ -204,10 +207,9 @@ export function Inspector({
     a = blueprint(b.kind),
     ride = isRide(b.kind),
     tenant = isTenant(b.kind),
-    disabled = run.finished;
+    disabled = run.finished || readOnly;
   const seats = a.seats + Math.floor((a.seats * b.level) / 2),
     duration = b.kind === "coaster" ? [36, 30, 24][b.launch - 1] : a.cycle;
-  const concession = run.partnerships.find((p) => p.building === b.id);
   const connectCost = connectionCost(run, b);
   const status =
     b.ready_at > run.tick
@@ -236,7 +238,15 @@ export function Inspector({
       <div className="mp-building-icon" style={{ color: a.color }}>
         <img src={`/art/${b.kind}-v1.webp`} alt="" />
       </div>
-      <h2>{a.name}</h2>
+      <h2>{b.design?.name || a.name}</h2>
+      {!readOnly && (
+        <AttractionDesign
+          building={b}
+          finished={run.finished}
+          cash={run.cash}
+          action={action}
+        />
+      )}
       <span className={`mp-status ${b.powered ? "open" : ""}`}>{status}</span>
       <p className="mp-subtle">{a.description}</p>
       {!b.connected && (
@@ -379,7 +389,7 @@ export function Inspector({
                 max="30"
                 step="5"
                 value={rentDraft}
-                disabled={disabled || !!concession}
+                disabled={disabled}
                 onChange={(e) =>
                   setRentDraft({ base: rent, value: Number(e.target.value) })
                 }
@@ -393,21 +403,11 @@ export function Inspector({
                 }}
               />
               <p className="mp-fine">
-                {concession
-                  ? `Signed concession: ${concession.share_percent}% of sales. Your agreement protects these terms for opening day.`
-                  : "The owner sets prices and buys stock. A larger share leaves less cash to restock."}
+                The owner sets prices and buys stock. A larger share leaves less
+                cash to restock.
               </p>
             </>
           )}
-          <button
-            className="mp-secondary full"
-            disabled={disabled || run.cash < 10000}
-            onClick={() =>
-              action({ kind: "invest", building: b.id, value: 10000 })
-            }
-          >
-            <Coins size={16} /> Invest 100 credits
-          </button>
         </>
       )}
       {!disabled && (
@@ -417,7 +417,7 @@ export function Inspector({
             {b.enabled ? "Close" : "Open"}
           </button>
           <button
-            disabled={!!b.riders.length || !!concession}
+            disabled={!!b.riders.length}
             onClick={() => action({ kind: "sell", building: b.id })}
           >
             Sell · {money(resaleValue(b))}
@@ -726,7 +726,7 @@ export function Results({
         <button onClick={onLeaders}>Top five</button>
         {state.mode === "near" && (
           <button onClick={onOwnership}>
-            <NearMark /> Your NEAR business shares
+            <NearMark /> Publish your park & signature rides
           </button>
         )}
         <button onClick={onExport}>Export run</button>

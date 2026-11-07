@@ -139,18 +139,20 @@ fn share_fixture() -> Moonpark {
     );
     context("alice.testnet", 1);
     c.create_run(VERSION.into(), "run".into(), None);
-    c.apply_actions(
-        "1".into(),
-        0,
-        "partner".into(),
-        vec![Command {
-            kind: "partner".into(),
-            building: 2,
-            value: 1,
-            ..Default::default()
-        }],
-        0,
-    );
+    // Seed an earlier concession explicitly. New v4 runs never offer one.
+    let mut record = c.get_run("1".into());
+    let mut run: Run = serde_json::from_value(record["run"].clone()).unwrap();
+    run.partnerships = moonpark_sim::partnerships::offers();
+    run.partnerships[0].status = "active".into();
+    run.partnerships[0].building = Some(2);
+    run.partnerships[0].deadline = 160;
+    run.grant_escrow = 18000;
+    run.grant_cash = 42000;
+    run.revision = 1;
+    record["run"] = serde_json::to_value(&run).unwrap();
+    record["last_request"] = "partner".into();
+    c.runs.insert(&"1".into(), &record.to_string());
+    c.issue_share("1", &run.partnerships[0], &"alice.testnet".parse().unwrap());
     c
 }
 fn accrue(c: &mut Moonpark, amount: i64) {
@@ -390,4 +392,258 @@ fn game_storage_cannot_consume_reward_backing() {
         .account_balance(near_sdk::NearToken::from_yoctonear(1));
     testing_env!(b.build());
     c.assert_collateral();
+}
+
+fn park_fixture() -> Moonpark {
+    context("sponsor.testnet", 1);
+    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    for who in ["alice.testnet", "bob.testnet", "carol.testnet"] {
+        c.register_player(who.parse().unwrap(), format!("guest:{who}"), who.into());
+    }
+    context("alice.testnet", 1);
+    c.create_run(VERSION.into(), "alice".into(), None);
+    let mut record = c.get_run("1".into());
+    let mut r = Run::new();
+    while !r.finished {
+        r.apply(&[], 10).unwrap();
+    }
+    r.buildings[0].served = 10;
+    record["run"] = serde_json::to_value(r).unwrap();
+    c.runs.insert(&"1".into(), &record.to_string());
+    c.publish_blueprint("1".into(), "1".into(), 1, "Moonbeam".into());
+    c
+}
+#[test]
+fn claim_requires_recipient_signature_and_preserves_operator() {
+    let mut c = park_fixture();
+    c.nominate_park_owner("1".into(), Some("carol.testnet".parse().unwrap()));
+    assert_eq!(
+        c.get_park("1".into()).unwrap().owner.as_str(),
+        "alice.testnet"
+    );
+    context("carol.testnet", 1);
+    let p = c.accept_park("1".into());
+    assert_eq!(p.owner.as_str(), "carol.testnet");
+    assert_eq!(p.operator.as_str(), "alice.testnet");
+    assert_eq!(c.accept_park("1".into()).owner, p.owner);
+    assert!(c
+        .get_park_by_owner("alice.testnet".parse().unwrap())
+        .is_none());
+}
+#[test]
+#[should_panic(expected = "Sign with the nominated")]
+fn another_account_cannot_accept_a_claim() {
+    let mut c = park_fixture();
+    c.nominate_park_owner("1".into(), Some("carol.testnet".parse().unwrap()));
+    context("bob.testnet", 1);
+    c.accept_park("1".into());
+}
+#[test]
+fn license_is_deposit_backed_idempotent_and_pays_current_creator_owner() {
+    let mut c = park_fixture();
+    c.nominate_park_owner("1".into(), Some("carol.testnet".parse().unwrap()));
+    context("carol.testnet", 1);
+    c.accept_park("1".into());
+    context("bob.testnet", 1);
+    c.create_run(VERSION.into(), "bob".into(), None);
+    deposit("bob.testnet", parks::LICENSE_FEE, 1);
+    c.license_blueprint("2".into(), "1:1".into());
+    let amount = parks::LICENSE_FEE * 90 / 100;
+    assert_eq!(c.creator_obligations, amount);
+    assert_eq!(
+        c.creator_earnings
+            .get(&"carol.testnet".parse().unwrap())
+            .unwrap()
+            .available,
+        amount
+    );
+    c.license_blueprint("2".into(), "1:1".into());
+    assert_eq!(c.creator_obligations, amount);
+    assert_eq!(c.get_blueprint("1:1".into()).unwrap().licenses, 1);
+    assert!(c.has_license("2".into(), "1:1".into()));
+    let bp = c.get_blueprint("1:1".into()).unwrap();
+    c.validate_licenses(
+        &"bob.testnet".parse().unwrap(),
+        &[Command {
+            kind: "build".into(),
+            item: bp.kind,
+            variant: bp.variant,
+            value: bp.launch as i64,
+            design: Some(bp.design),
+            blueprint_id: Some(bp.id),
+            ..Default::default()
+        }],
+    );
+    context("carol.testnet", 1);
+    let _ = c.claim_creator_earnings();
+    assert_eq!(c.creator_obligations, amount);
+    transfer_result(false);
+    assert!(!c.on_creator_paid(
+        "carol.testnet".parse().unwrap(),
+        near_sdk::json_types::U128(amount)
+    ));
+    assert_eq!(c.creator_obligations, amount);
+    context("carol.testnet", 1);
+    let _ = c.claim_creator_earnings();
+    transfer_result(true);
+    assert!(c.on_creator_paid(
+        "carol.testnet".parse().unwrap(),
+        near_sdk::json_types::U128(amount)
+    ));
+    assert_eq!(c.creator_obligations, 0);
+}
+#[test]
+#[should_panic(expected = "License this design first")]
+fn license_provenance_cannot_be_forged() {
+    let mut c = park_fixture();
+    context("bob.testnet", 1);
+    c.create_run(VERSION.into(), "bob".into(), None);
+    let bp = c.get_blueprint("1:1".into()).unwrap();
+    c.validate_licenses(
+        &"bob.testnet".parse().unwrap(),
+        &[Command {
+            kind: "build".into(),
+            item: bp.kind,
+            variant: bp.variant,
+            value: bp.launch as i64,
+            design: Some(bp.design),
+            blueprint_id: Some(bp.id),
+            ..Default::default()
+        }],
+    );
+}
+#[test]
+fn owner_reauthorization_and_sponsored_rotation_keep_a_stable_park() {
+    let mut c = park_fixture();
+    c.rotate_park_operator("1".into(), "bob.testnet".parse().unwrap());
+    let p = c
+        .get_park_by_operator("bob.testnet".parse().unwrap())
+        .unwrap();
+    assert_eq!(p.id, "1");
+    assert_eq!(p.owner.as_str(), "alice.testnet");
+    assert!(c
+        .get_park_by_operator("alice.testnet".parse().unwrap())
+        .is_none());
+    c.set_park_operator("1".into(), "carol.testnet".parse().unwrap());
+    assert_eq!(
+        c.get_park("1".into()).unwrap().operator.as_str(),
+        "carol.testnet"
+    );
+}
+#[test]
+fn reviews_are_once_per_park_and_can_be_updated() {
+    let mut c = park_fixture();
+    let p = c.get_park("1".into()).unwrap();
+    c.save_park(
+        "1".into(),
+        p.revision,
+        "Moonbeam Park".into(),
+        1,
+        Some("1".into()),
+    );
+    context("bob.testnet", 1);
+    c.create_run(VERSION.into(), "bob".into(), None);
+    c.rate_park("1".into(), 5);
+    let p = c.rate_park("1".into(), 4);
+    assert_eq!(p.rating_count, 1);
+    assert_eq!(p.rating_sum, 4);
+}
+
+#[test]
+#[should_panic(expected = "Opening day time limit reached")]
+fn deadline_rejects_height_changes_even_before_passive_closing() {
+    context("sponsor.testnet", 1);
+    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    c.register_player(
+        "alice.testnet".parse().unwrap(),
+        "guest:alice".into(),
+        "Alice".into(),
+    );
+    context("alice.testnet", 1);
+    c.create_run(VERSION.into(), "day".into(), None);
+    c.apply_actions(
+        "1".into(),
+        0,
+        "build".into(),
+        vec![Command {
+            kind: "build".into(),
+            item: "coaster".into(),
+            x: 3,
+            z: 8,
+            ..Default::default()
+        }],
+        0,
+    );
+    context("alice.testnet", 566_000_000_001);
+    c.apply_actions(
+        "1".into(),
+        1,
+        "late-height".into(),
+        vec![Command {
+            kind: "design".into(),
+            building: 3,
+            design: Some(moonpark_sim::Design {
+                height: 2,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }],
+        0,
+    );
+}
+
+#[test]
+fn deadline_keeps_free_cosmetic_edits_available() {
+    context("sponsor.testnet", 1);
+    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    c.register_player(
+        "alice.testnet".parse().unwrap(),
+        "guest:alice".into(),
+        "Alice".into(),
+    );
+    context("alice.testnet", 1);
+    c.create_run(VERSION.into(), "day".into(), None);
+    context("alice.testnet", 566_000_000_001);
+    let r = c.apply_actions(
+        "1".into(),
+        0,
+        "paint".into(),
+        vec![Command {
+            kind: "design".into(),
+            building: 1,
+            design: Some(moonpark_sim::Design {
+                palette: 3,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }],
+        0,
+    );
+    assert_eq!(r["run"]["cash"], 160000);
+    assert_eq!(r["run"]["buildings"][0]["design"]["palette"], 3);
+}
+
+#[test]
+fn published_blueprints_snapshot_inherited_park_colors() {
+    let mut c = park_fixture();
+    let mut record = c.get_run("1".into());
+    record["run"]["palette"] = 3.into();
+    record["run"]["buildings"][1]["kind"] = "wheel".into();
+    record["run"]["buildings"][1]["served"] = 1.into();
+    c.runs.insert(&"1".into(), &record.to_string());
+    let bp = c.publish_blueprint("1".into(), "1".into(), 2, "Stardust Wheel".into());
+    assert_eq!(bp.design.palette, 3);
+}
+
+#[test]
+fn public_park_pages_count_published_parks_when_paging() {
+    let mut c = park_fixture();
+    context("bob.testnet", 1);
+    c.create_run(VERSION.into(), "bob".into(), None);
+    let mut p = c.get_park("2".into()).unwrap();
+    p.run_id = Some("2".into());
+    c.parks.insert(&p.id, &p);
+    let listed = c.list_parks(None, Some(1));
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].id, "2");
 }

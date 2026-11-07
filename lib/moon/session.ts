@@ -1,14 +1,7 @@
 import { simulate } from "./engine";
-import {
-  create,
-  settle,
-  view,
-  ownershipAction,
-  type Config,
-  type Credentials,
-} from "./near";
-import type { Run, RecordState, Command, Concession } from "./model";
-import { VERSION, END } from "./model";
+import { create, settle, view, type Config, type Credentials } from "./near";
+import type { Run, RecordState, Command } from "./model";
+import { VERSION, END, isCosmeticCommand } from "./model";
 type Op = { commands: Command[]; ticks: number; id: string };
 export type Snapshot = {
   run: Run;
@@ -19,7 +12,6 @@ export type Snapshot = {
   txs: string[];
   deadline: number;
   notice?: string;
-  receipts?: Record<string, { reservation?: string; payment?: string }>;
 };
 export class ParkSession {
   state: Snapshot;
@@ -45,7 +37,6 @@ export class ParkSession {
       error: null,
       txs: [],
       deadline: deadline ?? Date.now() + (END + 15) * 1000,
-      receipts: {},
     };
     this.desired = run.tick;
     this.emit();
@@ -55,6 +46,23 @@ export class ParkSession {
     credentials?: Credentials,
     cfg?: Config,
   ) {
+    const saved = localStorage.getItem("moonpark-current");
+    if (saved) {
+      try {
+        const old = JSON.parse(saved);
+        if (
+          old.state?.run?.version !== VERSION &&
+          old.config?.contractId &&
+          old.state?.record?.run_id
+        )
+          localStorage.setItem(
+            `moonpark-history:${old.config.contractId}:${old.state.record.run_id}`,
+            saved,
+          );
+      } catch {
+        /* Ignore incomplete local saves. */
+      }
+    }
     if (credentials && cfg) {
       const requestKey = `moonpark-start:${cfg.contractId}:${credentials.accountId}`;
       const requestId = localStorage.getItem(requestKey) || crypto.randomUUID();
@@ -84,7 +92,7 @@ export class ParkSession {
     if (!saved) return null;
     if (saved.state.run.version !== VERSION)
       throw Error(
-        "This saved park uses the previous rules. Start a new opening day to try the new shuttles and partnerships.",
+        "This saved park uses the previous rules. Start a new opening day to try the park ownership and signature rides.",
       );
     let record = saved.state.record;
     if (record && saved.config)
@@ -100,9 +108,13 @@ export class ParkSession {
       saved.state.deadline,
     );
     s.state.txs = saved.state.txs;
-    s.state.receipts = saved.state.receipts ?? {};
     let ops = saved.ops;
-    if (record?.run.finished) ops = [];
+    if (record?.run.finished)
+      ops = ops.filter(
+        (o) =>
+          o.ticks === 0 &&
+          o.commands.every((c) => isCosmeticCommand(record!.run, c)),
+      );
     if (record?.last_request) {
       const i = ops.findIndex((o) => o.id === record!.last_request);
       if (i >= 0) ops = ops.slice(i + 1);
@@ -121,7 +133,10 @@ export class ParkSession {
   }
   async action(command: Command) {
     return this.enqueue(async () => {
-      if (Date.now() > this.state.deadline)
+      if (
+        Date.now() > this.state.deadline &&
+        !isCosmeticCommand(this.state.run, command)
+      )
         throw Error("Opening day has ended.");
       const run = await simulate({
         op: "step",
@@ -245,21 +260,6 @@ export class ParkSession {
         }
       }
       await this.enqueue(async () => {
-        if (result.tx) {
-          const receipts = { ...this.state.receipts };
-          for (const deal of result.record.run.partnerships) {
-            const before = this.state.record!.run.partnerships.find(
-              (p) => p.id === deal.id,
-            );
-            const receipt = { ...receipts[deal.id] };
-            if (before?.status === "offered" && deal.status !== "offered")
-              receipt.reservation = result.tx;
-            if (before?.status !== "completed" && deal.status === "completed")
-              receipt.payment = result.tx;
-            receipts[deal.id] = receipt;
-          }
-          this.state.receipts = receipts;
-        }
         this.state.record = result.record;
         if (result.tx)
           this.state.txs = [...this.state.txs, result.tx].slice(-120);
@@ -281,9 +281,15 @@ export class ParkSession {
           });
           this.state.record = record;
           this.ops = this.ops
-            .map((o) => ({ ...o, commands: [] }))
-            .filter((o) => o.ticks > 0);
-          if (record.run.finished) this.ops = [];
+            .map((o) => ({
+              ...o,
+              commands: o.commands.filter((c) =>
+                isCosmeticCommand(record.run, c),
+              ),
+            }))
+            .filter((o) => o.ticks > 0 || o.commands.length > 0);
+          if (record.run.finished)
+            this.ops = this.ops.filter((o) => o.ticks === 0);
           await this.rebase();
           this.state.error = null;
           this.state.notice =
@@ -330,67 +336,6 @@ export class ParkSession {
       null,
       2,
     );
-  }
-  get ownerId() {
-    return this.credentials?.accountId ?? null;
-  }
-  private ownedCredentials() {
-    if (!this.credentials) return [];
-    const all = new Map([[this.credentials.accountId, this.credentials]]);
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key?.startsWith("moonpark-retired-keys:")) continue;
-      try {
-        const c = JSON.parse(localStorage.getItem(key)!) as Credentials;
-        if (
-          c.identity === this.credentials.identity &&
-          c.contractId === this.credentials.contractId &&
-          c.secretKey &&
-          c.recoveryKey
-        )
-          all.set(c.accountId, c);
-      } catch {}
-    }
-    return [...all.values()];
-  }
-  get ownerIds() {
-    return this.ownedCredentials().map((c) => c.accountId);
-  }
-  async ownership(
-    method: "claim_business_reward" | "claim_prize" | "nft_transfer",
-    args: Record<string, unknown>,
-  ) {
-    if (!this.credentials || !this.config)
-      throw Error("Open your NEAR park first.");
-    let owner =
-      typeof args.account_id === "string"
-        ? args.account_id
-        : this.credentials.accountId;
-    if (method !== "claim_prize") {
-      const asset = await view<Concession>(this.config, "get_business_share", {
-        token_id: args.token_id,
-      });
-      if (!asset?.closed)
-        throw Error("Finish and confirm this concession’s opening day first.");
-      owner = asset.owner_id;
-    }
-    const signer = this.ownedCredentials().find((c) => c.accountId === owner);
-    if (!signer)
-      throw Error("This browser does not hold the current owner’s key.");
-    if (
-      owner === this.credentials.accountId &&
-      (!this.state.record?.run.finished || this.state.pending)
-    )
-      throw Error("Finish and confirm your current opening day first.");
-    const tx = await ownershipAction(
-      signer,
-      this.config,
-      method,
-      method === "claim_prize" ? {} : args,
-    );
-    this.state.txs = [...this.state.txs, tx].slice(-120);
-    this.emit();
-    return tx;
   }
   dispose() {
     this.disposed = true;

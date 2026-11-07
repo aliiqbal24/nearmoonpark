@@ -10,7 +10,7 @@ import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { createHash, randomBytes } from "node:crypto";
 import assert from "node:assert/strict";
 await mkdir(".near-local", { recursive: true });
-const keyPath = ".near-local/moon-v3-deployer.json";
+const keyPath = ".near-local/moon-v4-deployer.json";
 let key;
 try {
   key = JSON.parse(await readFile(keyPath, "utf8"));
@@ -47,7 +47,7 @@ try {
   });
   if (!r.ok) throw Error(`Testnet faucet returned ${r.status}`);
 }
-const contractId = `economy.${key.accountId}`;
+const contractId = `game.${key.accountId}`;
 const code = new Uint8Array(
   await readFile(
     "target/wasm32-unknown-unknown/release/moonpark_contract.wasm",
@@ -65,7 +65,7 @@ if (!exists) {
     receiverId: contractId,
     actions: [
       actions.createAccount(),
-      actions.transfer(10000000000000000000000000n),
+      actions.transfer(8000000000000000000000000n),
       actions.deployContract(code),
       actions.functionCall(
         "new",
@@ -98,13 +98,6 @@ const call = (methodName, args = {}, deposit = 0n) =>
     gas: 100000000000000n,
     waitUntil: "FINAL",
   });
-const business = await provider.callFunction({
-  contractId,
-  method: "get_business_fund",
-  args: {},
-});
-if (business.available_yocto === "0")
-  await call("fund_business_rewards", {}, 1000000000000000000000000n);
 const prizes = await provider.callFunction({
   contractId,
   method: "get_prize_snapshot",
@@ -117,7 +110,7 @@ let challenge = await provider.callFunction({
   method: "get_challenge",
   args: {},
 });
-assert.equal(challenge.id, "moonpark-v3");
+assert.equal(challenge.id, "moonpark-v4");
 if (process.argv.includes("--open") && !challenge.open) {
   await call("open_challenge");
   challenge = await provider.callFunction({
@@ -165,7 +158,7 @@ await writeFile(
   "public/moon-build.json",
   JSON.stringify(
     {
-      version: "moonpark-v3",
+      version: "moonpark-v4",
       contractSha256: createHash("sha256").update(code).digest("hex"),
       engineSha256: createHash("sha256")
         .update(await readFile("public/engine/moon.wasm"))
