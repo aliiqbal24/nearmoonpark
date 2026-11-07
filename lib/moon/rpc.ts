@@ -1,9 +1,12 @@
-import { InvalidNonceError } from "near-api-js/rpc-errors";
+import {
+  AccessKeyNotEnoughAllowanceActionError,
+  InvalidNonceError,
+} from "near-api-js/rpc-errors";
 import type { FailoverRpcProvider } from "near-api-js";
 
 // near-api-js refreshes its nonce cache for InvalidNonceError. Its failover
 // provider wraps that error, hiding it from Account's built-in retry. Preserve
-// the actual SDK error so concurrent tabs / sponsor workers can recover.
+// it and prepaid-allowance errors so nonce and gas-budget retries can recover.
 export function failoverRpc(
   api: Pick<
     typeof import("near-api-js"),
@@ -18,10 +21,12 @@ export function failoverRpc(
       try {
         return await super.sendTransactionUntil(...args);
       } catch (error) {
-        const nonce = (error as { errors?: unknown[] })?.errors?.find(
-          (e) => e instanceof InvalidNonceError,
+        const recoverable = (error as { errors?: unknown[] })?.errors?.find(
+          (e) =>
+            e instanceof InvalidNonceError ||
+            e instanceof AccessKeyNotEnoughAllowanceActionError,
         );
-        if (nonce) throw nonce;
+        if (recoverable) throw recoverable;
         throw error;
       }
     }
