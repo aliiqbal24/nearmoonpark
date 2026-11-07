@@ -2613,3 +2613,17 @@ button.mp-chain .mp-near-mark svg {
 .mp-near-explainer[open] > summary {
   margin-bottom: 0;
 }
+.mp-action-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #e1ecdc;
+  border-radius: 10px;
+  color: #286854;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.mp-action-success svg {
+  flex-shrink: 0;
+}

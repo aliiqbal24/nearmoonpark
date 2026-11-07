@@ -59,6 +59,7 @@ export function NearEconomy({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(""),
     [receipt, setReceipt] = useState(""),
+    [actionMessage, setActionMessage] = useState(""),
     [recipient, setRecipient] = useState(""),
     [transfer, setTransfer] = useState<string | null>(null),
     [review, setReview] = useState(false);
@@ -154,9 +155,17 @@ export function NearEconomy({
     setBusy(key);
     setError("");
     setReceipt("");
+    setActionMessage("");
     try {
       const tx = await onAction(method, args);
       setReceipt(tx);
+      setActionMessage(
+        method === "nft_transfer"
+          ? `Ownership transferred to ${String(args.receiver_id)}`
+          : method === "claim_prize"
+            ? "Competition prize collected in your NEAR account"
+            : "Reward collected in your NEAR account",
+      );
       setTransfer(null);
       setReview(false);
       setRecipient("");
@@ -437,6 +446,12 @@ export function NearEconomy({
           Collect competition prize · {testNear(prizeClaim.claimable_yocto)}{" "}
           tNEAR
         </button>
+      )}
+      {actionMessage && (
+        <p className="mp-action-success" role="status">
+          <Check size={15} />
+          {actionMessage}
+        </p>
       )}
       {receipt && (
         <a

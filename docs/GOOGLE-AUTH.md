@@ -1,3 +1,5 @@
+> Google is an optional standalone-host alternative. The published Sites version uses its built-in ChatGPT social sign-in and needs no Google client credentials.
+
 # Google sign-in setup
 
 The integration is implemented, but no Google OAuth web client was available in this environment. Browser account setup was unavailable. Until credentials are configured, the game clearly disables Google sign-in and ranked admission; practice and anonymous NEAR playtests remain available.

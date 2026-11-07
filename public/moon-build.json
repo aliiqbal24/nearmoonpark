@@ -3,7 +3,7 @@
   "contractSha256": "177139f5c1a818781fa8e84699353fb72f3b3680b99dfa2b3f7c22e922e48200",
   "engineSha256": "18d9ab09a57af6e60d4876bd46ef0a3d28da15a0ebf745f9824a60f1f136d694",
   "codeHash": "2aWWsedhvw8pCVUFuTf4yCN4YfTc2CBZfrU7oFXthpy5",
-  "prizeChallengeOpen": false,
+  "prizeChallengeOpen": true,
   "immutable": true,
   "contractAccessKeys": 0
 }

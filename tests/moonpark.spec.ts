@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { PerspectiveCamera, Vector3 } from "three";
-import { KeyPair } from "near-api-js";
+import { KeyPair, JsonRpcProvider } from "near-api-js";
 import { writeFile } from "node:fs/promises";
 function project(page: Page, x: number, z: number, y = 0.1) {
   const size = page.viewportSize()!;
@@ -346,9 +346,26 @@ test("sponsored NEAR round confirms through the complete browser flow", async ({
   await share
     .getByRole("button", { name: "Confirm ownership transfer", exact: true })
     .click();
-  await expect(share.getByText("TRANSFERRED", { exact: true })).toBeVisible({
+  await expect(
+    page.getByText(`Ownership transferred to ${root}`, { exact: true }),
+  ).toBeVisible({
     timeout: 45000,
   });
+  const config = await page.evaluate(
+    async () =>
+      (await (await fetch("/moon-config.json")).json()) as {
+        rpcUrl: string;
+        contractId: string;
+      },
+  );
+  const transferred = await new JsonRpcProvider({
+    url: config.rpcUrl,
+  }).callFunction<{ owner_id: string }>({
+    contractId: config.contractId,
+    method: "get_business_share",
+    args: { token_id: `${result.record.run_id}:1` },
+  });
+  expect(transferred?.owner_id).toBe(root);
   expect(errors).toEqual([]);
   await writeFile(
     "outputs/moon-ui-proof.json",
