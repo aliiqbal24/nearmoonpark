@@ -16,10 +16,8 @@ import {
 import {
   SCALE,
   box,
-  cylinder,
   sphere,
   label,
-  material,
   astronaut,
   rocket,
   serviceRover,
@@ -98,6 +96,7 @@ export class MoonWorld {
   private rideId: number | null = null;
   private savedPosition = new T.Vector3();
   private lastTick = -1;
+  private visualTick = 0;
   private updateTime = 0;
   private reducedMotion = matchMedia("(prefers-reduced-motion: reduce)")
     .matches;
@@ -145,7 +144,8 @@ export class MoonWorld {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.09;
     this.controls.minDistance = 10;
-    this.controls.maxDistance = 85;
+    this.controls.maxDistance = 72;
+    this.controls.minPolarAngle = Math.PI * 0.12;
     this.controls.maxPolarAngle = Math.PI * 0.46;
     this.controls.mouseButtons = {
       LEFT: T.MOUSE.PAN,
@@ -417,6 +417,7 @@ export class MoonWorld {
     if (this.run !== run) {
       this.run = run;
       if (this.lastTick !== run.tick) {
+        if (run.tick < this.lastTick) this.visualTick = run.tick;
         this.updateTime = performance.now();
         this.lastTick = run.tick;
       }
@@ -698,9 +699,30 @@ export class MoonWorld {
       this.camera.position.z += dz;
       this.controls.target.x += dx;
       this.controls.target.z += dz;
+      this.clampPan();
     }
     if (e.key === "Home") this.home();
   };
+  private clampPan() {
+    if (this.manual) return;
+    const target = this.controls.target;
+    const distance = this.camera.position.distanceTo(target);
+    const reach = T.MathUtils.clamp(
+      (this.controls.maxDistance - distance) * 0.55,
+      7,
+      18,
+    );
+    const x = T.MathUtils.clamp(target.x, -reach, reach);
+    const z = T.MathUtils.clamp(
+      target.z,
+      -Math.min((HEIGHT * SCALE) / 2 - 2, reach),
+      Math.min((HEIGHT * SCALE) / 2 + 8, reach + 5),
+    );
+    this.camera.position.x += x - target.x;
+    this.camera.position.y -= target.y;
+    this.camera.position.z += z - target.z;
+    target.set(x, 0, z);
+  }
   home() {
     this.camera.fov = 50;
     this.camera.updateProjectionMatrix();
@@ -786,6 +808,11 @@ export class MoonWorld {
       });
     }
     if (run) {
+      this.visualTick = T.MathUtils.clamp(
+        Math.max(run.tick, this.visualTick) + dt * this.speed,
+        run.tick,
+        run.tick + 1,
+      );
       const visual =
         cinematic !== null
           ? 40 + cinematic
@@ -793,8 +820,7 @@ export class MoonWorld {
             ? 40 + (this.reducedMotion ? 1 : this.time * 0.8)
             : run.finished
               ? run.tick
-              : run.tick +
-                Math.min(1, ((now - this.updateTime) / 1000) * this.speed);
+              : this.visualTick;
       for (const b of run.buildings) {
         const m = this.models.get(b.id);
         if (m && !b.sold)
@@ -805,7 +831,7 @@ export class MoonWorld {
               ? cinematic % 1
               : run.finished
                 ? Math.min(b.cycle_left, (now - this.updateTime) / 1000)
-                : Math.min(1, ((now - this.updateTime) / 1000) * this.speed),
+                : Math.min(1, visual - run.tick),
           );
       }
       this.animateGuests(run, dt, visual);
@@ -841,7 +867,10 @@ export class MoonWorld {
         }
       }
     }
-    if (cinematic === null && this.rideId === null) this.controls.update();
+    if (cinematic === null && this.rideId === null) {
+      this.controls.update();
+      this.clampPan();
+    }
     if (this.earth) this.earth.rotation.y = -1.5 + this.time * 0.000073;
     this.skyCamera.quaternion.copy(this.camera.quaternion);
     if (
@@ -890,18 +919,40 @@ export class MoonWorld {
       }
       p.visible = true;
       let cell = g.cell;
+      let nextCell = cell;
+      let progress = 0;
       if (
         this.attractMode &&
         !this.reducedMotion &&
         g.status === "walking" &&
         g.route.length > 1
       ) {
-        const n = g.route.length,
-          index = (g.id * 3 + Math.floor(time * 0.8)) % (n * 2 - 2);
-        cell = g.route[index < n ? index : n * 2 - 2 - index];
+        const n = g.route.length;
+        const travel = g.id * 3 + time * 0.8;
+        const cycle = n * 2 - 2;
+        const index = Math.floor(travel) % cycle;
+        const next = (index + 1) % cycle;
+        cell = g.route[index < n ? index : cycle - index];
+        nextCell = g.route[next < n ? next : cycle - next];
+        progress = travel % 1;
+      } else if (["walking", "leaving"].includes(g.status) && g.route.length) {
+        nextCell = g.route[0];
+        progress = T.MathUtils.clamp(time - run.tick, 0, 1);
       }
-      let x = ((cell % WIDTH) + 0.5 - WIDTH / 2) * SCALE,
-        z = (Math.floor(cell / WIDTH) + 0.5 - HEIGHT / 2) * SCALE;
+      let x =
+        (T.MathUtils.lerp(cell % WIDTH, nextCell % WIDTH, progress) +
+          0.5 -
+          WIDTH / 2) *
+        SCALE;
+      let z =
+        (T.MathUtils.lerp(
+          Math.floor(cell / WIDTH),
+          Math.floor(nextCell / WIDTH),
+          progress,
+        ) +
+          0.5 -
+          HEIGHT / 2) *
+        SCALE;
       if (g.status === "arriving") {
         const delay = Math.floor((g.id % 8) / 2) * 0.24;
         const u = T.MathUtils.clamp(
@@ -932,27 +983,29 @@ export class MoonWorld {
       }
       const target = new T.Vector3(x, 0.22, z),
         d = target.clone().sub(p.position);
-      if (d.length() > 0.04) p.rotation.y = Math.atan2(d.x, d.z);
-      p.position.lerp(target, Math.min(1, dt * Math.max(5, this.speed * 5)));
-      p.position.y =
-        0.22 +
-        (["walking", "arriving", "leaving", "boarding"].includes(g.status)
-          ? Math.abs(Math.sin(time * 5 + g.id)) * 0.05
-          : 0);
+      d.y = 0;
+      const walking =
+        ["walking", "arriving", "leaving", "boarding"].includes(g.status) &&
+        d.lengthSq() > 0.000001;
+      if (d.lengthSq() > 0.000001) {
+        const heading = Math.atan2(d.x, d.z);
+        const turn =
+          T.MathUtils.euclideanModulo(
+            heading - p.rotation.y + Math.PI,
+            Math.PI * 2,
+          ) - Math.PI;
+        p.rotation.y += turn * (1 - Math.exp(-14 * dt));
+      }
+      p.userData.walkDistance = (p.userData.walkDistance ?? 0) + d.length();
+      const stride = p.userData.walkDistance * 5.4 + g.id;
+      p.position.copy(target);
+      p.position.y = 0.22 + (walking ? Math.abs(Math.sin(stride)) * 0.045 : 0);
       for (let i = 0; i < 2; i++) {
-        (p.userData.legs[i] as T.Object3D).rotation.x = [
-          "walking",
-          "arriving",
-          "leaving",
-          "boarding",
-        ].includes(g.status)
-          ? Math.sin(time * 6 + g.id + i * Math.PI) * 0.35
+        (p.userData.legs[i] as T.Object3D).rotation.x = walking
+          ? Math.sin(stride + i * Math.PI) * 0.35
           : 0;
-        const walking = ["walking", "arriving", "leaving", "boarding"].includes(
-          g.status,
-        );
         (p.userData.arms[i] as T.Object3D).rotation.x = walking
-          ? -Math.sin(time * 6 + g.id + i * Math.PI) * 0.25
+          ? -Math.sin(stride + i * Math.PI) * 0.25
           : Math.sin(time * 1.7 + g.id + i) * 0.045;
         (p.userData.arms[i] as T.Object3D).rotation.z =
           g.status === "leaving" && g.satisfaction > 70

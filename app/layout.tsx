@@ -6,8 +6,11 @@ export const metadata: Metadata = {
   description:
     "Build the Moon’s best day out. A lively nine-minute theme park tycoon with rocket arrivals, mass-driver coasters and an economy on NEAR.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg?v=moonpark-2", type: "image/svg+xml" },
+      { url: "/favicon.ico?v=moonpark-2", sizes: "16x16 32x32 48x48 64x64" },
+    ],
+    shortcut: "/favicon.svg?v=moonpark-2",
   },
 };
 

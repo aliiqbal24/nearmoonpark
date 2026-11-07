@@ -1,28 +1,23 @@
-> Google is an optional standalone-host alternative. The published Sites version uses its built-in ChatGPT social sign-in and needs no Google client credentials.
+# Google sign-in
 
-# Google sign-in setup
+Moonpark uses Neon managed Auth and a free Neon Postgres database through Vercel Marketplace. The game proxies Auth requests through `/api/auth/[...path]`. The home-page proxy exchanges the OAuth verifier for an HTTP-only session. Ranked API handlers independently verify the session and require a verified email.
 
-The integration is implemented, but no Google OAuth web client was available in this environment. Browser account setup was unavailable. Until credentials are configured, the game clearly disables Google sign-in and ranked admission; practice and anonymous NEAR playtests remain available.
+## Hosted configuration
 
-## Create the client
+The Vercel project is `nearmoonpark`. Its production origin is `https://nearmoonpark.vercel.app`, which is registered in Neon Auth's trusted domains. Localhost callbacks are allowed by Neon for development.
 
-In Google Cloud Console, choose the project that will own Moonpark. Configure Google Auth Platform branding and audience, then create an OAuth client of type **Web application**. Use the real Moonpark name and the published privacy and terms pages:
+Set `NEON_AUTH_BASE_URL` and a random `NEON_AUTH_COOKIE_SECRET` of at least 32 characters as private runtime variables. Marketplace supplies the database connection variables. Pull them into ignored `.env.local` for local development, then run `npm run db:migrate` to create Moonpark's private profile and sponsorship tables. Neon manages its own identity tables.
 
-- Privacy: `https://last-signal-mars.ajiqbal1.chatgpt.site/privacy`
-- Terms: `https://last-signal-mars.ajiqbal1.chatgpt.site/terms`
-- Production callback: `https://last-signal-mars.ajiqbal1.chatgpt.site/api/auth/callback/google`
-- Local callback, if needed: `http://localhost:5173/api/auth/callback/google`
+Never commit credentials or paste them into chat. Rotating the cookie secret invalidates cached sessions.
 
-Configure the appropriate public audience for the competition. An OAuth app restricted to a test-user allowlist will not work for arbitrary judges or players. Only basic identity scopes are used: OpenID, email and profile. Moonpark does not request Gmail or Drive access.
+## Google provider
 
-## Store credentials privately
+Google is currently enabled using Neon's shared testing OAuth client. The consent screen identifies Neon. For a Moonpark-branded production consent screen, configure an owned Google OAuth web client in Neon Console under Better Auth. Use the exact redirect URI shown there, which belongs to Neon's hosted Auth service. The game's return URL is `https://nearmoonpark.vercel.app/?ranked=1`.
 
-Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` as hosted runtime secrets. Retain the generated `BETTER_AUTH_SECRET`; changing it invalidates sessions. Set `BETTER_AUTH_URL` to `https://last-signal-mars.ajiqbal1.chatgpt.site` in hosting. A local `.dev.vars` may use `http://localhost:5173`. Never commit credentials or paste them into chat.
+Only basic identity scopes are requested, including email and profile. The public player name defaults to a pseudonym and can be edited. Google email remains private.
 
-Redeploy a saved Site version after changing hosted environment values. D1 migrations include the Better Auth user/session/account/verification tables and the private Moonpark profile and sponsorship tables.
+## Verification and prize opening
 
-## Verify before opening prizes
+Verify a fresh sign-in, refresh, sign-out and return visit. Check that anonymous requests cannot obtain ranked sponsorship and that the same verified identity retains its public player ID.
 
-Test a fresh sign-in, sign-out and return visit. Confirm that the public name defaults to a pseudonym and can be edited, while the Google email stays private. Play a full ranked round, confirm its canonical NEAR score, then sign in on another browser and check that the same player has one best leaderboard entry. Verify that signed-out requests cannot obtain ranked sponsorship.
-
-Once gameplay is approved and the final rules/build are frozen, the contract sponsor can explicitly call `open_challenge`. It is a one-time operation. The current playtest deployment intentionally has not opened it. Do not upgrade an opened prize contract; deploy a new ruleset instead.
+Once gameplay is approved and the final rules and build are frozen, the contract sponsor can explicitly call `open_challenge`. This is a one-time operation. The current playtest deployment has not opened it. Preserve an opened prize contract and deploy a new ruleset for later changes.

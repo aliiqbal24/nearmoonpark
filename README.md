@@ -2,7 +2,7 @@
 
 Build the Moon's best day out. Rockets bring visitors with finite budgets; your rides and independent concessionaires turn their arrival into a little lunar economy.
 
-**Play:** https://last-signal-mars.ajiqbal1.chatgpt.site
+**Play:** https://nearmoonpark.vercel.app
 
 One human designs the park; everyone else is an NPC. A narrated, skippable 40-second film leads into a nine-minute opening day. The clock holds at 9:00 until the first shuttle lands. Build rides and paths, tune prices and launches, customize signature rides, and use 1×/2×/4× to watch the consequences.
 
@@ -14,7 +14,7 @@ One human designs the park; everyone else is an NPC. A narrated, skippable 40-se
 4. Add **Crater Coolers**, power and maintenance as the park grows. Merchants choose prices, buy stock, pay operating costs, reorder supplies and can become insolvent. Coin trails and sound follow actual income receipts.
 5. Use **4×**, ride the mass driver with its front-seat camera, and inspect the economy ledger. NEAR validates commands and computes the final score.
 6. At closing, choose **Publish your park & signature rides**. Publish the verified layout and a guest-tested ride. Other parks can license that design, with 90% of the 0.005 tNEAR fee credited to its creator park’s owner. Visit public parks and ride their coasters. Optionally claim your persistent park through a signed NEAR wallet transaction.
-7. Sign in through the hosted site's **Continue with ChatGPT** link to play a provisionally eligible competition round after the challenge opens. The contract keeps one best result per identity and freezes separate prize standings at the cutoff.
+7. Sign in through the hosted site's **Continue with Google** link to play a provisionally eligible competition round after the challenge opens. The contract keeps one best result per identity and freezes separate prize standings at the cutoff.
 
 The NEAR badge opens the ownership and funding panel throughout play. No wallet extension, crypto purchase, seed-phrase entry or gas confirmation is required in the normal game loop. Anonymous runs appear as verified exhibitions and cannot take prize standings.
 
@@ -51,7 +51,7 @@ npm run test:sandbox
 npm run typecheck
 ```
 
-With the dev server running, `npm run test:game` checks gameplay, mobile layout, the first-landing clock, NEAR explanation and film. `MOON_PUBLIC_UI=1` adds the read-only published-park fixture. Playwright uses `/usr/bin/chromium`; override `CHROMIUM_PATH` if needed. `MOON_CHAIN_UI=1 npm run test:game` additionally spends testnet sponsorship on a complete round, customization, verified park publication and a signature blueprint. `npm run build` builds the Worker/browser application.
+With the dev server running, `npm run test:game` checks gameplay, mobile layout, the first-landing clock, NEAR explanation and film. `MOON_PUBLIC_UI=1` adds the read-only published-park fixture. Playwright uses `/usr/bin/chromium`; override `CHROMIUM_PATH` if needed. `MOON_CHAIN_UI=1 npm run test:game` additionally spends testnet sponsorship on a complete round, customization, verified park publication and a signature blueprint. `npm run build` builds the Next.js browser application and server routes.
 
 ## Deploy a testnet economy
 
@@ -59,19 +59,22 @@ With the dev server running, `npm run test:game` checks gameplay, mobile layout,
 
 Each sponsored player receives 0.5 testnet NEAR and a restricted gameplay key with a 0.4 NEAR allowance. The server receives public keys. Park administration uses browser-held generated credentials, and external wallet claiming uses NEAR Connect with testnet-capable wallets on testnet. Back up private generated credentials before clearing storage. Sponsorship is finite and rate-limited. Public exports exclude private keys.
 
-The hosted site uses the Sites platform's social sign-in. `MOON_CHATGPT_AUTH=1` is trusted only in production at the configured `BETTER_AUTH_URL` on `.chatgpt.site`, behind Sites' identity gateway. Do not enable gateway-header trust on another hosting provider. Google OAuth remains an optional standalone alternative; [setup](docs/GOOGLE-AUTH.md). Anonymous access fails closed for ranked admission and profile changes.
+The Vercel deployment uses Neon Auth's managed Better Auth Google sign-in. Ranked admission requires a server-verified session with a verified email. The client cannot supply its own identity. Configure the canonical Vercel origin in Neon's trusted domains. Shared Google credentials support hackathon testing. Add a dedicated Google OAuth client in Neon for branded production sign-in.
 
-D1 holds identity, profile and sponsorship records, not game outcomes. Sites applies pending hosted migrations. Local preview migrations, applied once after a production build:
+Neon Postgres stores private profile links and sponsorship limits. Game outcomes and ownership are verified on NEAR. Link the Vercel project and provision the free Neon integration, then pull environment values and apply the schema once:
 
 ```sh
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_red_rockslide.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_blue_lorna_dane.sql
+vercel env pull .env.local
+npm run db:migrate
+npm run dev
 ```
+
+The app serves at http://localhost:5173. Production builds use `npm run build` and `npm start`. Private environment values, account backups, test outputs and Rust build artifacts are excluded from Vercel uploads.
 
 `npm run test:chain` makes a separate non-prize verification run and records public transaction evidence. `node scripts/game/moon-deploy.mjs --open` opens the immutable challenge after verification. The prize cutoff is November 18, 2026 at 23:59 UTC. No real-money entry fee or mainnet transaction is part of this prototype.
 
 ## Submission and provenance
 
-Built for NEAR HACKATHON, **Games With Real Economies**. Original gameplay, simulation, interface, procedural models, camera sequence, musical score and sound effects. The opening uses locally synthesized Kokoro narration; [cinema sources and credits](docs/MOONPARK-CINEMA.md). Sites/Vinext and declared dependencies provide infrastructure. The Earth texture comes from the Three.js examples; [visual credits](docs/VISUALS.md).
+Built for NEAR HACKATHON, **Games With Real Economies**. Original gameplay, simulation, interface, procedural models, camera sequence, musical score and sound effects. The opening uses locally synthesized Kokoro narration; [cinema sources and credits](docs/MOONPARK-CINEMA.md). Next.js, Vercel, Neon and declared dependencies provide infrastructure. The Earth texture comes from the Three.js examples; [visual credits](docs/VISUALS.md).
 
 The earlier Mars game remains at `/legacy`; [archived README](docs/MARS-PROTOTYPE.md). MIT license. A public source repository, the owner-published demo post and final hackathon submission are separate release milestones. No social post or hackathon submission has been sent.

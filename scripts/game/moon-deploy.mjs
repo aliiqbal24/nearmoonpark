@@ -132,11 +132,11 @@ await writeFile(
   "public/moon-config.json",
   JSON.stringify(config, null, 2) + "\n",
 );
-const old = await readFile(".dev.vars", "utf8").catch(() => "");
+const old = await readFile(".env.local", "utf8").catch(() => "");
 const vars = new Map(
   old
     .split("\n")
-    .filter(Boolean)
+    .filter((line) => /^[A-Za-z_][A-Za-z0-9_]*=/.test(line))
     .map((line) => {
       const i = line.indexOf("=");
       return [line.slice(0, i), line.slice(i + 1)];
@@ -145,15 +145,14 @@ const vars = new Map(
 vars.set("MOON_SPONSOR_ID", key.accountId);
 vars.set("MOON_SPONSOR_KEY", key.secretKey);
 vars.set("MOON_CONTRACT_ID", contractId);
-vars.set("MOON_CHATGPT_AUTH", "1");
-if (!vars.has("BETTER_AUTH_SECRET"))
-  vars.set("BETTER_AUTH_SECRET", randomBytes(32).toString("hex"));
+if (!vars.get("NEON_AUTH_COOKIE_SECRET"))
+  vars.set("NEON_AUTH_COOKIE_SECRET", randomBytes(48).toString("hex"));
 await writeFile(
-  ".dev.vars",
+  ".env.local",
   [...vars].map(([k, v]) => `${k}=${v}`).join("\n") + "\n",
   { mode: 0o600 },
 );
-await chmod(".dev.vars", 0o600);
+await chmod(".env.local", 0o600);
 await writeFile(
   "public/moon-build.json",
   JSON.stringify(

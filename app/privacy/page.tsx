@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Privacy() {
   return (
     <main
@@ -11,11 +13,10 @@ export default function Privacy() {
       <h1>Moonpark privacy</h1>
       <p>
         Practice and guest NEAR play do not require sign-in. Ranked play on this
-        site uses ChatGPT sign-in to establish a stable player identity. We
-        store a site-scoped identity and your chosen public player name. We do
-        not publish your email on NEAR or the leaderboard. A separately
-        configured Google sign-in deployment may also store the name, email and
-        session supplied by that provider.
+        site uses Google sign-in through Neon Auth to establish a verified,
+        stable player identity. Neon stores your authentication profile and
+        session. Moonpark stores your identity link and chosen public player
+        name in Neon Postgres. Your email stays private to authentication.
       </p>
       <p>
         NEAR runs, park ownership, published names, designs, reviews, licenses,
@@ -37,7 +38,7 @@ export default function Privacy() {
         account data can be made to the creator through the public project
         repository once published.
       </p>
-      <a href="/">Return to Moonpark</a>
+      <Link href="/">Return to Moonpark</Link>
     </main>
   );
 }

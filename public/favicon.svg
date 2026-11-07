@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#213449"/><path d="M40 12A22 22 0 1 0 51 44 23 23 0 0 1 40 12Z" fill="#addfcf"/><path d="m45 15 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" fill="#f4cd80"/><circle cx="22" cy="38" r="3" fill="#83b5ac"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="night" x2=".8" y2="1">
+      <stop stop-color="#243b55"/>
+      <stop offset="1" stop-color="#0a1427"/>
+    </linearGradient>
+    <linearGradient id="moon" x2="1" y2="1">
+      <stop stop-color="#ffe6a3"/>
+      <stop offset="1" stop-color="#e9a94f"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="62" height="62" rx="16" fill="url(#night)" stroke="#536783" stroke-width="2"/>
+  <path d="M36 9a23 23 0 1 0 17 35A24 24 0 0 1 36 9Z" fill="url(#moon)"/>
+  <path d="M8 48h15c11 0 21-8 21-18 0-8-5-12-11-12s-12 6-9 14c3 9 15 15 32 15" fill="none" stroke="#102137" stroke-width="9" stroke-linecap="round"/>
+  <path d="M8 48h15c11 0 21-8 21-18 0-8-5-12-11-12s-12 6-9 14c3 9 15 15 32 15" fill="none" stroke="#91f1d3" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="m51 9 1.8 4.2L57 15l-4.2 1.8L51 21l-1.8-4.2L45 15l4.2-1.8Z" fill="#fff3cf"/>
+</svg>

@@ -39,7 +39,6 @@ export class ParkSession {
       deadline: deadline ?? Date.now() + (END + 15) * 1000,
     };
     this.desired = run.tick;
-    this.emit();
   }
   static async start(
     onChange: (s: Snapshot) => void,
@@ -69,7 +68,7 @@ export class ParkSession {
       localStorage.setItem(requestKey, requestId);
       const record = await create(credentials, cfg, requestId);
       localStorage.removeItem(requestKey);
-      return new ParkSession(
+      const session = new ParkSession(
         record.run,
         onChange,
         credentials,
@@ -77,10 +76,17 @@ export class ParkSession {
         record,
         Number(BigInt(record.deadline) / 1000000n),
       );
+      session.emit();
+      return session;
     }
-    return new ParkSession(await simulate({ op: "new" }), onChange);
+    const session = new ParkSession(await simulate({ op: "new" }), onChange);
+    session.emit();
+    return session;
   }
-  static async resume(onChange: (s: Snapshot) => void) {
+  static async resume(
+    onChange: (s: Snapshot) => void,
+    isCurrent: () => boolean = () => true,
+  ) {
     const saved = JSON.parse(
       localStorage.getItem("moonpark-current") || "null",
     ) as {
@@ -99,13 +105,16 @@ export class ParkSession {
       record = await view<RecordState>(saved.config, "get_run", {
         run_id: record.run_id,
       });
+    if (!isCurrent()) return null;
     const s = new ParkSession(
       record?.run ?? saved.state.run,
       onChange,
       saved.credentials,
       saved.config,
       record,
-      saved.state.deadline,
+      record
+        ? Number(BigInt(record.deadline) / 1000000n)
+        : Date.now() + (END - saved.state.run.tick + 15) * 1000,
     );
     s.state.txs = saved.state.txs;
     let ops = saved.ops;
@@ -121,6 +130,10 @@ export class ParkSession {
     }
     s.ops = ops;
     await s.rebase();
+    if (!isCurrent()) {
+      s.dispose();
+      return null;
+    }
     s.desired = s.state.run.tick;
     s.emit();
     void s.flush();
@@ -174,9 +187,7 @@ export class ParkSession {
     if (closing) this.desired = END;
     return this.enqueue(async () => {
       if (this.disposed || this.state.run.finished) return;
-      const lag =
-        this.ops.reduce((n, o) => n + o.ticks, 0) + (this.active?.ticks ?? 0);
-      if (this.state.mode === "near" && lag >= 40 && !closing) return;
+      // The day is bounded by END. Keep play responsive while its journal confirms.
       const ticks = Math.min(
         10,
         Math.max(0, Math.floor(this.desired) - this.state.run.tick),

@@ -66,6 +66,7 @@ export function lunarTerrain(scene: T.Scene) {
     bumpMap: bump,
     bumpScale: 0.06,
     roughness: 0.98,
+    vertexColors: true,
   });
   const ground = new T.Mesh(
     new T.PlaneGeometry(1800, 1800, 256, 256),
@@ -76,32 +77,81 @@ export function lunarTerrain(scene: T.Scene) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;
   };
-  const craters = Array.from({ length: 26 }, () => ({
-    x: (rand() - 0.5) * 280,
-    z: -25 - rand() * 200,
-    r: 4 + rand() * 18,
-  }));
-  const vertices = ground.geometry.attributes.position;
-  for (let i = 0; i < vertices.count; i++) {
-    const x = vertices.getX(i),
-      z = -vertices.getY(i),
-      d = Math.hypot(x, z);
+  const craters = [
+    { x: -43, z: -8, r: 17 },
+    { x: 38, z: -34, r: 23 },
+    { x: -12, z: -67, r: 29 },
+    { x: 47, z: 30, r: 14 },
+    { x: -38, z: 44, r: 12 },
+    ...Array.from({ length: 20 }, () => ({
+      x: (rand() - 0.5) * 280,
+      z: -25 - rand() * 200,
+      r: 6 + rand() * 20,
+    })),
+  ];
+  const heightAt = (x: number, z: number) => {
+    const d = Math.hypot(x, z);
+    const clearance = Math.max(0, Math.abs(x) - 23, -19 - z, z - 29);
+    const edge = T.MathUtils.smoothstep(clearance, 0, 12);
     const hills = T.MathUtils.smoothstep(d, 55, 180);
     let height =
       hills *
       (4 +
         Math.sin(x * 0.024) * Math.cos(z * 0.017) * 8 +
         Math.sin(x * 0.047 + z * 0.019) * 3);
+    height +=
+      edge * (Math.sin(x * 0.18 + z * 0.06) * 0.3 + Math.cos(z * 0.21) * 0.18);
     for (const crater of craters) {
       const u = Math.hypot(x - crater.x, z - crater.z) / crater.r;
+      if (u > 1.65) continue;
       height +=
-        hills *
+        edge *
         crater.r *
-        (0.13 * Math.exp(-Math.pow((u - 1) * 5, 2)) -
-          0.13 * Math.exp(-u * u * 3));
+        (0.2 * Math.exp(-Math.pow((u - 1) * 5, 2)) -
+          0.12 * Math.pow(Math.max(0, 1 - u * u), 2) +
+          (crater.r > 20 ? 0.045 * Math.exp(-u * u * 30) : 0));
     }
+    const observatoryPad = T.MathUtils.smoothstep(
+      Math.hypot(x - 29, z + 14),
+      4.5,
+      11,
+    );
+    return height * observatoryPad;
+  };
+  // Concentrate the existing mesh around the park, retaining the distant horizon.
+  const terrainCoordinate = (value: number) => {
+    const u = Math.abs(value) / 900;
+    return (
+      Math.sign(value) *
+      (u <= 0.72
+        ? (u / 0.72) * 120
+        : 120 + Math.pow((u - 0.72) / 0.28, 1.6) * 780)
+    );
+  };
+  const vertices = ground.geometry.attributes.position;
+  const colors = new Float32Array(vertices.count * 3);
+  const basin = new T.Color("#8d99aa");
+  const highland = new T.Color("#d1c4ae");
+  const color = new T.Color();
+  for (let i = 0; i < vertices.count; i++) {
+    const x = terrainCoordinate(vertices.getX(i));
+    const z = -terrainCoordinate(vertices.getY(i));
+    const height = heightAt(x, z);
+    vertices.setXY(i, x, -z);
     vertices.setZ(i, height);
+    color
+      .copy(basin)
+      .lerp(
+        highland,
+        T.MathUtils.clamp(
+          0.48 + height * 0.09 + Math.sin(x * 0.04 + z * 0.03) * 0.12,
+          0,
+          1,
+        ),
+      );
+    color.toArray(colors, i * 3);
   }
+  ground.geometry.setAttribute("color", new T.BufferAttribute(colors, 3));
   ground.geometry.computeVertexNormals();
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.22;
@@ -168,11 +218,20 @@ export function lunarTerrain(scene: T.Scene) {
     (color) =>
       new T.MeshStandardMaterial({ color, roughness: 0.95, metalness: 0 }),
   );
-  for (let i = 0; i < 240; i++) {
-    const x = (rand() - 0.5) * 170,
-      z = (rand() - 0.5) * 155;
+  const outcrops = [
+    { x: -27, z: -17, r: 2.5 },
+    { x: -29, z: -15, r: 1.7 },
+    { x: 33, z: -4, r: 2.1 },
+    { x: 36, z: -2, r: 1.3 },
+    { x: -28, z: 25, r: 1.9 },
+    { x: 29, z: 30, r: 2.2 },
+  ];
+  for (let i = 0; i < 260; i++) {
+    const site = outcrops[i];
+    const x = site?.x ?? (rand() - 0.5) * 170;
+    const z = site?.z ?? (rand() - 0.5) * 155;
     if (Math.abs(x) < 23 && z > -19 && z < 29) continue;
-    const r = 0.12 + rand() ** 3 * 1.8;
+    const r = site?.r ?? 0.12 + rand() ** 3 * 1.8;
     const geo = new T.IcosahedronGeometry(r, 1);
     const v = geo.attributes.position;
     for (let j = 0; j < v.count; j++) {
@@ -181,7 +240,7 @@ export function lunarTerrain(scene: T.Scene) {
     }
     geo.computeVertexNormals();
     const rock = new T.Mesh(geo, stone[i % 2]);
-    rock.position.set(x, r * 0.12 - 0.15, z);
+    rock.position.set(x, heightAt(x, z) + r * 0.2 - 0.15, z);
     rock.scale.y = 0.55;
     rock.rotation.set(rand(), rand() * 6, rand());
     rock.castShadow = true;

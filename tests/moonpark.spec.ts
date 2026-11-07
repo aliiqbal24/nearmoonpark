@@ -190,7 +190,6 @@ test("overlap is rejected without spending and construction survives reload", as
     )
     .toBe(false);
   await page.reload();
-  await page.getByRole("button", { name: /Return to your park/ }).click();
   await expect(
     page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
   ).toBeVisible();
@@ -227,7 +226,7 @@ test("sponsored NEAR round publishes a customized park and signature ride", asyn
     process.env.MOON_CHAIN_UI !== "1",
     "Opt-in public testnet sponsorship.",
   );
-  test.setTimeout(420000);
+  test.setTimeout(600000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
@@ -251,18 +250,39 @@ test("sponsored NEAR round publishes a customized park and signature ride", asyn
   await page.getByRole("button", { name: "Orbital", exact: true }).click();
   await page.getByRole("button", { name: "Close inspector" }).click();
   await page.getByRole("button", { name: "4×", exact: true }).click();
+  let recordedSyncError = false;
   await expect
     .poll(
-      () =>
-        page.evaluate(() => {
+      async () => {
+        const status = await page.evaluate(() => {
           const s = JSON.parse(
             localStorage.getItem("moonpark-current") || "null",
           );
-          return (
-            s?.state.record?.run.finished === true && s.state.pending === 0
+          return {
+            complete:
+              s?.state.record?.run.finished === true && s.state.pending === 0,
+            error: s?.state.error,
+            tick: s?.state.run.tick,
+            confirmed: s?.state.record?.run.tick,
+            owner: s?.state.record?.owner,
+          };
+        });
+        if (status.error && !recordedSyncError) {
+          recordedSyncError = true;
+          console.log(
+            "NEAR synchronization diagnostic",
+            JSON.stringify(status),
           );
-        }),
-      { timeout: 300000, intervals: [2000] },
+          const saved = await page.evaluate(() =>
+            localStorage.getItem("moonpark-current")!,
+          );
+          await writeFile(".near-local/moon-sync-debug.json", saved, {
+            mode: 0o600,
+          });
+        }
+        return status.complete;
+      },
+      { timeout: 420000, intervals: [2000] },
     )
     .toBe(true);
   await page
@@ -379,7 +399,6 @@ test("attraction customization previews immediately and persists through reload"
     });
   await page.screenshot({ path: "outputs/moon-customized-ride.png" });
   await page.reload();
-  await page.getByRole("button", { name: /Return to your park/ }).click();
   await expect
     .poll(() =>
       page.evaluate(
@@ -860,4 +879,73 @@ test("a queued cosmetic edit survives resuming an already closed NEAR day", asyn
   expect(state.run.palette).toBe(1);
   expect(state.run.score).toEqual(proof.score);
   expect(state.run.finished).toBe(true);
+});
+
+test("sponsorship failure can open practice immediately without replaying the intro", async ({
+  page,
+}) => {
+  let attempts = 0;
+  await page.route("**/api/moon/provision", (route) => {
+    attempts++;
+    return route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error:
+          "The testnet sponsorship reserve needs replenishing. Practice is available.",
+      }),
+    });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open your park", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Skip intro", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Play practice instead", exact: true }),
+  ).toBeVisible();
+  // The recovery controls must outlive the transient error toast.
+  await page.waitForTimeout(6500);
+  await page.getByRole("button", { name: "Retry NEAR", exact: true }).click();
+  await expect.poll(() => attempts).toBe(2);
+  await expect(
+    page.getByRole("button", { name: "Play practice instead", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Play practice instead", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("moonpark-current")!).state.mode,
+    ),
+  ).toBe("practice");
+  await expect(page.locator(".mp-intro")).toHaveCount(0);
+});
+
+test("practice refresh resumes automatically even after its old wall-clock deadline", async ({
+  page,
+}) => {
+  await open(page);
+  const savedTick = await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem("moonpark-current")!);
+    saved.state.deadline = Date.now() - 3600000;
+    localStorage.setItem("moonpark-current", JSON.stringify(saved));
+    return saved.state.run.tick;
+  });
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Return to your park/ }),
+  ).toHaveCount(0);
+  const restored = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("moonpark-current")!).state,
+  );
+  expect(restored.run.tick).toBeGreaterThanOrEqual(savedTick);
+  expect(restored.run.finished).toBe(false);
+  expect(restored.deadline).toBeGreaterThan(Date.now());
 });

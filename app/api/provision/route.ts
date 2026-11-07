@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { getSql } from "@/db";
 import {
   Account,
   JsonRpcProvider,
@@ -14,13 +14,13 @@ export async function POST(request: Request) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin)
     return Response.json({ error: "Origin mismatch" }, { status: 403 });
-  const e = env as unknown as {
-    DB?: D1Database;
-    NEAR_SPONSOR_ID?: string;
-    NEAR_SPONSOR_KEY?: string;
-    NEAR_CONTRACT_ID?: string;
-  };
-  if (!e.DB || !e.NEAR_SPONSOR_KEY || !e.NEAR_SPONSOR_ID || !e.NEAR_CONTRACT_ID)
+  const e = process.env;
+  if (
+    !e.DATABASE_URL ||
+    !e.NEAR_SPONSOR_KEY ||
+    !e.NEAR_SPONSOR_ID ||
+    !e.NEAR_CONTRACT_ID
+  )
     return Response.json(
       {
         error:
@@ -52,14 +52,13 @@ export async function POST(request: Request) {
     .map((x) => x.toString(16).padStart(2, "0"))
     .join("")
     .slice(0, 20);
-  const db = e.DB,
+  const db = getSql(),
     accountId = `p${id}.${e.NEAR_SPONSOR_ID}`,
-    ip = request.headers.get("cf-connecting-ip") || "local";
+    ip =
+      request.headers.get("x-vercel-forwarded-for")?.split(",")[0].trim() ||
+      "local";
   const work = async () => {
-    const old = await db
-      .prepare("SELECT * FROM provisioning WHERE id = ?")
-      .bind(id)
-      .first<{ session_key: string; status: string }>();
+    const [old] = await db`SELECT * FROM provisioning WHERE id=${id}`;
     if (old && old.session_key !== body.sessionPublicKey)
       return Response.json(
         { error: "Recovery key already registered with another session." },
@@ -67,16 +66,10 @@ export async function POST(request: Request) {
       );
     if (old?.status === "ready") return Response.json({ accountId });
     if (!old) {
-      const rows = await db
-        .prepare("SELECT COUNT(*) AS n FROM provisioning WHERE created_at > ?")
-        .bind(Date.now() - 86400000)
-        .first<{ n: number }>();
-      const perIp = await db
-        .prepare(
-          "SELECT COUNT(*) AS n FROM provisioning WHERE created_at > ? AND ip = ?",
-        )
-        .bind(Date.now() - 3600000, ip)
-        .first<{ n: number }>();
+      const [rows] =
+        await db`SELECT COUNT(*) AS n FROM provisioning WHERE created_at > ${Date.now() - 86400000}`;
+      const [perIp] =
+        await db`SELECT COUNT(*) AS n FROM provisioning WHERE created_at > ${Date.now() - 3600000} AND ip=${ip}`;
       if ((rows?.n || 0) >= 100 || (perIp?.n || 0) >= 8)
         return Response.json(
           {
@@ -85,12 +78,8 @@ export async function POST(request: Request) {
           },
           { status: 429 },
         );
-      await db
-        .prepare(
-          "INSERT OR IGNORE INTO provisioning (id,account_id,session_key,status,ip,created_at) VALUES (?,?,?,'pending',?,?)",
-        )
-        .bind(id, accountId, body.sessionPublicKey, ip, Date.now())
-        .run();
+      await db`INSERT INTO provisioning(id,account_id,session_key,status,ip,created_at)
+        VALUES(${id},${accountId},${body.sessionPublicKey},'pending',${ip},${Date.now()}) ON CONFLICT (id) DO NOTHING`;
     }
     const p = new FailoverRpcProvider([
       new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" }),
@@ -148,10 +137,7 @@ export async function POST(request: Request) {
       args: { account_id: accountId },
       waitUntil: "FINAL",
     });
-    await db
-      .prepare("UPDATE provisioning SET status='ready' WHERE id=?")
-      .bind(id)
-      .run();
+    await db`UPDATE provisioning SET status='ready' WHERE id=${id}`;
     return Response.json({ accountId });
   };
   const task = queue.then(work);

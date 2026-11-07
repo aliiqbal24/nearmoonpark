@@ -20,7 +20,6 @@ import {
   RotateCw,
   ArrowUpRight,
   Play,
-  ShieldCheck,
   Eye,
   Palette,
 } from "lucide-react";
@@ -58,7 +57,6 @@ import {
   END,
   LANDING,
   blueprint,
-  footprint,
   isRide,
   money,
   clock,
@@ -68,7 +66,6 @@ import {
   type Placement,
   type Detail,
   type Entry,
-  type Kind,
   type PrizeStatus,
 } from "@/lib/moon/model";
 import type { MoonWorld as World } from "@/lib/moon/world";
@@ -103,6 +100,7 @@ export default function Game() {
     [videoFailed, setVideoFailed] = useState(false),
     [introLeaving, setIntroLeaving] = useState(false),
     [launching, setLaunching] = useState(false),
+    [openingError, setOpeningError] = useState(false),
     [resumeAvailable, setResumeAvailable] = useState(false),
     [rideId, setRideId] = useState<number | null>(null),
     [showResults, setShowResults] = useState(true),
@@ -129,6 +127,11 @@ export default function Game() {
     audio = useRef<MoonAudio | null>(null),
     audioStarted = useRef(false),
     pendingNear = useRef<Promise<Credentials> | null>(null),
+    entryIdentity = useRef({
+      playerId: "guest",
+      ranked: false,
+      displayName: "Moon Explorer",
+    }),
     finishing = useRef(false),
     finishedRef = useRef(false),
     generation = useRef(0),
@@ -156,23 +159,51 @@ export default function Game() {
     }
   }, []);
   useEffect(() => {
+    let active = true;
     audio.current = new MoonAudio();
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("moonpark-identity") || "null",
-      );
-      if (saved?.name) setParkIdentity(saved);
-    } catch {}
-    if (new URLSearchParams(location.search).has("parkdesk")) setPanel("near");
     void simulate({ op: "new" })
-      .then((run) => {
+      .then(async (run) => {
+        if (!active) return;
         setInitial(run);
+        try {
+          const identity = JSON.parse(
+            localStorage.getItem("moonpark-identity") || "null",
+          );
+          if (identity?.name) setParkIdentity(identity);
+        } catch {}
+        if (new URLSearchParams(location.search).has("parkdesk"))
+          setPanel("near");
         try {
           const saved = JSON.parse(
             localStorage.getItem("moonpark-current") || "null",
           );
           setResumeAvailable(saved?.state?.run?.version === VERSION);
-        } catch {}
+          if (
+            saved?.state?.run?.version === VERSION &&
+            !saved.state.run.finished
+          ) {
+            const bootGeneration = generation.current;
+            const restored = await ParkSession.resume(
+              receive,
+              () => active && generation.current === bootGeneration,
+            );
+            if (restored && active) {
+              session.current = restored;
+              setScreen(restored.state.run.finished ? "results" : "playing");
+              setWallLeft(
+                Math.max(0, (restored.state.deadline - Date.now()) / 1000),
+              );
+              setToast("Welcome back. Your park has been restored.");
+            }
+          }
+        } catch (error) {
+          if (active)
+            setToast(
+              error instanceof Error
+                ? error.message
+                : "Your saved park is available through Resume.",
+            );
+        }
       })
       .catch((e) => setToast(String(e)));
     void nearConfig().then((c) => {
@@ -209,10 +240,11 @@ export default function Game() {
       })
       .catch(() => {});
     return () => {
+      active = false;
       session.current?.dispose();
       audio.current?.dispose();
     };
-  }, []);
+  }, [receive]);
   useEffect(() => {
     audio.current?.setCinematic(screen === "intro" && !videoFailed);
   }, [screen, videoFailed]);
@@ -347,10 +379,16 @@ export default function Game() {
     setIntroTime(0);
     setScreen("intro");
     setLaunching(false);
+    setOpeningError(false);
     finishing.current = false;
     finishedRef.current = false;
     lastWave.current = 0;
     setChosenMode(mode);
+    entryIdentity.current = {
+      playerId: ranked ? player!.player_id : "guest",
+      ranked,
+      displayName: ranked ? player!.display_name : "Moon Explorer",
+    };
     pendingNear.current =
       mode === "near"
         ? provision(
@@ -362,13 +400,23 @@ export default function Game() {
         : null;
     pendingNear.current?.catch(() => {});
   };
-  const finishIntro = async () => {
+  const finishIntro = async (practice = false) => {
     if (finishing.current) return;
     finishing.current = true;
     setLaunching(true);
     try {
       const g = generation.current;
-      const credentials = await pendingNear.current;
+      if (openingError && !practice && cfg) {
+        const entry = entryIdentity.current;
+        pendingNear.current = provision(
+          cfg,
+          entry.playerId,
+          entry.ranked,
+          entry.displayName,
+        );
+      }
+      setOpeningError(false);
+      const credentials = practice ? null : await pendingNear.current;
       const next = await ParkSession.start(
         (s) => {
           if (g === generation.current) receive(s);
@@ -377,6 +425,13 @@ export default function Game() {
         credentials ? cfg! : undefined,
       );
       session.current = next;
+      if (practice) {
+        pendingNear.current = null;
+        setChosenMode("practice");
+        setToast(
+          "Your park is open in practice mode. NEAR play can be retried from the opening screen.",
+        );
+      }
       setScreen("playing");
       setIntroLeaving(true);
       const fadeStart = performance.now();
@@ -399,6 +454,7 @@ export default function Game() {
       setLaunching(false);
       worldRef.current?.home();
     } catch (e) {
+      setOpeningError(true);
       setToast(e instanceof Error ? e.message : "Could not open the park.");
       setLaunching(false);
       finishing.current = false;
@@ -772,18 +828,27 @@ export default function Game() {
             <span>
               {launching
                 ? "Preparing your park…"
-                : "THE DREAM / A LUNAR OPENING DAY"}
+                : openingError
+                  ? "Retry NEAR or open your park in practice."
+                  : "THE DREAM / A LUNAR OPENING DAY"}
             </span>
             <button
               className="mp-secondary"
               disabled={launching}
               onClick={() => void finishIntro()}
             >
-              {launching ? "Opening…" : "Skip intro"}
+              {launching
+                ? "Opening…"
+                : openingError
+                  ? "Retry NEAR"
+                  : "Skip intro"}
               <ArrowUpRight size={16} />
             </button>
-            {!launching && toast && chosenMode === "near" && (
-              <button onClick={() => start("practice")}>
+            {!launching && openingError && chosenMode === "near" && (
+              <button
+                className="mp-primary"
+                onClick={() => void finishIntro(true)}
+              >
                 Play practice instead
               </button>
             )}

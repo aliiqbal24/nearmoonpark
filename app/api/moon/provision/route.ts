@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { getSql, reserveSponsorship } from "@/db";
 import {
   Account,
   FailoverRpcProvider,
@@ -15,13 +15,13 @@ export async function POST(request: Request) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin)
     return Response.json({ error: "Origin mismatch" }, { status: 403 });
-  const e = env as unknown as {
-    DB?: D1Database;
-    MOON_SPONSOR_ID?: string;
-    MOON_SPONSOR_KEY?: string;
-    MOON_CONTRACT_ID?: string;
-  };
-  if (!e.DB || !e.MOON_SPONSOR_ID || !e.MOON_SPONSOR_KEY || !e.MOON_CONTRACT_ID)
+  const e = process.env;
+  if (
+    !e.DATABASE_URL ||
+    !e.MOON_SPONSOR_ID ||
+    !e.MOON_SPONSOR_KEY ||
+    !e.MOON_CONTRACT_ID
+  )
     return Response.json(
       {
         error:
@@ -49,17 +49,15 @@ export async function POST(request: Request) {
   let playerId: string,
     displayName = "Moon Explorer";
   if (body.ranked) {
-    const signed = await identity(request);
+    const signed = await identity();
     if (!signed?.user)
       return Response.json(
         { error: "Sign in before ranked play." },
         { status: 401 },
       );
-    const profile = await e.DB.prepare(
-      "SELECT player_id,display_name FROM moon_profile WHERE user_id=?",
-    )
-      .bind(signed.user.id)
-      .first<{ player_id: string; display_name: string }>();
+    const sql = getSql();
+    const [profile] =
+      await sql`SELECT player_id,display_name FROM moon_profile WHERE user_id=${signed.user.id}`;
     if (!profile)
       return Response.json(
         { error: "Load your player profile before starting." },
@@ -77,13 +75,12 @@ export async function POST(request: Request) {
     .join("")
     .slice(0, 20);
   const accountId = `m${id}.${e.MOON_SPONSOR_ID}`,
-    db = e.DB,
-    ip = request.headers.get("cf-connecting-ip") || "local";
+    db = getSql(),
+    ip =
+      request.headers.get("x-vercel-forwarded-for")?.split(",")[0].trim() ||
+      "local";
   const work = async () => {
-    const old = await db
-      .prepare("SELECT * FROM moon_provisioning WHERE id=?")
-      .bind(id)
-      .first<{ session_key: string; status: string; player_id: string }>();
+    const [old] = await db`SELECT * FROM moon_provisioning WHERE id=${id}`;
     if (old) {
       if (
         old.session_key !== body.sessionPublicKey ||
@@ -96,19 +93,14 @@ export async function POST(request: Request) {
       playerId = old.player_id;
       if (old.status === "ready") return Response.json({ accountId });
     } else {
-      const global = await db
-        .prepare(
-          "SELECT COUNT(*) AS n FROM moon_provisioning WHERE created_at>?",
-        )
-        .bind(Date.now() - 86400000)
-        .first<{ n: number }>();
-      const local = await db
-        .prepare(
-          "SELECT COUNT(*) AS n FROM moon_provisioning WHERE created_at>? AND ip=?",
-        )
-        .bind(Date.now() - 3600000, ip)
-        .first<{ n: number }>();
-      if ((global?.n || 0) >= 100 || (local?.n || 0) >= 8)
+      const reserved = await reserveSponsorship({
+        id,
+        accountId,
+        sessionKey: body.sessionPublicKey,
+        playerId,
+        ip,
+      });
+      if (!reserved)
         return Response.json(
           {
             error:
@@ -116,12 +108,6 @@ export async function POST(request: Request) {
           },
           { status: 429 },
         );
-      await db
-        .prepare(
-          "INSERT OR IGNORE INTO moon_provisioning(id,account_id,session_key,player_id,status,ip,created_at) VALUES(?,?,?,?,'pending',?,?)",
-        )
-        .bind(id, accountId, body.sessionPublicKey, playerId, ip, Date.now())
-        .run();
     }
     const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
       "https://test.rpc.fastnear.com",
@@ -213,10 +199,7 @@ export async function POST(request: Request) {
       gas: 50000000000000n,
       waitUntil: "EXECUTED",
     });
-    await db
-      .prepare("UPDATE moon_provisioning SET status='ready' WHERE id=?")
-      .bind(id)
-      .run();
+    await db`UPDATE moon_provisioning SET status='ready' WHERE id=${id}`;
     return Response.json({ accountId });
   };
   const result = queue.then(work);

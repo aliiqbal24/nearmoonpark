@@ -1,4 +1,5 @@
 node_modules/
+.next/
 dist/
 .vinext/
 .wrangler/
@@ -15,3 +16,4 @@ test-results/
 playwright-report/
 
 .media-tools/
+.vercel
