@@ -662,7 +662,6 @@ test("ride exchange licenses a design, credits its creator and builds its verifi
     { credentials, cfg, record: record as { run: unknown; deadline: string } },
   );
   await page.reload();
-  await page.getByRole("button", { name: /Return to your park/ }).click();
   await page.getByRole("button", { name: "My park and ride exchange" }).click();
   await page.getByRole("tab", { name: "Ride exchange" }).click();
   const card = page.locator("article").filter({ hasText: chosen.creator });
