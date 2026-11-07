@@ -3515,3 +3515,19 @@ button.mp-chain .mp-near-mark svg {
     margin: 0 6% 20px;
   }
 }
+
+.moonpark .mp-title-protocol:hover:not(:disabled) {
+  background: transparent;
+  opacity: 0.82;
+}
+.mp-title-masthead nav button:hover:not(:disabled),
+.mp-title .mp-secondary:hover:not(:disabled),
+.moonpark .mp-title-economy:hover:not(:disabled) {
+  background: #d7eee315;
+  border-color: #b2d9c779;
+}
+.mp-title-links button:hover:not(:disabled),
+.mp-title .mp-resume:hover:not(:disabled) {
+  background: transparent;
+  color: #c1f2d5;
+}
