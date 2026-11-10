@@ -1,7 +1,7 @@
 import * as T from "three";
 
 // Shared by the visible solar disc and both lighting scenes.
-export const SUN_DIRECTION = new T.Vector3(-0.6, 0.075, -0.795).normalize();
+export const SUN_DIRECTION = new T.Vector3(-0.6, 0.48, -0.7).normalize();
 
 export function createSky(sky: T.Scene) {
   let seed = 71823;
@@ -9,46 +9,14 @@ export function createSky(sky: T.Scene) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;
   };
-  const canvas = document.createElement("canvas");
-  canvas.width = 2048;
-  canvas.height = 1024;
-  const paint = canvas.getContext("2d")!;
-  const backdrop = paint.createLinearGradient(0, 0, 0, 1024);
-  backdrop.addColorStop(0, "#01030a");
-  backdrop.addColorStop(0.5, "#071124");
-  backdrop.addColorStop(1, "#02050d");
-  paint.fillStyle = backdrop;
-  paint.fillRect(0, 0, 2048, 1024);
-  // A quiet, dusty Milky Way. This is distant starlight, with no local parallax.
-  for (let i = 0; i < 13000; i++) {
-    const x = random() * 2048;
-    const centre = 410 + Math.sin((x / 2048) * Math.PI * 2) * 100;
-    const spread = (random() + random() + random() - 1.5) * 115;
-    const radius = 4 + random() * 22;
-    const glow = paint.createRadialGradient(
-      x,
-      centre + spread,
-      0,
-      x,
-      centre + spread,
-      radius,
-    );
-    glow.addColorStop(0, i % 3 ? "#8ba9c20a" : "#b1a1ce0c");
-    glow.addColorStop(1, "#8ba9c200");
-    paint.fillStyle = glow;
-    paint.fillRect(
-      x - radius,
-      centre + spread - radius,
-      radius * 2,
-      radius * 2,
-    );
-  }
-  const field = new T.CanvasTexture(canvas);
+  const field = new T.TextureLoader().load("/art/lunar-sky-v2.webp");
   field.colorSpace = T.SRGBColorSpace;
+  field.wrapS = T.RepeatWrapping;
   const dome = new T.Mesh(
     new T.SphereGeometry(2800, 48, 24),
     new T.MeshBasicMaterial({
       map: field,
+      color: "#637184",
       side: T.BackSide,
       depthWrite: false,
       toneMapped: false,
@@ -142,7 +110,7 @@ export function createSky(sky: T.Scene) {
     }),
   );
   earth.position.copy(
-    new T.Vector3(-0.33, 0.12, -0.93).normalize().multiplyScalar(1400),
+    new T.Vector3(-0.33, 0.22, -0.93).normalize().multiplyScalar(1400),
   );
   earth.rotation.y = -1.5;
   sky.add(earth);

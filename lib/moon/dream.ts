@@ -1,5 +1,6 @@
 import {
   blueprint,
+  defaultDesign,
   entrance,
   gridRoute,
   walkingRoute,
@@ -34,6 +35,14 @@ export function dreamPark(initial: Run): Run {
       powered: true,
       connected: true,
       stock: 16,
+      design: {
+        ...defaultDesign(),
+        style: ["wheel", "drink", "solar"].includes(k)
+          ? 1
+          : ["rover", "depot"].includes(k)
+            ? 2
+            : 0,
+      },
       riders: isRide(k) ? [0, 1, 2, 3] : [],
     });
   }

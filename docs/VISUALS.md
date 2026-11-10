@@ -1,77 +1,91 @@
-# Moonpark art direction and production
+# Moonpark lunar-resort artwork
 
-Moonpark uses a handcrafted lunar-resort style. Ivory enamel, dark teal structural parts, mint lighting, gold hardware and individual ride colors make the buildings readable from above. The same editable Three.js models appear in the live park, construction cards, inspector photographs and opening film.
+The live park, construction cards, design previews, public parks and opening films share the same editable Three.js models. The November 10 upgrade rebuilds the spaceport, all eight building types and the character rig around ivory enamel, deep teal, warm brass, coral and pressure glass.
 
-## Live artwork
+## Architectural customization
 
-All eight attractions have rounded shells, service hatches, inset lights, foundation bolts and boarding details. The taller mass driver has twin rails, cross-ties, footings, braced supports and a covered station. Earthrise has suspended, independently upright rounded cabins and perimeter bulbs. Lunar Bounce has an orbital Moon centerpiece. Rover Rally has a continuous banked road ribbon, working vehicles, lights, roll bars and an island display. Concessions have striped awnings, counters, products and roof sculptures. Solar panels have individual inset cells and a power cabinet.
+Every type has three selectable structural families. Multiple copies can use different families, palettes, names and lighting.
 
-Astronauts have reflective visors, helmet fittings, life-support packs, suit panels, gloves and articulated limbs. Actual visitor states drive walking, queues, purchases, riding and boarding. Happy departing guests wave. Merchant owners stand beside their businesses and remain selectable. Wheeled service robots carry actual paid supply orders and perform maintenance.
+| Type | Retro Resort | Orbital | Expedition |
+| --- | --- | --- | --- |
+| Mass driver | Rounded station, paired towers and magnetic launch collars | Glazed station and curved support towers | Braced industrial towers and segmented launch housings |
+| Earthrise wheel | Round panoramic cabins and paired supports | Curved supports, glass capsules and an outer orbital ring | Octagonal wheel, enclosed angular cabins and trusses |
+| Lunar Bounce | Enamel tripod and telescoping mast | Swept arches and a suspended halo | Reinforced tripod and cross-bracing |
+| Rover Rally | Open scenic circuit and Moon centerpiece | Glazed planetary pavilion | Industrial shade canopy and exposed supports |
+| Moon Pie Kitchen | Rounded diner and striped canopy | Glass pressure pod and floating rings | Ribbed barrel module with external services |
+| Crater Coolers | Enamel drinks kiosk and giant iced cup | Glass crystal pavilion | Ribbed pressure module and industrial fittings |
+| Lunar Care | Rounded open robot hangar | Glazed maintenance dome | Reinforced service hangar and hazard trim |
+| Solar Canopy | Four petal arrays | Six petal arrays and an orbital ring | Two braced industrial arrays |
 
-Fine panel seams, fasteners and deck stencils appear on each attraction platform. Suit harnesses and cuff fittings remain legible in close-ups.
+The existing design values persist in local saves, verified parks and licensed blueprints. Style zero is displayed as Retro Resort. Existing palette, light and coaster-height values continue to render through the same entry points. Food and drinks are the two visible merchant businesses. Maintenance uses park staff.
 
-The transit rocket has an ogive nose, cabin windows, landing struts, engine bells and layered additive exhaust. Soft radial dust sprites represent the landing plume. The spaceport has inset guidance rings, safety markings, benches, boarding rails and an enamel entrance gantry. Shuttles descend, dock, unload and collect homebound visitors every forty simulation seconds. Eight-person inbound groups continue until all 96 guests have arrived.
+## Characters and arrival
 
-Lunar terrain uses a generated regolith texture over deterministic sculpted terrain and crater relief. The park has a dusty prepared surface, subtle plot markers, paneled paths, cable edging and lighted boundary blocks. Nearby rocks and the NEAR observatory use original geometry. Earth and stars occupy a separate distant sky, without ground-scale parallax. The title uses a lower, closer view of the staged park.
+The articulated visitor rig has human faces, six skin and hair combinations, helmet shells and transparent visors, suit panels, harnesses, buckles, backpacks, hoses, gloves and padded boots. Walking, queuing, boarding, waving and ride occupancy follow actual simulation state. Visitors glance around while idle. Walking lanes and wider queue spacing reduce overlapping bodies. Ride seats show their current occupants.
 
-## Interface and rendering
+Omar and Mina stand behind their service counters. Nia works inside Lunar Care. The delivery robot has treaded wheels, a face display, antenna, grippers and a cargo tray. Its wheels turn during deliveries and servicing.
 
-Construction cards and inspector panels use supersampled, lossless WebP photographs of the actual models. Guest and adviser portraits use the same character rig. Enamel gradients, recessed controls, a gold cash badge and restrained depth keep the interface consistent with the park. Desktop and mobile layouts retain the existing controls and information hierarchy. Reduced-motion settings suppress decorative thumbnail movement.
+The arrival plaza has a curved entrance gantry, glazed terminal wings, planted pressure domes, brass lamps, seating, luggage, a compass inlay and a flight board driven by the shuttle phase. The transit rocket has a shaped nose and hull, swept fins, framed portholes, hull seams, fasteners, landing pistons and engine bells. Its passenger hatch faces the actual boarding route. Existing landing, unloading and departure timing drives the scene.
 
-The renderer uses HDR multisampling, ground-truth ambient occlusion, restrained highlight bloom, environment reflections, a warm directional key, cool rim light, physical materials and sun shadows. Static meshes merge by material. Character suit details use vertex colors to keep each articulated character to six draw calls. Shared geometry/materials remain reusable, while replaced model resources and scene-owned textures are released. Mobile pixel ratio and shadows remain capped separately from desktop and offline film rendering. Sustained slow frames lower live render resolution and shadow-map size automatically. Expensive screen effects yield to the direct render path on software renderers, unsupported float targets and slow devices. Offline masters retain full quality. Portrait phones receive a separately rendered opening film.
+## Terrain, materials and cameras
 
-Actual positive ledger receipts produce coin trails and sounds. Partnership completion has a distinct larger reward. Nearby receipts merge at high speed, and the cash HUD counts smoothly. The park canvas stays mounted through decisions and closing.
+A few broad crater basins have broken rims and varied relief. Distant ridges and clustered basalt rocks give the horizon depth. Prepared ground, warm paving and brass-edged plot boundaries distinguish the park. Small benches and planted domes derive from paths and clear automatically as the layout changes.
 
-## In-game sound and sky
+Generated regolith, botanical foliage and distant starlight supply surface detail. Plants use curved alpha-tested leaf cards inside glass domes. Earth, stars and the Sun use a separate orientation-only sky camera. The visible Sun and directional key share their position. Earth keeps its small apparent size and distant behavior while the player pans.
 
-The landing page uses a lunar-resort layout with a live staged park, clear play controls and prominent NEAR Protocol ownership information. The official NEAR symbol is reproduced from the [NEAR website](https://near.org/).
+Physical materials separate enamel, fabric, stone, glass and metal. HDR rendering uses environment reflections, a warm key, cool fill, ambient occlusion, restrained bloom and sun shadows. Static architectural meshes merge across nested groups while articulated ride and character roots retain their transforms. Owned resources are released when models change. Shared geometry, surface materials and leaf textures remain reusable.
 
-The distant sky combines seeded star layers, a generated Milky Way texture, a solar disc with optical glare and a textured Earth. The visible sun and scene lighting share a direction. All celestial elements stay in the separate sky scene, preserving their apparent distance during camera movement.
+The coaster uses one bank frame for the rails, train and front-seat camera. Smoothed roll angles avoid abrupt flips through near-vertical track. The structural spine follows the same frame. Returning to the park restores the camera's vertical axis.
 
-An original eighty-second stereo score uses a thirty-two-bar arrangement of warm pads, plucked chords, celesta, bass and quiet percussion. Construction, coins, engine rumble, closing and confirmed NEAR licenses have layered effects. The Web Audio mixer separates music and effects, ducks them during the opening film, limits peaks, bounds concurrent effects and suspends sound in background tabs. Run `python scripts/game/moon-audio.py` with NumPy and FFmpeg to rebuild the MP3 assets. Editable WAV masters are retained in ignored `outputs/moonpark-audio/`. The soundtrack master measures −17.1 LUFS with a −2.8 dBFS true peak before the in-game mix.
+Hardware rendering uses separately bounded desktop and mobile resolution. Sustained slow frames reduce live resolution and shadow size. Software renderers use compact geometry, simpler surface shaders, smaller shadow maps and direct rendering. Offline movie capture uses full geometry and quality. Phone-sized browser checks exercise layout and playback. Physical-device profiling remains a separate hardware check.
 
-The landing, sky and audio refresh passed fifteen browser checks covering a complete practice day, compact layouts, first landing, film playback and fallback, published-park visits, recovery and audio controls. All eight audio assets decoded as stereo in the browser. Audio levels and peak headroom were checked technically. A subjective listening review remains outstanding.
+## Editable sources and reproduction
 
-## Editable sources
+- `lib/moon/art-kit.ts` contains shared geometry, material finishes, signs, batching and resource ownership.
+- `lib/moon/characters.ts` contains the articulated visitor rig.
+- `lib/moon/spacecraft.ts` contains the transit rocket and service rover.
+- `lib/moon/resort-props.ts` contains pressure gardens, curved foliage, seating, lamps, roofs, awnings, pastry sculptures and foundations.
+- `lib/moon/rides.ts` contains all four ride models and their animation rigs.
+- `lib/moon/shops.ts` contains concessions, maintenance and solar variants.
+- `lib/moon/scenery.ts` contains terrain, paths, the spaceport, observatory and derived path amenities.
+- `lib/moon/world.ts` contains lighting, picking, state-driven animation and camera integration.
+- `scripts/game/moon-art.mjs` photographs 24 building variants and 22 portraits from those live models. It checks finite geometry and smooth coaster frames during production.
+- `public/art/*-s0-v2.webp`, `*-s1-v2.webp` and `*-s2-v2.webp` are the building previews. Portraits use `*-v2.webp`. The 18 visitor portraits match all three suit groups and six face variants. Omar, Mina and Nia have matching portraits beside their inspector updates.
+- `MOONPARK-CINEMA.md` documents the editable film pipeline.
 
-- `lib/moon/assets.ts` contains original rides, characters, spacecraft, service robots, signs and material batching.
-- `lib/moon/scenery.ts` contains terrain, the spaceport, paths and observatory.
-- `lib/moon/world.ts` contains lighting, cameras, picking and state-driven animation.
-- `scripts/game/moon-art.mjs` photographs eight attractions and seven character portraits. Run it against `npm run dev` with `node scripts/game/moon-art.mjs`.
-- `public/art/*-v1.webp` contains the sixteen optimized artwork files consumed by the game.
-- `MOONPARK-CINEMA.md` documents the reproducible opening-film production.
+Start the isolated local art server with `npx vite --config scripts/game/visual-preview.config.mjs`. Then run `GAME_URL=http://127.0.0.1:5174 MOON_CAPTURE_GPU=1 node scripts/game/moon-art.mjs`. Omit the GPU flag for portable software capture. Use `--only=food,coaster,guest-0` for a smaller production slice. The art server denies environment files, account keys and Git internals. It runs locally on port 5174.
 
-## Generated texture
+## Generated bitmap provenance
 
-The built-in image-generation tool produced the original regolith bitmap. The selected image was inspected, resized to 1024×1024 and encoded as `public/art/lunar-regolith-v1.webp`. The uncompressed original is retained locally in `outputs/lunar-regolith-original.png`. All ride and character photographs come from the original code-native 3D models.
+The built-in image-generation tool produced the following originals. Inspected originals remain in ignored `outputs/moonpark-art-v2/`. FFmpeg resizes and encodes the delivery WebP files. Editable geometry, characters, signs, photographs, camera work and animation are authored in the source modules above.
 
-The generation prompt follows.
+| Local original | Delivery asset | Role |
+| --- | --- | --- |
+| `art-direction.png` | Local art reference | Three-dimensional lunar-resort concept and the three architectural families |
+| `regolith-source.png` | `public/art/lunar-regolith-v2.webp` | 1536-square lunar terrain albedo |
+| `foliage-source.png` | `public/art/lunar-leaves-v2.webp` | 1024-square transparent four-leaf atlas |
+| `sky-source.png` | `public/art/lunar-sky-v2.webp` | 2048-by-1024 distant Milky Way texture |
 
-> Use case: stylized-concept. Asset type: seamless game terrain albedo texture for a polished stylized 3D lunar theme park. Generate a square, perfectly top-down orthographic flat texture of fine moon regolith, dusty cool silver gray with subtle warm gray mineral grains, many tiny granular particles, occasional small embedded flat stone chips, shallow overlapping ancient microcrater impressions. Beautiful high-end stylized realism, tactile but low contrast, physically plausible powdery surface. Uniform soft neutral illumination with NO directional cast shadows, NO horizon, NO perspective, NO objects or footprints or text, no baked ambient occlusion, no large identifiable feature. Texture must seamlessly tile on all edges. The whole image is the ground texture, designed to repeat across a large lunar surface without conspicuous repetition.
+### Generation briefs
 
-## Credits
+The art-direction sheet establishes a premium stylized lunar resort with cream and coral spacecraft, brass docking panels, an arched teal terminal, lush pressure gardens, a rounded pie diner and a copper-and-mint magnetic coaster. It compares rounded Retro Resort, glazed Orbital and ribbed Expedition architecture. Human-faced astronauts have padded suits, chunky boots and expressive proportions. Warm key light and cool shadows separate the objects from natural crater terrain and a distant Earth.
 
-The Earth diffuse texture is bundled locally from https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg . Three.js carries MIT notices at https://github.com/mrdoob/three.js . Interface control icons use Lucide. Narration uses Kokoro 82M v1.0 under Apache-2.0 through the MIT-licensed Kokoro ONNX wrapper. The cinema document records their primary sources. Models, terrain geometry, camera work, score, effects and narration text are original. No Bullfrog or Supercell footage, music, logos or game assets are used.
+The regolith prompt requests a seamless square, perfectly top-down lunar albedo. Silver slate and warm ash-grey powder contain blue-grey basalt fragments, mineral speckling, tiny stone chips and subtle sediment variation. Flat neutral light and low contrast keep the surface usable at close and distant scales. The whole image is continuous terrain with clean repeat edges.
 
-## Visual-upgrade verification
+The foliage prompt requests exactly four isolated upright botanical leaves in a two-by-two transparent atlas with generous gutters. The quadrants contain a jade oval tropical leaf with a pale midrib, a chartreuse-tipped fern, a sage-and-lime variegated pointed leaf, and a curved deep emerald leaf with golden edges. Each leaf has tactile hand-painted veins, flat illumination and complete alpha edges.
 
-Type checking and all ten routine browser checks pass, including complete construction-to-closing gameplay, persistence, mobile layout, partnerships, first landing, film playback, video fallback and unavailable floating-point targets. The optional transaction-spending NEAR browser test is excluded from this visual pass. The earlier v3 protocol evidence remains in `MOONPARK-VERIFICATION.md`.
+The sky prompt requests a two-to-one equirectangular distant-space texture. A nearly black indigo starfield contains an irregular, restrained Milky Way band with muted blue, purple and pale gold dust. Dark upper and lower regions, organic astronomical structure and varied pinprick stars keep the backdrop quiet. The horizontal edges visually continue. Celestial bodies are separate scene objects.
 
-Both complete 1,200-frame exports decode successfully. Their manifest records sizes and SHA-256 hashes. Exported park, founder and robot-comedy frames were inspected separately, and portrait playback was checked in a phone-sized browser. The original audio master was reused, with measured delivery loudness of −18.0 LUFS and peak −4.3 dBTP. A new listening review was outside this pass.
+## Sound and credits
 
-An isolated 1600×1000 world-render sample on the local RTX 5080 measured 3.13 ms per frame across sixty frames, with a GPU finish at every frame. This measurement covers the Three.js world on this workstation. Physical-phone performance profiling remains outstanding. Software-rendered Chromium also completed the routine gameplay checks, with a longer allowance for asynchronous replay after the test clock jumps forward.
+The original lunar-resort score, sound effects and narration master are reused. Web Audio separates music and effects, ducks the mix during the opening film, limits peaks and suspends playback in background tabs. Editable audio sources and measured delivery loudness are documented in the cinema file.
 
+The Earth texture is bundled from the [Three.js examples](https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg). Three.js uses [MIT licensing](https://github.com/mrdoob/three.js). Interface controls use Lucide. Narration uses Kokoro 82M v1.0 under Apache-2.0 through the MIT-licensed Kokoro ONNX wrapper. Models, terrain geometry, scripts, score, effects and narration text are original production assets.
 
-## November 10 visual review and next art pass
+## November 10 verification
 
-The live park and a populated overview were inspected. Large areas of similar grey terrain dominate the frame. Repeated crater profiles create an artificial backdrop. Several attractions share small white platforms and similar box-shaped volumes. The current style choices mainly add trim, rings and signs, so their silhouettes stay close. Broad fill and haze reduce separation between guests, buildings and ground.
+The production build, TypeScript checks and focused source lint pass. All 17 simulation and 35 contract tests pass. All 18 routine browser cases pass in the production build with software rendering, including a complete opening day, first landing, three-family customization, reload recovery, movie playback and fallback, compact screens, sound, public parks and archived v4 saves. The same 18 cases were exercised with hardware rendering, with the movie playback case repeated after its final encode completed. Four optional transaction-spending browser cases retain their existing opt-in gate.
 
-The next direction is an illustrated lunar resort with larger, playful silhouettes and a deliberate warm/cool lighting contrast. Keep all eight building types and create three modular design families across them. Retro Resort uses rounded enamel, striped awnings and warm brass. Orbital uses glass capsules, curved supports and suspended rings. Expedition uses ribbed pressure modules, trusses and hazard markings. Palette, signs and lighting remain independently selectable. This makes customization change structure and materials as well as color.
+Both complete delivery videos decode for all 1,200 frames at 30 fps and 40 seconds. Desktop is 1920 by 1080, and mobile is 720 by 1280. Exported spacecraft, founder, robot, overview and front-seat frames were inspected. The original audio master measures −18.0 LUFS integrated and −4.3 dBTP in delivery. A new subjective listening session was outside this visual pass.
 
-Give each type a recognizable hero shape. The mass driver gets magnetic launch coils and a sweeping track, Earthrise gets panoramic glass cabins, Bounce gets an orbital play structure, and Rover Rally gets a sculpted driving circuit. The kitchen gets a diner silhouette and oversized pie sign, drinks get an ice-blue cooling tower, maintenance gets an open robot hangar, and solar gets petal-like arrays. Food and drink are the only merchant businesses.
-
-Compose an arrival plaza with pressure-glass planters, seating, luggage, boarding rails and warm storefronts. Attach small decorative clusters to existing buildings and paths so they need no economic controls. Sculpt a few overlapping crater basins with varied, broken rims and distant ridges. Use stronger contact shadows, restrained bloom, material roughness differences and a clear Earth/Sun composition. Tune all detail at the normal play camera and phone viewport.
-
-Character work should emphasize readable proportions, suit variation, expressive gestures, boarding and purchasing animation. Motion should include ride anticipation, smooth acceleration and satisfying arrivals. The first production slice should contain the spaceport, one kitchen, the hero coaster and their guests in the actual game camera. Generate a consistent concept sheet and materials, build the editable game assets, then inspect stills and motion in the live renderer before extending the kit to the remaining types.
-
-This review defines the next visual pass. The November 10 implementation focuses on automatic vendor wallets, two merchants, eight building types and save compatibility.
+An isolated populated scene at 1600 by 1000 on the local RTX 5080 measured about 6.2–7.2 ms per frame across two 60-frame passes, with a GPU finish after each frame. The earlier unmerged scene measured about 8.6 ms in the same authoring harness. These are workstation world-render measurements. Physical-phone performance is outstanding. Compact viewport layout and portrait movie playback are covered by browser checks.

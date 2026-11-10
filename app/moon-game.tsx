@@ -679,7 +679,7 @@ export default function Game() {
       <video
         ref={videoRef}
         className={`mp-opening-film ${screen === "intro" && !videoFailed ? "playing" : ""} ${introLeaving ? "leaving" : ""}`}
-        poster="/video/moonpark-opening-v3-poster.jpg"
+        poster="/video/moonpark-opening-v4-poster.jpg"
         preload="auto"
         playsInline
         muted={muted}
@@ -694,12 +694,12 @@ export default function Game() {
         }}
       >
         <source
-          src="/video/moonpark-opening-v3-mobile.mp4"
+          src="/video/moonpark-opening-v4-mobile.mp4"
           media="(max-width: 800px)"
           type="video/mp4"
         />
         <source
-          src="/video/moonpark-opening-v3.mp4"
+          src="/video/moonpark-opening-v4.mp4"
           type="video/mp4"
           onError={() => setVideoFailed(true)}
         />
@@ -707,7 +707,7 @@ export default function Game() {
       {screen === "intro" && !videoFailed && (
         <img
           className="mp-opening-still"
-          src="/video/moonpark-opening-v3-poster.jpg"
+          src="/video/moonpark-opening-v4-poster.jpg"
           alt="A lunar park under the stars"
         />
       )}
@@ -1008,7 +1008,7 @@ export default function Game() {
             !panel && (
               <div className="mp-advisor">
                 <span className="mp-advisor-avatar">
-                  <img src="/art/advisor-v1.webp" alt="" />
+                  <img src="/art/advisor-v2.webp" alt="" />
                 </span>
                 <div>
                   <strong>MAKE IT A DAY TO REMEMBER</strong>
@@ -1149,7 +1149,7 @@ export default function Game() {
                         style={{ color: a.color }}
                       >
                         <img
-                          src={`/art/${a.kind}-v1.webp`}
+                          src={`/art/${a.kind}-s0-v2.webp`}
                           alt=""
                           draggable={false}
                         />

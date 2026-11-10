@@ -1,7 +1,7 @@
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 const base = process.env.GAME_URL || "http://127.0.0.1:5173",
   sample = process.argv.includes("--sample"),
   portrait = process.argv.includes("--portrait");
@@ -56,18 +56,12 @@ try {
     await new Promise((r) => setTimeout(r, 1000));
     window.film = { world, run };
   });
+  page.on("pageerror", (error) => {
+    throw error;
+  });
   const render = async (t) => {
     await page.evaluate((t) => {
-      const { world, run } = window.film;
-      for (const g of run.guests) {
-        if (g.status === "walking" && g.route.length > 1) {
-          const n = g.route.length,
-            index =
-              (g.id * 3 + Math.floor(t * (0.8 + (g.id % 3) * 0.15))) %
-              (n * 2 - 2);
-          g.cell = g.route[index < n ? index : n * 2 - 2 - index];
-        }
-      }
+      const { world } = window.film;
       world.renderIntroAt(t);
     }, t);
   };

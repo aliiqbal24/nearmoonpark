@@ -157,7 +157,10 @@ export function Inspector({
           </button>
         </div>
         <div className={`mp-avatar group-${guest.group}`}>
-          <img src={`/art/guest-${guest.group}-v1.webp`} alt="" />
+          <img
+            src={`/art/guest-${guest.group}-${guest.id % 6}-v2.webp`}
+            alt=""
+          />
         </div>
         <h2>{guestName(guest.id)}</h2>
         <p className="mp-subtle">
@@ -223,7 +226,7 @@ export function Inspector({
         </button>
       </div>
       <div className="mp-building-icon" style={{ color: a.color }}>
-        <img src={`/art/${b.kind}-v1.webp`} alt="" />
+        <img src={`/art/${b.kind}-s${b.design?.style ?? 0}-v2.webp`} alt="" />
       </div>
       <h2>{b.design?.name || a.name}</h2>
       {!readOnly && (
@@ -357,7 +360,13 @@ export function Inspector({
       )}
       {tenant && (
         <>
-          <blockquote>“{b.reason}”</blockquote>
+          <div className="mp-shop-update">
+            <img
+              src={`/art/owner-${b.kind}-v2.webp`}
+              alt={b.kind === "food" ? "Omar" : "Mina"}
+            />
+            <blockquote>“{b.reason}”</blockquote>
+          </div>
           {b.delivery_qty > 0 && (
             <p className="mp-delivery">
               <Package size={16} /> {b.delivery_qty} units arrive in{" "}
@@ -385,10 +394,13 @@ export function Inspector({
         </>
       )}
       {b.kind === "depot" && (
-        <p className="mp-fine">
-          Nia’s park robots automatically repair connected rides. Parts and
-          service cost 10 credits per repair, paid only when needed.
-        </p>
+        <div className="mp-shop-update">
+          <img src="/art/owner-depot-v2.webp" alt="Nia" />
+          <p className="mp-fine">
+            Nia’s park robots automatically repair connected rides. Parts and
+            service cost 10 credits per repair, paid only when needed.
+          </p>
+        </div>
       )}
       {!disabled && (
         <div className="mp-inspector-bottom">

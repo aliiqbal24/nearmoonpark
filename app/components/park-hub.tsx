@@ -579,7 +579,10 @@ export function ParkHub({
                   )
                   .map((b) => (
                     <article key={b.id}>
-                      <img src={`/art/${b.kind}-v1.webp`} alt="" />
+                      <img
+                        src={`/art/${b.kind}-s${b.design?.style ?? 0}-v2.webp`}
+                        alt=""
+                      />
                       <strong>
                         {b.design?.name || blueprint(b.kind).name}
                       </strong>
@@ -639,7 +642,10 @@ export function ParkHub({
             <div className="mp-exchange-grid">
               {designs.map((b) => (
                 <article key={b.id}>
-                  <img src={`/art/${b.kind}-v1.webp`} alt="" />
+                  <img
+                    src={`/art/${b.kind}-s${b.design?.style ?? 0}-v2.webp`}
+                    alt=""
+                  />
                   <strong>{b.name}</strong>
                   <a
                     href={`/park/p-${b.park_id}${versionQuery}`}

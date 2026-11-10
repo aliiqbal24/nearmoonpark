@@ -3542,3 +3542,54 @@ button.mp-chain .mp-near-mark svg {
 .mp-wallet-list strong { font-size: 14px; }
 .mp-wallet-list small { font-size: 11px; opacity: .75; }
 .mp-vendor-link { margin: 12px 0; }
+
+.mp-design-families {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+.mp-design-families button {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 6px 2px 9px;
+  color: #36575b;
+  background: linear-gradient(145deg, #fff9eb, #e9dfca);
+  border: 1px solid #b5a67f66;
+  border-radius: 11px;
+  font-size: 9px;
+  font-weight: 800;
+}
+.mp-design-families img {
+  width: 100%;
+  height: 66px;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 3px #1d424522);
+}
+.mp-design-families button[aria-pressed="true"] {
+  border-color: #168b80;
+  background: linear-gradient(145deg, #e4f3e9, #b9dfd0);
+  box-shadow: inset 0 0 0 1px #168b80;
+}
+.mp-design-families button:focus-visible {
+  outline: 3px solid #168b80;
+  outline-offset: 2px;
+}
+
+.mp-shop-update {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 14px 0;
+}
+.mp-shop-update > img {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 75px;
+  object-fit: contain;
+}
+.moonpark .mp-shop-update blockquote {
+  flex: 1;
+  margin: 0;
+}

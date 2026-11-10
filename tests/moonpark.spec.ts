@@ -393,6 +393,31 @@ test("attraction customization previews immediately and persists through reload"
   await page
     .getByRole("button", { name: "Stardust colors", exact: true })
     .click();
+  const families = page.getByRole("group", { name: "Architectural design" });
+  await expect(families.getByRole("button")).toHaveCount(3);
+  await expect
+    .poll(() =>
+      families
+        .locator("img")
+        .evaluateAll((images) =>
+          images.every((image) => (image as HTMLImageElement).naturalWidth > 0),
+        ),
+    )
+    .toBe(true);
+  await families
+    .getByRole("button", { name: "Expedition", exact: true })
+    .click();
+  await expect(page.locator(".mp-building-icon img")).toHaveAttribute(
+    "src",
+    "/art/coaster-s2-v2.webp",
+  );
+  await families
+    .getByRole("button", { name: "Retro Resort", exact: true })
+    .click();
+  await expect(page.locator(".mp-building-icon img")).toHaveAttribute(
+    "src",
+    "/art/coaster-s0-v2.webp",
+  );
   await page.getByRole("button", { name: "Orbital", exact: true }).click();
   await page.getByRole("button", { name: "Neon", exact: true }).click();
   await page.getByRole("button", { name: "Skyline +200", exact: true }).click();

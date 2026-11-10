@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, mkdtemp, rename } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
+import { basename } from "node:path";
 function run(args, capture = false) {
   const r = spawnSync(
     "ffmpeg",
@@ -12,9 +13,13 @@ function run(args, capture = false) {
   return r.stdout;
 }
 await mkdir("public/video", { recursive: true });
-const desktop = "public/video/moonpark-opening-v3.mp4",
-  mobile = "public/video/moonpark-opening-v3-mobile.mp4";
-if (!process.argv.includes("--verify-only")) {
+const verifyOnly = process.argv.includes("--verify-only");
+const delivery = verifyOnly
+  ? "public/video"
+  : await mkdtemp("outputs/moonpark-cinema/delivery-");
+const desktop = `${delivery}/moonpark-opening-v4.mp4`,
+  mobile = `${delivery}/moonpark-opening-v4-mobile.mp4`;
+if (!verifyOnly) {
   run([
     "-i",
     "outputs/moonpark-cinema/picture-master.mp4",
@@ -22,6 +27,8 @@ if (!process.argv.includes("--verify-only")) {
     "outputs/moonpark-cinema/score-master.wav",
     "-c:v",
     "libx264",
+    "-threads",
+    "4",
     "-preset",
     "slow",
     "-crf",
@@ -57,6 +64,8 @@ if (!process.argv.includes("--verify-only")) {
     "1:a:0",
     "-c:v",
     "libx264",
+    "-threads",
+    "4",
     "-preset",
     "slow",
     "-crf",
@@ -72,17 +81,18 @@ if (!process.argv.includes("--verify-only")) {
     mobile,
   ]);
 }
-run([
-  "-ss",
-  "38",
-  "-i",
-  desktop,
-  "-frames:v",
-  "1",
-  "-q:v",
-  "2",
-  "public/video/moonpark-opening-v3-poster.jpg",
-]);
+if (!verifyOnly)
+  run([
+    "-ss",
+    "38",
+    "-i",
+    desktop,
+    "-frames:v",
+    "1",
+    "-q:v",
+    "2",
+    `${delivery}/moonpark-opening-v4-poster.jpg`,
+  ]);
 const variants = [];
 for (const [file, width, height] of [
   [desktop, 1920, 1080],
@@ -107,36 +117,47 @@ for (const [file, width, height] of [
   run(["-i", file, "-f", "null", "-"]);
   const bytes = await readFile(file);
   variants.push({
-    file: file.replace("public/", "/"),
+    file: `/video/${basename(file)}`,
     width,
     height,
     bytes: bytes.length,
     sha256: createHash("sha256").update(bytes).digest("hex"),
   });
 }
-await writeFile(
-  "public/video/moonpark-opening.json",
-  JSON.stringify(
-    {
-      version: 3,
-      duration: 40,
-      fps: 30,
-      frames: 1200,
-      narration: {
-        model: "Kokoro 82M v1.0",
-        voice: "bm_george",
-        license: "Apache-2.0",
-        source: "https://huggingface.co/hexgrad/Kokoro-82M",
+if (!verifyOnly) {
+  await writeFile(
+    `${delivery}/moonpark-opening.json`,
+    JSON.stringify(
+      {
+        version: 4,
+        duration: 40,
+        fps: 30,
+        frames: 1200,
+        narration: {
+          model: "Kokoro 82M v1.0",
+          voice: "bm_george",
+          license: "Apache-2.0",
+          source: "https://huggingface.co/hexgrad/Kokoro-82M",
+        },
+        score: "Original Moonpark score and synthesized effects",
+        cameraSource: "lib/moon/cinema.ts",
+        sceneSource: "lib/moon/world.ts",
+        variants,
       },
-      score: "Original Moonpark score and synthesized effects",
-      cameraSource: "lib/moon/cinema.ts",
-      sceneSource: "lib/moon/world.ts",
-      variants,
-    },
-    null,
-    2,
-  ),
-);
+      null,
+      2,
+    ),
+  );
+  // Publish complete, decoded assets atomically after all variants pass verification.
+  for (const file of [
+    desktop,
+    mobile,
+    `${delivery}/moonpark-opening-v4-poster.jpg`,
+    `${delivery}/moonpark-opening.json`,
+  ]) {
+    await rename(file, `public/video/${basename(file)}`);
+  }
+}
 console.log(
   JSON.stringify({ verified: true, duration: 40, frames: 1200, variants }),
 );

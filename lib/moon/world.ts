@@ -1,3 +1,4 @@
+import { configureArt } from "./art-kit";
 import { createSky, SUN_DIRECTION } from "./sky";
 import { PALETTES } from "./parks";
 import * as T from "three";
@@ -13,6 +14,7 @@ import {
   spaceport,
   observatory,
   walkwayMaterial,
+  pathAmenities,
 } from "./scenery";
 import {
   SCALE,
@@ -33,7 +35,6 @@ import {
   entrance,
   walkingRoute,
   isTenant,
-  merchantOwner,
   type Run,
   type Placement,
   type Detail,
@@ -74,6 +75,9 @@ export class MoonWorld {
   private grid: T.GridHelper;
   private paths: T.InstancedMesh;
   private pathSignature = "";
+  private amenities = new T.Group();
+  private amenitySignature = "";
+  private flightStatus = "";
   private ray = new T.Raycaster();
   private mouse = new T.Vector2();
   private plane = new T.Plane(new T.Vector3(0, 1, 0), 0);
@@ -118,21 +122,28 @@ export class MoonWorld {
     const gl = this.renderer.getContext() as WebGL2RenderingContext;
     const graphics = gl.getExtension("WEBGL_debug_renderer_info");
     const floatColor = !!gl.getExtension("EXT_color_buffer_float");
-    this.postEnabled =
-      floatColor &&
-      (this.manual ||
-        !graphics ||
-        !/swiftshader|llvmpipe|software/i.test(
-          gl.getParameter(graphics.UNMASKED_RENDERER_WEBGL),
-        ));
+    const softwareRenderer =
+      !!graphics &&
+      /swiftshader|llvmpipe|software/i.test(
+        gl.getParameter(graphics.UNMASKED_RENDERER_WEBGL),
+      );
+    configureArt(!this.manual && softwareRenderer ? "compact" : "full");
+    this.postEnabled = floatColor && (this.manual || !softwareRenderer);
     this.renderer.setPixelRatio(
-      Math.min(devicePixelRatio, host.clientWidth < 800 ? 1.25 : 1.5),
+      Math.min(
+        devicePixelRatio,
+        softwareRenderer && !this.manual
+          ? 0.8
+          : host.clientWidth < 800
+            ? 1.5
+            : 2,
+      ),
     );
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = T.PCFShadowMap;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 0.98;
     host.appendChild(this.renderer.domElement);
     this.renderer.autoClear = false;
     this.renderer.setClearColor("#03060c");
@@ -164,20 +175,33 @@ export class MoonWorld {
     this.cockpit.add(flightSign);
     this.cockpit.visible = false;
     this.camera.add(this.cockpit);
-    box(this.rideNose, "#eac478", 0, -0.76, -1.18, 1.65, 0.36, 0.6);
-    box(this.rideNose, "#263a4d", 0, -0.55, -1.34, 1.35, 0.08, 0.08);
+    for (const side of [-1, 1]) {
+      box(
+        this.rideNose,
+        "#153e48",
+        side * 0.73,
+        -0.82,
+        -1.18,
+        0.24,
+        0.38,
+        0.55,
+      );
+      box(this.rideNose, "#d8a34c", side * 0.73, -0.64, -1.18, 0.2, 0.04, 0.45);
+    }
     this.rideNose.visible = false;
     this.camera.add(this.rideNose);
-    this.scene.add(new T.HemisphereLight("#bfd6ff", "#55516c", 0.85));
-    const sun = new T.DirectionalLight("#ffe4ba", 2.8);
+    this.scene.add(new T.HemisphereLight("#c7deee", "#586269", 0.62));
+    const sun = new T.DirectionalLight("#ffecd0", 3.4);
     this.sun = sun;
     sun.position.copy(SUN_DIRECTION).multiplyScalar(60);
     sun.castShadow = true;
     const shadowSize = this.manual
       ? 4096
-      : host.clientWidth < 800
-        ? 1024
-        : 2048;
+      : softwareRenderer
+        ? 512
+        : host.clientWidth < 800
+          ? 1024
+          : 2048;
     sun.shadow.mapSize.set(shadowSize, shadowSize);
     sun.target.position.set(0, 0, 0);
     sun.shadow.camera.left = -36;
@@ -195,7 +219,7 @@ export class MoonWorld {
       const pmrem = new T.PMREMGenerator(this.renderer);
       const room = new RoomEnvironment();
       this.scene.environment = pmrem.fromScene(room, 0.04).texture;
-      this.scene.environmentIntensity = 0.48;
+      this.scene.environmentIntensity = 0.58;
       room.dispose();
       pmrem.dispose();
     }
@@ -207,7 +231,7 @@ export class MoonWorld {
     );
     this.paths.count = 0;
     this.paths.receiveShadow = true;
-    this.scene.add(this.paths);
+    this.scene.add(this.paths, this.amenities);
     this.grid = new T.GridHelper(WIDTH * SCALE, WIDTH, "#c8e4e8", "#9aa4b6");
     this.grid.position.y = 0.18;
     this.grid.visible = false;
@@ -225,9 +249,9 @@ export class MoonWorld {
     this.lander.position.set(0, 0.1, 22);
     this.scene.add(this.lander);
     this.gangway = new T.Group();
-    box(this.gangway, "#c1cbd2", 0, 0.2, 18.6, 1.5, 0.15, 7);
+    box(this.gangway, "#e5d6b9", 0, 0.2, 18.6, 1.5, 0.15, 7);
     for (const x of [-0.7, 0.7])
-      box(this.gangway, "#8eddd3", x, 0.5, 18.6, 0.06, 0.6, 7);
+      box(this.gangway, "#d8a34c", x, 0.48, 18.6, 0.04, 0.5, 7);
     this.scene.add(this.gangway);
     const dustGeometry = new T.BufferGeometry();
     dustGeometry.setAttribute(
@@ -257,8 +281,8 @@ export class MoonWorld {
     this.dust.position.set(0, 0.2, 22);
     this.scene.add(this.dust);
     spaceport(this.scene);
-    this.founder = astronaut("#a9e4d3", 1.5);
-    this.founder.position.set(2, 0.1, 15.7);
+    this.founder = astronaut("#a9e4d3", 1.5, 4);
+    this.founder.position.set(2, 0.19, 15.7);
     this.scene.add(this.founder);
     this.gagRobot.add(serviceRover("#e4b17d"));
     box(this.gagRobot, "#f7edd5", 0, 0.78, 0.44, 0.38, 0.38, 0.32);
@@ -351,7 +375,7 @@ export class MoonWorld {
       cinematic === null && rideId === null && !this.attractMode;
     if (returnToPark) {
       this.home();
-      this.renderer.toneMappingExposure = 1.05;
+      this.renderer.toneMappingExposure = 0.98;
     }
     if (this.run !== run) {
       this.run = run;
@@ -463,6 +487,17 @@ export class MoonWorld {
       this.paths.count = run.paths.length;
       this.paths.instanceMatrix.needsUpdate = true;
     }
+    const amenitySignature = `${signature}|${run.buildings
+      .filter((b) => !b.sold)
+      .map((b) => `${b.id},${b.x},${b.z},${b.rotation}`)
+      .join(";")}`;
+    if (amenitySignature !== this.amenitySignature) {
+      this.amenitySignature = amenitySignature;
+      this.scene.remove(this.amenities);
+      disposeObject(this.amenities);
+      this.amenities = pathAmenities(run);
+      this.scene.add(this.amenities);
+    }
     const ids = new Set(run.buildings.filter((b) => !b.sold).map((b) => b.id));
     for (const [id, m] of this.models)
       if (!ids.has(id)) {
@@ -498,18 +533,15 @@ export class MoonWorld {
               >
             )[b.kind] ?? "#a9e4d3",
             1.05,
+            b.kind === "food" ? 4 : b.kind === "drink" ? 3 : 2,
           );
           owner.name = "merchant-owner";
-          const entry = entrance(b);
           owner.position.set(
-            (entry.x + 0.5 - b.x - w / 2) * SCALE + 0.6,
-            0,
-            (entry.z + 0.5 - b.z - h / 2) * SCALE,
+            b.kind === "depot" ? -0.7 : 0.3,
+            0.37,
+            b.kind === "depot" ? 0.5 : 0.02,
           );
-          const name = label(merchantOwner(b.kind), "#d5f1e8", 1.05, true);
-          name.position.y = 1.35;
-          owner.add(name);
-          m.root.add(owner);
+          m.root.children[0].add(owner);
         }
         m.root.traverse((o) => (o.userData.building = b.id));
         this.scene.add(m.root);
@@ -565,7 +597,8 @@ export class MoonWorld {
     )
       valid = false;
     const mesh = this.ghost.children[0] as
-      T.Mesh<T.BoxGeometry, T.MeshBasicMaterial> | undefined;
+      | T.Mesh<T.BoxGeometry, T.MeshBasicMaterial>
+      | undefined;
     mesh?.material.color.set(valid ? "#a5f6dd" : "#ed9b91");
   }
   private pointerDown = (e: PointerEvent) => {
@@ -662,6 +695,7 @@ export class MoonWorld {
     target.set(x, 0, z);
   }
   home() {
+    this.camera.up.set(0, 1, 0);
     this.camera.fov = 50;
     this.camera.updateProjectionMatrix();
     if (this.host.clientWidth < 720) {
@@ -798,10 +832,15 @@ export class MoonWorld {
           const u = (this.time / 20) % 1;
           const p = m.curve.getPointAt(u),
             ahead = m.curve.getPointAt((u + 0.015) % 1);
-          m.root.children[0].localToWorld(p);
-          m.root.children[0].localToWorld(ahead);
-          this.camera.position.copy(p).add(new T.Vector3(0, 0.7, 0));
-          this.camera.lookAt(ahead.add(new T.Vector3(0, 0.65, 0)));
+          const frame = m.root.children[0];
+          const up =
+            m.upAt?.(u).transformDirection(frame.matrixWorld) ??
+            new T.Vector3(0, 1, 0);
+          frame.localToWorld(p);
+          frame.localToWorld(ahead);
+          this.camera.up.copy(up);
+          this.camera.position.copy(p).addScaledVector(up, 0.7);
+          this.camera.lookAt(ahead.addScaledVector(up, 0.65));
         }
       }
     }
@@ -841,6 +880,7 @@ export class MoonWorld {
         p = astronaut(
           ["#f3be82", "#8eddd3", "#bc9fe9"][g.group],
           g.group === 0 ? 0.8 : 1,
+          g.id,
         );
         p.traverse((o) => (o.userData.guest = g.id));
         this.scene.add(p);
@@ -860,7 +900,7 @@ export class MoonWorld {
       let nextCell = cell;
       let progress = 0;
       if (
-        this.attractMode &&
+        (this.attractMode || this.cinematic !== null) &&
         !this.reducedMotion &&
         g.status === "walking" &&
         g.route.length > 1
@@ -913,11 +953,22 @@ export class MoonWorld {
       } else if (g.status === "queueing") {
         const b = run.buildings.find((b) => b.id === g.target);
         const index = b?.queue.indexOf(g.id) ?? 0;
-        x += ((index % 3) - 1) * 0.25;
-        z += Math.floor(Math.max(0, index) / 3) * 0.3;
+        const slot = Math.max(0, index);
+        const across = ((slot % 2) - 0.5) * 0.56;
+        const behind = Math.floor(slot / 2) * 0.61;
+        const rotation = (-(b?.rotation ?? 0) * Math.PI) / 2;
+        x += Math.cos(rotation) * across + Math.sin(rotation) * behind;
+        z += -Math.sin(rotation) * across + Math.cos(rotation) * behind;
       } else {
         x += Math.sin(g.id * 12.3) * 0.15;
         z += Math.cos(g.id * 7.1) * 0.15;
+      }
+      if (["walking", "leaving"].includes(g.status)) {
+        const lane = ((g.id % 3) - 1) * 0.23;
+        const dx = (nextCell % WIDTH) - (cell % WIDTH);
+        const dz = Math.floor(nextCell / WIDTH) - Math.floor(cell / WIDTH);
+        if (dx !== 0) z += Math.sign(dx) * lane;
+        else if (dz !== 0) x -= Math.sign(dz) * lane;
       }
       const target = new T.Vector3(x, 0.22, z),
         d = target.clone().sub(p.position);
@@ -936,6 +987,8 @@ export class MoonWorld {
       }
       p.userData.walkDistance = (p.userData.walkDistance ?? 0) + d.length();
       const stride = p.userData.walkDistance * 5.4 + g.id;
+      (p.userData.head as T.Object3D).rotation.y =
+        Math.sin(time * 0.65 + g.id * 2.4) * (walking ? 0.06 : 0.15);
       p.position.copy(target);
       p.position.y = 0.22 + (walking ? Math.abs(Math.sin(stride)) * 0.045 : 0);
       for (let i = 0; i < 2; i++) {
@@ -970,6 +1023,8 @@ export class MoonWorld {
         this.deliveries.set(b.id, d);
       }
       d.visible = true;
+      for (const wheel of d.userData.wheels as T.Object3D[])
+        wheel.rotation.x = time * 4;
       const u = Math.min(1, Math.max(0, 1 - (b.delivery_at - time) / 15));
       if (d.userData.paths !== this.pathSignature) {
         const entry = entrance(b);
@@ -1022,13 +1077,16 @@ export class MoonWorld {
     const m = b ? this.models.get(b.id) : null;
     const pose = cinematicPose(
       t,
-      m?.curve ? { curve: m.curve, frame: m.root.children[0] } : undefined,
+      m?.curve
+        ? { curve: m.curve, frame: m.root.children[0], upAt: m.upAt }
+        : undefined,
     );
+    this.camera.up.copy(pose.up);
     this.camera.position.copy(pose.position);
     this.camera.lookAt(pose.target);
     this.camera.fov = pose.fov;
     this.camera.updateProjectionMatrix();
-    this.renderer.toneMappingExposure = 1.05 * pose.fade;
+    this.renderer.toneMappingExposure = 0.98 * pose.fade;
   }
   private animateShuttle(t: number) {
     const phase = t % 40,
@@ -1053,6 +1111,26 @@ export class MoonWorld {
     );
     this.lander.visible = phase < 38;
     this.gangway.visible = phase >= 10 && phase < 30;
+    const status =
+      phase < 10
+        ? "ON APPROACH"
+        : phase < 30
+          ? "GATES OPEN"
+          : phase < 38
+            ? "DEPARTING"
+            : "NEXT ARRIVAL";
+    if (status !== this.flightStatus) {
+      this.flightStatus = status;
+      const old = this.scene.getObjectByName("port-status-sign");
+      if (old?.parent) {
+        const sign = label(status, "#9ee0ca", 1.84);
+        sign.name = old.name;
+        sign.position.copy(old.position);
+        old.parent.add(sign);
+        old.removeFromParent();
+        disposeObject(old);
+      }
+    }
     const flame = this.lander.userData.flame as T.Group;
     flame.visible = phase < 10 || (phase >= 30 && phase < 38);
     flame.scale.y =
@@ -1079,7 +1157,7 @@ export class MoonWorld {
     this.paused = value;
     if (!value) {
       this.last = performance.now();
-      this.renderer.toneMappingExposure = 1.05;
+      this.renderer.toneMappingExposure = 0.98;
     }
   }
   setAttractMode(value: boolean) {

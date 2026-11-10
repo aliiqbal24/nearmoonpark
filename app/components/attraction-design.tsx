@@ -98,14 +98,19 @@ export function AttractionDesign({
           onChange={(palette) => change({ palette })}
         />
         <label>Design</label>
-        <div className="mp-segments">
-          {["Classic", "Orbital", "Expedition"].map((name, style) => (
+        <div
+          className="mp-design-families"
+          role="group"
+          aria-label="Architectural design"
+        >
+          {["Retro Resort", "Orbital", "Expedition"].map((name, style) => (
             <button
               key={name}
               aria-pressed={design.style === style}
               onClick={() => change({ style })}
             >
-              {name}
+              <img src={`/art/${building.kind}-s${style}-v2.webp`} alt="" />
+              <span>{name}</span>
             </button>
           ))}
         </div>

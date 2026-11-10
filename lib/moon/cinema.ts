@@ -11,8 +11,13 @@ const path = (points: number[][], u: number) =>
   ).getPoint(ease(u));
 export function cinematicPose(
   t: number,
-  coaster?: { curve: T.CatmullRomCurve3; frame: T.Object3D },
+  coaster?: {
+    curve: T.CatmullRomCurve3;
+    frame: T.Object3D;
+    upAt?: (u: number) => T.Vector3;
+  },
 ) {
+  const up = new T.Vector3(0, 1, 0);
   let position: T.Vector3,
     target: T.Vector3,
     fov = 44;
@@ -60,8 +65,10 @@ export function cinematicPose(
     coaster.frame.updateWorldMatrix(true, true);
     coaster.frame.localToWorld(position);
     coaster.frame.localToWorld(target);
-    position.y += 0.72;
-    target.y += 0.65;
+    if (coaster.upAt)
+      up.copy(coaster.upAt(u)).transformDirection(coaster.frame.matrixWorld);
+    position.addScaledVector(up, 0.72);
+    target.addScaledVector(up, 0.65);
     fov = 56;
   } else if (t < 33) {
     const u = (t - 29) / 4;
@@ -97,5 +104,5 @@ export function cinematicPose(
     if (Math.abs(t - c) < 0.16)
       fade = Math.min(fade, ease(Math.abs(t - c) / 0.16));
   fade *= ease(t / 0.8);
-  return { position, target, fov, fade };
+  return { position, target, up, fov, fade };
 }
