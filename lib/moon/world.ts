@@ -489,7 +489,7 @@ export class MoonWorld {
           0.18,
           (b.z + h / 2 - HEIGHT / 2) * SCALE,
         );
-        if (isTenant(b.kind)) {
+        if (isTenant(b.kind) || b.kind === "depot") {
           const owner = astronaut(
             (
               { food: "#f2ad6b", drink: "#7ad7f1", depot: "#ea91ba" } as Record<

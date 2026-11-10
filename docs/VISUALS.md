@@ -60,3 +60,18 @@ Type checking and all ten routine browser checks pass, including complete constr
 Both complete 1,200-frame exports decode successfully. Their manifest records sizes and SHA-256 hashes. Exported park, founder and robot-comedy frames were inspected separately, and portrait playback was checked in a phone-sized browser. The original audio master was reused, with measured delivery loudness of −18.0 LUFS and peak −4.3 dBTP. A new listening review was outside this pass.
 
 An isolated 1600×1000 world-render sample on the local RTX 5080 measured 3.13 ms per frame across sixty frames, with a GPU finish at every frame. This measurement covers the Three.js world on this workstation. Physical-phone performance profiling remains outstanding. Software-rendered Chromium also completed the routine gameplay checks, with a longer allowance for asynchronous replay after the test clock jumps forward.
+
+
+## November 10 visual review and next art pass
+
+The live park and a populated overview were inspected. Large areas of similar grey terrain dominate the frame. Repeated crater profiles create an artificial backdrop. Several attractions share small white platforms and similar box-shaped volumes. The current style choices mainly add trim, rings and signs, so their silhouettes stay close. Broad fill and haze reduce separation between guests, buildings and ground.
+
+The next direction is an illustrated lunar resort with larger, playful silhouettes and a deliberate warm/cool lighting contrast. Keep all eight building types and create three modular design families across them. Retro Resort uses rounded enamel, striped awnings and warm brass. Orbital uses glass capsules, curved supports and suspended rings. Expedition uses ribbed pressure modules, trusses and hazard markings. Palette, signs and lighting remain independently selectable. This makes customization change structure and materials as well as color.
+
+Give each type a recognizable hero shape. The mass driver gets magnetic launch coils and a sweeping track, Earthrise gets panoramic glass cabins, Bounce gets an orbital play structure, and Rover Rally gets a sculpted driving circuit. The kitchen gets a diner silhouette and oversized pie sign, drinks get an ice-blue cooling tower, maintenance gets an open robot hangar, and solar gets petal-like arrays. Food and drink are the only merchant businesses.
+
+Compose an arrival plaza with pressure-glass planters, seating, luggage, boarding rails and warm storefronts. Attach small decorative clusters to existing buildings and paths so they need no economic controls. Sculpt a few overlapping crater basins with varied, broken rims and distant ridges. Use stronger contact shadows, restrained bloom, material roughness differences and a clear Earth/Sun composition. Tune all detail at the normal play camera and phone viewport.
+
+Character work should emphasize readable proportions, suit variation, expressive gestures, boarding and purchasing animation. Motion should include ride anticipation, smooth acceleration and satisfying arrivals. The first production slice should contain the spaceport, one kitchen, the hero coaster and their guests in the actual game camera. Generate a consistent concept sheet and materials, build the editable game assets, then inspect stills and motion in the live renderer before extending the kit to the remaining types.
+
+This review defines the next visual pass. The November 10 implementation focuses on automatic vendor wallets, two merchants, eight building types and save compatibility.

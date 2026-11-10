@@ -1,0 +1,9 @@
+{
+  "contractId": "game.moonpark-mw65jiya.testnet",
+  "rpcUrl": "https://test.rpc.fastnear.com",
+  "fallbackRpcUrl": "https://rpc.testnet.near.org",
+  "codeHash": "HXVUbBWAQLD4znnbzs97RdPz2y664QCYRBmKCkHJVHWy",
+  "network": "testnet",
+  "immutable": true,
+  "archivedVersion": "v4"
+}

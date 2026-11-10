@@ -1,0 +1,369 @@
+{
+  "maxGas": "61271943049590",
+  "totalGas": "1574989085955193",
+  "frames": [
+    {
+      "tick": 10,
+      "gas": "39313781283259",
+      "hash": "3a63df6b53ca39284cca1c36a9b94638114b0ecbef812acc22e134301a5fdeb0"
+    },
+    {
+      "tick": 30,
+      "gas": "43335234346387",
+      "hash": "553d16b8a5f6d61cb4b0894486fd9baa5ad38674a434bb24a607c5b9da002305"
+    },
+    {
+      "tick": 50,
+      "gas": "43318506657531",
+      "hash": "2b49a3eaada9b4ab400a7f1c772087a00e0e154138ed4ae20ec0fe01758a171b"
+    },
+    {
+      "tick": 70,
+      "gas": "46390091743272",
+      "hash": "6a82d4958fd6787079c5a122fd94c838128473b65566c6915eaca5416aaf0ec5"
+    },
+    {
+      "tick": 90,
+      "gas": "46909630431189",
+      "hash": "ffe4c73fcd5fdd5957150e5052be9b5e7d31c1bf563cdd7d8b9610505cbbf43f"
+    },
+    {
+      "tick": 110,
+      "gas": "51345301414906",
+      "hash": "f199807adeaa4dac9ee56f03252f07b715fa8fb3a095d9763e4e8e8b29bb31e5"
+    },
+    {
+      "tick": 130,
+      "gas": "51671823862645",
+      "hash": "fb6bc7492fad5f9bd6b96772f72f1d5d31aac3f24cbbc23eb4f6eb906a565c72"
+    },
+    {
+      "tick": 150,
+      "gas": "52115556740365",
+      "hash": "127773ce4b83d6620a6192576a531d7bbf26e42368cb1ed1c24a4fc4804b8c89"
+    },
+    {
+      "tick": 170,
+      "gas": "53136324958984",
+      "hash": "8df623eda395e0d45bc340bc8fb2bff67e4a4285830b8a8920e770d307e6604a"
+    },
+    {
+      "tick": 190,
+      "gas": "54498647052178",
+      "hash": "aeb9400fa6ded338b40dd6de6b090cfc1ae7a294171ccd50621d2258282eceb3"
+    },
+    {
+      "tick": 210,
+      "gas": "52956043657463",
+      "hash": "2f409ffa7eff95f4f54aac5aa20e59abdf55fe5d620f30498ec98e8a09ffc0bc"
+    },
+    {
+      "tick": 220,
+      "gas": "52067455698653",
+      "hash": "7e9d773d973635a381f4a6f218be0f9310350dab141cfb9b3034baa846767661"
+    },
+    {
+      "tick": 240,
+      "gas": "54798609052485",
+      "hash": "7c643bc8423108ac6fb7e25577d93321c8606deca1cc04e511bab49ede3ea0bd"
+    },
+    {
+      "tick": 260,
+      "gas": "56066183936228",
+      "hash": "bc2c8501dd6bc2e83912353568eaa616fa05648b8ed3f5aa649491b4677f4d75"
+    },
+    {
+      "tick": 280,
+      "gas": "55329016418012",
+      "hash": "9b4f488745bfce0bf2a6a1f677eab904ac1fd3a9372dc16ecd97c7092b26ad7d"
+    },
+    {
+      "tick": 300,
+      "gas": "55936651086455",
+      "hash": "e5bd913124c63482a4ef301adcd0d5da5f633563709356be9864ebba82682cc3"
+    },
+    {
+      "tick": 320,
+      "gas": "55703698221035",
+      "hash": "e06e213fb706b0aff16f4ac71002f087916b4c637b38ee71ee76f7a131c9a058"
+    },
+    {
+      "tick": 340,
+      "gas": "56720115694877",
+      "hash": "199def075c7043a01264a14cfb9a30a3f476a603f4fa19b80d23f2682ed4abab"
+    },
+    {
+      "tick": 360,
+      "gas": "60424220706476",
+      "hash": "83bf9bf18d373a1b882a37674b86c74c9744da04c8363a40ab2533f73c62c1ed"
+    },
+    {
+      "tick": 380,
+      "gas": "57366077265653",
+      "hash": "f7f0890fe380a8babb95746c87095193e769c08717e3fd9d002b9b75a1546211"
+    },
+    {
+      "tick": 400,
+      "gas": "58980918904610",
+      "hash": "b1835bd0c3c51a80a3e0683fe44915286678b855208ff7f9fa2592ba008a9042"
+    },
+    {
+      "tick": 420,
+      "gas": "58397064506708",
+      "hash": "4b1f1243cdb9fb19960b2e10b8cf1094aa3c0a563a35ffb6310345e4464fe4c6"
+    },
+    {
+      "tick": 440,
+      "gas": "61271943049590",
+      "hash": "49b25409f2f49bcf0f49a5754179c9b10839f00900e1084af6224e4cb8090164"
+    },
+    {
+      "tick": 460,
+      "gas": "59527767491576",
+      "hash": "88e6dbc482b5f7a0359120153b952692313656f9fcaae2483de23fd968f65da7"
+    },
+    {
+      "tick": 480,
+      "gas": "60908716945595",
+      "hash": "6120fcea00a3554dd217c0004b7a3e320e037cddca21368cc4a05e1dcf1b5720"
+    },
+    {
+      "tick": 500,
+      "gas": "59056090617746",
+      "hash": "ffeb28eeb7a2eb9fb1de617c85cb357c66b3fa8ea9cf6491d172038b4704c1ff"
+    },
+    {
+      "tick": 520,
+      "gas": "60674305907375",
+      "hash": "b6224a784ce99c5c79de2866db9ceb748ffd4c28bc8c643c52efc552e6c2462c"
+    },
+    {
+      "tick": 540,
+      "gas": "59397999605471",
+      "hash": "4dcac27452dcef1aaeb20f484481bd067381c60ef840509310e6cd1c396d5f0f"
+    },
+    {
+      "tick": 550,
+      "gas": "57371308698469",
+      "hash": "45aea0f963189fb979bb19f9e9fa47e68d993f8e79d8b55e31dcac6c99f6bf46"
+    }
+  ],
+  "score": {
+    "guests": 5735,
+    "finance": 525,
+    "variety": 901,
+    "total": 7161,
+    "happy": 94,
+    "equity_gain": 31540,
+    "unique": 173,
+    "satisfaction": 9177
+  },
+  "leaderboard": {
+    "entries": [
+      {
+        "player_id": "opaque-alice",
+        "display_name": "Alice",
+        "run_id": "1",
+        "owner": "alice.sandbox",
+        "score": {
+          "guests": 5735,
+          "finance": 525,
+          "variety": 901,
+          "total": 7161,
+          "happy": 94,
+          "equity_gain": 31540,
+          "unique": 173,
+          "satisfaction": 9177
+        },
+        "completed_at": "1794310717288334637"
+      }
+    ],
+    "challenge_id": "moonpark-v5",
+    "open": true
+  },
+  "ownershipProof": {
+    "published": {
+      "id": "1",
+      "owner": "alice.sandbox",
+      "operator": "alice.sandbox",
+      "pending_owner": null,
+      "name": "Earthrise Gardens",
+      "emblem": 1,
+      "revision": 1,
+      "run_id": "1",
+      "blueprint_ids": [],
+      "rating_sum": 0,
+      "rating_count": 0,
+      "license_count": 0
+    },
+    "blueprint": {
+      "id": "1:3",
+      "park_id": "1",
+      "creator": "alice.sandbox",
+      "name": "Earthskimmer",
+      "kind": "coaster",
+      "variant": 0,
+      "launch": 2,
+      "design": {
+        "name": "Earthskimmer",
+        "palette": 3,
+        "style": 1,
+        "lights": 2,
+        "height": 1
+      },
+      "source_run": "1",
+      "source_building": 3,
+      "licenses": 0
+    },
+    "claimed": {
+      "id": "1",
+      "owner": "charlie.sandbox",
+      "operator": "alice.sandbox",
+      "pending_owner": null,
+      "name": "Earthrise Gardens",
+      "emblem": 1,
+      "revision": 4,
+      "run_id": "1",
+      "blueprint_ids": [
+        "1:3"
+      ],
+      "rating_sum": 0,
+      "rating_count": 0,
+      "license_count": 0
+    },
+    "licensedBuilding": {
+      "id": 3,
+      "design": {
+        "name": "Earthskimmer",
+        "palette": 3,
+        "style": 1,
+        "lights": 2,
+        "height": 1
+      },
+      "blueprint_id": "1:3",
+      "height_paid": 1,
+      "kind": "coaster",
+      "x": 3,
+      "z": 8,
+      "rotation": 0,
+      "variant": 0,
+      "price": 1000,
+      "invested": 120000,
+      "level": 0,
+      "launch": 2,
+      "enabled": true,
+      "sold": false,
+      "ready_at": 15,
+      "connected": false,
+      "powered": false,
+      "condition": 100,
+      "queue": [],
+      "riders": [],
+      "cycle_left": 0,
+      "served": 0,
+      "revenue": 0,
+      "cash": 0,
+      "stock": 0,
+      "rent": 10,
+      "delivery_qty": 0,
+      "delivery_at": 0,
+      "recent": 0,
+      "reason": "Waiting for the first customers.",
+      "insolvent": false
+    },
+    "creatorEarnings": {
+      "available": "4500000000000000000000",
+      "pending": "0",
+      "paid": "0"
+    },
+    "privateCallbackRejected": true,
+    "duplicateLicenseRefunded": true,
+    "collectedPrize": {
+      "account_id": "alice.sandbox",
+      "allocated_yocto": "500000000000000000000000",
+      "claimable_yocto": "0",
+      "paid_yocto": "500000000000000000000000",
+      "pending_yocto": "0",
+      "tier": "track",
+      "currency": "testnet NEAR"
+    }
+  },
+  "economyProof": {
+    "run_id": "1",
+    "revision": 29,
+    "tick": 550,
+    "policy_id": "moonpark-v5-fixed-vendors-1",
+    "token_ids": [
+      "1:credits",
+      "1:food",
+      "1:drink",
+      "1:parts"
+    ],
+    "supplies": [
+      "11491200",
+      "1962",
+      "1950",
+      "2046"
+    ],
+    "locked": false,
+    "cash_value": false,
+    "wallets": [
+      {
+        "role": "park",
+        "account_id": "alice.sandbox",
+        "balances": [
+          "31870",
+          "0",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "role": "passengers",
+        "account_id": "moon.sandbox",
+        "balances": [
+          "104900",
+          "0",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "role": "omar",
+        "account_id": "omar.sandbox",
+        "balances": [
+          "28410",
+          "10",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "role": "mina",
+        "account_id": "mina.sandbox",
+        "balances": [
+          "33820",
+          "0",
+          "10",
+          "0"
+        ]
+      },
+      {
+        "role": "logistics",
+        "account_id": "logistics.sandbox",
+        "balances": [
+          "11292200",
+          "1952",
+          "1940",
+          "2046"
+        ]
+      }
+    ]
+  },
+  "transferProof": {
+    "receiver": "bob.sandbox",
+    "token_id": "1:credits",
+    "amount": "100",
+    "failedReceiverRefunded": true
+  }
+}

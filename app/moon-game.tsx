@@ -67,6 +67,7 @@ import {
   type PrizeStatus,
 } from "@/lib/moon/model";
 import type { MoonWorld as World } from "@/lib/moon/world";
+import archivedV4 from "@/public/moon-v4-config.json";
 import "./moonpark.css";
 
 type Player = { player_id: string; display_name: string };
@@ -175,9 +176,11 @@ export default function Game() {
           const saved = JSON.parse(
             localStorage.getItem("moonpark-current") || "null",
           );
-          setResumeAvailable(saved?.state?.run?.version === VERSION);
+          setResumeAvailable(
+            [VERSION, "moonpark-v4"].includes(saved?.state?.run?.version),
+          );
           if (
-            saved?.state?.run?.version === VERSION &&
+            [VERSION, "moonpark-v4"].includes(saved?.state?.run?.version) &&
             !saved.state.run.finished
           ) {
             const bootGeneration = generation.current;
@@ -649,6 +652,8 @@ export default function Game() {
                     title: "Give the Moon a reason to smile.",
                     text: "Build something worth coming back for.",
                   };
+  const activeConfig =
+    snapshot?.run.version === "moonpark-v4" ? (archivedV4 as Config) : cfg;
   return (
     <main
       className="moonpark"
@@ -1054,6 +1059,7 @@ export default function Game() {
               building={selectedBuilding}
               guest={selectedGuest}
               action={(c) => void action(c)}
+              config={snapshot?.mode === "near" ? activeConfig : null}
               onClose={() => setSelection(null)}
               onRide={(id) => {
                 setRideId(id);
@@ -1281,7 +1287,7 @@ export default function Game() {
           {panel === "near" ? (
             <>
               <ParkHub
-                cfg={cfg}
+                cfg={activeConfig}
                 state={snapshot}
                 identity={parkIdentity}
                 onIdentity={setParkIdentity}
@@ -1325,6 +1331,7 @@ export default function Game() {
                 >
                   <Trophy size={16} /> Rankings & prize escrow
                 </button>
+                <a href="/archive/v4">Earlier parks & earnings</a>
                 <a href="/legacy-claims">Earlier concession claims</a>
                 <a
                   href={
@@ -1382,8 +1389,10 @@ export default function Game() {
             <Ledger
               run={run}
               txs={snapshot?.txs ?? []}
+              config={snapshot?.mode === "near" ? activeConfig : null}
+              runId={snapshot?.record?.run_id}
               contractId={
-                snapshot?.mode === "near" ? cfg?.contractId : undefined
+                snapshot?.mode === "near" ? activeConfig?.contractId : undefined
               }
             />
           ) : panel === "score" && run ? (
@@ -1428,10 +1437,11 @@ export default function Game() {
                 blueprint · Esc leaves a tool · Home resets the view.
               </p>
               <p className="mp-fine">
-                Concessionaires hold their own cash and inventory, choose prices
-                and pay suppliers. NEAR validates this economy and computes
-                ranked scores. Practice runs locally using the same Rust/WASM
-                engine.
+                Two independent vendors hold credits and stock in real testnet
+                accounts. Prices, deliveries and the fixed 10% park share run
+                automatically. Park robots handle maintenance. NEAR validates
+                this economy and computes ranked scores. Practice runs locally
+                using the same Rust/WASM engine.
               </p>
               <div className="mp-callout">
                 <div>

@@ -95,6 +95,7 @@ export function credentialsFor(
   cfg: Config,
   accountId?: string,
 ): Credentials | null {
+  if (typeof window === "undefined") return null;
   const preferred =
     accountId ?? localStorage.getItem(`moonpark-active:${cfg.contractId}`);
   const candidates = storedCredentials(cfg);
@@ -270,8 +271,8 @@ export async function parkSnapshot(cfg: Config, park: Park) {
   if (!park.run_id) return null;
   return view<RecordState>(cfg, "get_run", { run_id: park.run_id });
 }
-export async function publicPark(accountId: string) {
-  const cfg = await config();
+export async function publicPark(accountId: string, archived?: Config) {
+  const cfg = archived ?? (await config());
   if (!cfg) throw Error("NEAR configuration is unavailable.");
   const park = /^p-\d+$/.test(accountId)
     ? await view<Park | null>(cfg, "get_park", { park_id: accountId.slice(2) })

@@ -20,13 +20,15 @@ The NEAR badge opens the ownership and funding panel throughout play. No wallet 
 
 ## Why NEAR is part of the game
 
+**NPC vendor wallets** hold finite opening-day credits and stock. Two shop owners automatically price, restock and pay a fixed 10% park share. Each vendor account signs its deterministic policy. NEP-245 asset clearing and gameplay commit atomically. Normal play uses sponsored testnet gas.
+
 **Persistent ownership** links a park to its NEAR account ID, with signed wallet acceptance, operator authorization and private account backup/restore.
 
 **Player-created markets** make guest-tested ride designs permanent, attributed blueprints. A paid license gives another park the configuration and onchain provenance. Creator income is backed by the actual license payment, with private callbacks for retryable collection.
 
 **Verifiable competition** uses the same Rust engine in browser WASM and the contract. Players submit commands instead of claimed scores. Standardized nine-minute rounds are separate from persistent identity and design ownership. A funded testnet prize escrow demonstrates frozen weighted allocation. The conditional US$1K/US$5K creator pledge is separate and unfunded.
 
-**Immutable rules** live in a keyless contract. Creator and prize liabilities are protected from storage growth. The current ruleset is `moonpark-v4`. Earlier funded concessions can be accessed at `/legacy-claims`.
+**Immutable rules** live in a keyless contract. Creator and prize liabilities are protected from storage growth. The current ruleset is `moonpark-v5`. Earlier v4 parks and earnings can be accessed at `/archive/v4`, and v3 funded concessions at `/legacy-claims`.
 
 Read [the NEAR economy](docs/NEAR-ECONOMY.md), [game implementation](docs/MOONPARK.md), [verification](docs/MOONPARK-VERIFICATION.md) and [cinema production](docs/MOONPARK-CINEMA.md).
 
@@ -55,7 +57,7 @@ With the dev server running, `npm run test:game` checks gameplay, mobile layout,
 
 ## Deploy a testnet economy
 
-`npm run deploy:testnet` creates a testnet sponsor and a keyless child contract, funds a separate 0.5 tNEAR competition escrow and writes public configuration plus ignored local secrets. The v4 sponsor key is in `.near-local/moon-v4-deployer.json`. Keep `.near-local/` and `.dev.vars` private. Opening a challenge uses `npm run deploy:testnet -- --open`. New economic rules require another contract and challenge.
+`npm run deploy:testnet` creates a testnet sponsor and a keyless child contract, funds a separate 0.5 tNEAR competition escrow and writes public configuration plus ignored local secrets. The v5 sponsor and restricted vendor policy keys are in `.near-local/moon-v5-deployer.json`. Keep `.near-local/` and `.dev.vars` private. Opening a challenge uses `npm run deploy:testnet -- --open`. New economic rules require another contract and challenge.
 
 Each sponsored player receives 0.5 testnet NEAR and a restricted gameplay key with a 0.4 NEAR allowance. The server receives public keys. Park administration uses browser-held generated credentials, and external wallet claiming uses NEAR Connect with testnet-capable wallets on testnet. Back up private generated credentials before clearing storage. Sponsorship is finite and rate-limited. Public exports exclude private keys.
 

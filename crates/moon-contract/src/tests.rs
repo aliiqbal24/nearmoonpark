@@ -7,10 +7,193 @@ fn context(who: &str, time: u64) {
         .block_timestamp(time);
     testing_env!(c.build());
 }
+fn new_contract() -> Moonpark {
+    let caller = env::predecessor_account_id().to_string();
+    let time = env::block_timestamp();
+    let mut contract = Moonpark::new("sponsor.testnet".parse().unwrap());
+    for name in economy::VENDORS {
+        context(&format!("{name}.sponsor.testnet"), time);
+        contract.accept_vendor_policy("moonpark-v5-fixed-vendors-1".into());
+    }
+    context(&caller, time);
+    contract
+}
+
+fn economy_fixture() -> Moonpark {
+    context("sponsor.testnet", 1_000_000_000);
+    let mut c = new_contract();
+    c.register_player(
+        "alice.testnet".parse().unwrap(),
+        "guest:alice".into(),
+        "Alice".into(),
+    );
+    context("alice.testnet", 1_000_000_000);
+    c.create_run(VERSION.into(), "economy".into(), None);
+    c
+}
+fn finish_economy(c: &mut Moonpark) {
+    for n in 0..55 {
+        context("alice.testnet", (n + 1) * 10_000_000_000);
+        c.apply_actions("1".into(), n as u32, format!("tick-{n}"), vec![], 10);
+        let state = c.get_run_economy("1".into());
+        let record = c.get_run("1".into());
+        let run: Run = serde_json::from_value(record["run"].clone()).unwrap();
+        assert_eq!(state["supplies"][0], run.money_supply.to_string());
+        assert_eq!(state["wallets"][0]["balances"][0], run.cash.to_string());
+        for asset in 1..4 {
+            assert_eq!(
+                state["supplies"][asset],
+                (2048 - run.consumed[asset - 1]).to_string()
+            );
+            let total: u128 = state["wallets"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|w| {
+                    w["balances"][asset]
+                        .as_str()
+                        .unwrap()
+                        .parse::<u128>()
+                        .unwrap()
+                })
+                .sum();
+            assert_eq!(total.to_string(), state["supplies"][asset]);
+        }
+    }
+}
+fn asset_context(who: &str, deposit: u128) {
+    let mut b = VMContextBuilder::new();
+    b.current_account_id("moon.testnet".parse().unwrap())
+        .predecessor_account_id(who.parse().unwrap())
+        .block_timestamp(560_000_000_000)
+        .attached_deposit(near_sdk::NearToken::from_yoctonear(deposit));
+    testing_env!(b.build());
+}
+#[test]
+fn vendor_tokens_clear_atomically_conserve_supply_and_isolate_rounds() {
+    let mut c = economy_fixture();
+    assert_eq!(
+        c.mt_balance_of("omar.sponsor.testnet".parse().unwrap(), "1:credits".into())
+            .0,
+        6000
+    );
+    assert_eq!(
+        c.mt_balance_of("omar.sponsor.testnet".parse().unwrap(), "1:food".into())
+            .0,
+        12
+    );
+    finish_economy(&mut c);
+    let closing = c.get_run_economy("1".into());
+    assert_eq!(closing["locked"], false);
+    assert!(
+        closing["supplies"][1]
+            .as_str()
+            .unwrap()
+            .parse::<u128>()
+            .unwrap()
+            < 2048
+    );
+    c.create_run(VERSION.into(), "another-day".into(), None);
+    assert_eq!(closing, c.get_run_economy("1".into()));
+    assert_eq!(
+        c.mt_balance_of("omar.sponsor.testnet".parse().unwrap(), "2:food".into())
+            .0,
+        12
+    );
+}
+#[test]
+#[should_panic(expected = "Vendor account only")]
+fn a_player_cannot_authorize_a_vendor_wallet() {
+    let mut c = economy_fixture();
+    c.accept_vendor_policy("moonpark-v5-fixed-vendors-1".into());
+}
+#[test]
+#[should_panic(expected = "Vendor policy is awaiting")]
+fn opening_requires_vendor_signatures() {
+    context("sponsor.testnet", 1);
+    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    c.register_player(
+        "alice.testnet".parse().unwrap(),
+        "guest:alice".into(),
+        "Alice".into(),
+    );
+    context("alice.testnet", 1);
+    c.create_run(VERSION.into(), "unsigned".into(), None);
+}
+#[test]
+#[should_panic(expected = "committed to the game")]
+fn active_game_assets_cannot_be_moved_out_of_the_economy() {
+    let mut c = economy_fixture();
+    asset_context("alice.testnet", 1);
+    c.mt_transfer(
+        "omar.sponsor.testnet".parse().unwrap(),
+        "1:credits".into(),
+        near_sdk::json_types::U128(100),
+        None,
+        None,
+    );
+}
+#[test]
+fn closing_day_assets_transfer_and_cosmetics_preserve_the_new_owner_balance() {
+    let mut c = economy_fixture();
+    finish_economy(&mut c);
+    let alice: AccountId = "alice.testnet".parse().unwrap();
+    let omar: AccountId = "omar.sponsor.testnet".parse().unwrap();
+    let before = c.mt_balance_of(alice.clone(), "1:credits".into()).0;
+    asset_context("alice.testnet", 1);
+    c.mt_transfer(
+        omar,
+        "1:credits".into(),
+        near_sdk::json_types::U128(100),
+        None,
+        Some("Closing-day tip".into()),
+    );
+    context("alice.testnet", 560_000_000_000);
+    c.apply_actions(
+        "1".into(),
+        55,
+        "paint".into(),
+        vec![Command {
+            kind: "theme".into(),
+            value: 1,
+            ..Default::default()
+        }],
+        0,
+    );
+    assert_eq!(c.mt_balance_of(alice, "1:credits".into()).0, before - 100);
+}
+#[test]
+fn transfer_call_refunds_invalid_receiver_results_without_changing_supply() {
+    let mut c = economy_fixture();
+    finish_economy(&mut c);
+    let alice: AccountId = "alice.testnet".parse().unwrap();
+    let omar: AccountId = "omar.sponsor.testnet".parse().unwrap();
+    let before = c.mt_balance_of(alice.clone(), "1:credits".into()).0;
+    let supply = c.mt_supply("1:credits".into());
+    asset_context("alice.testnet", 1);
+    let _ = c.mt_transfer_call(
+        omar.clone(),
+        "1:credits".into(),
+        near_sdk::json_types::U128(100),
+        None,
+        None,
+        String::new(),
+    );
+    transfer_result(false);
+    let spent = c.mt_resolve_transfer(
+        alice.clone(),
+        omar,
+        vec!["1:credits".into()],
+        vec![near_sdk::json_types::U128(100)],
+    );
+    assert_eq!(spent[0].0, 0);
+    assert_eq!(c.mt_balance_of(alice, "1:credits".into()).0, before);
+    assert_eq!(c.mt_supply("1:credits".into()), supply);
+}
 #[test]
 fn identity_and_request_idempotency() {
     context("sponsor.testnet", 1_000_000_000);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     c.register_player(
         "alice.testnet".parse().unwrap(),
         "opaque-player".into(),
@@ -27,7 +210,7 @@ fn identity_and_request_idempotency() {
 #[test]
 fn best_scores_and_prize_snapshot() {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     for n in 0..8 {
         let e = Entry {
             player_id: format!("p{n}"),
@@ -55,7 +238,7 @@ fn best_scores_and_prize_snapshot() {
 #[should_panic(expected = "Owner only")]
 fn rejects_other_owner() {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     c.register_player("alice.testnet".parse().unwrap(), "p".into(), "Alice".into());
     context("alice.testnet", 1);
     let a = c.create_run(VERSION.into(), "a".into(), None);
@@ -72,7 +255,7 @@ fn rejects_other_owner() {
 #[should_panic(expected = "Stale revision")]
 fn rejects_stale_revision() {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     c.register_player("alice.testnet".parse().unwrap(), "p".into(), "Alice".into());
     context("alice.testnet", 1);
     let r = c.create_run(VERSION.into(), "run".into(), None);
@@ -88,7 +271,7 @@ fn rejects_stale_revision() {
 #[should_panic(expected = "Opening day time limit reached")]
 fn rejects_late_actions() {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     c.register_player("alice.testnet".parse().unwrap(), "p".into(), "Alice".into());
     context("alice.testnet", 1);
     let r = c.create_run(VERSION.into(), "run".into(), Some("Public nickname".into()));
@@ -110,7 +293,7 @@ fn rejects_late_actions() {
 #[should_panic(expected = "Simulation is ahead of the clock")]
 fn rejects_instant_full_round() {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     c.register_player("alice.testnet".parse().unwrap(), "p".into(), "Alice".into());
     context("alice.testnet", 1);
     let r = c.create_run(VERSION.into(), "run".into(), None);
@@ -129,7 +312,7 @@ fn deposit(who: &str, amount: u128, time: u64) {
 }
 fn share_fixture() -> Moonpark {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     deposit("sponsor.testnet", ownership::SHARE_CAP * 3, 1);
     c.fund_business_rewards();
     c.register_player(
@@ -291,7 +474,7 @@ fn transfer_call_receiver_cannot_take_reward_before_acceptance() {
 }
 fn prize_fixture() -> Moonpark {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     deposit("sponsor.testnet", 1_000_000, 1);
     c.fund_prizes();
     for n in 0..5 {
@@ -396,7 +579,7 @@ fn game_storage_cannot_consume_reward_backing() {
 
 fn park_fixture() -> Moonpark {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     for who in ["alice.testnet", "bob.testnet", "carol.testnet"] {
         c.register_player(who.parse().unwrap(), format!("guest:{who}"), who.into());
     }
@@ -553,7 +736,7 @@ fn reviews_are_once_per_park_and_can_be_updated() {
 #[should_panic(expected = "Opening day time limit reached")]
 fn deadline_rejects_height_changes_even_before_passive_closing() {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     c.register_player(
         "alice.testnet".parse().unwrap(),
         "guest:alice".into(),
@@ -595,7 +778,7 @@ fn deadline_rejects_height_changes_even_before_passive_closing() {
 #[test]
 fn deadline_keeps_free_cosmetic_edits_available() {
     context("sponsor.testnet", 1);
-    let mut c = Moonpark::new("sponsor.testnet".parse().unwrap());
+    let mut c = new_contract();
     c.register_player(
         "alice.testnet".parse().unwrap(),
         "guest:alice".into(),

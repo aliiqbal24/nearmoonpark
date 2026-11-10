@@ -10,7 +10,7 @@ import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { createHash, randomBytes } from "node:crypto";
 import assert from "node:assert/strict";
 await mkdir(".near-local", { recursive: true });
-const keyPath = ".near-local/moon-v4-deployer.json";
+const keyPath = ".near-local/moon-v5-deployer.json";
 let key;
 try {
   key = JSON.parse(await readFile(keyPath, "utf8"));
@@ -65,7 +65,7 @@ if (!exists) {
     receiverId: contractId,
     actions: [
       actions.createAccount(),
-      actions.transfer(8000000000000000000000000n),
+      actions.transfer(10000000000000000000000000n),
       actions.deployContract(code),
       actions.functionCall(
         "new",
@@ -98,6 +98,71 @@ const call = (methodName, args = {}, deposit = 0n) =>
     gas: 100000000000000n,
     waitUntil: "FINAL",
   });
+// Vendor accounts retain a single restricted policy key. It cannot move native
+// NEAR, attach deposits, call another contract or arbitrarily transfer game assets.
+key.vendors ??= {};
+for (const role of ["omar", "mina", "logistics"]) {
+  const accountId = `${role}.${key.accountId}`;
+  if (!key.vendors[role]) {
+    key.vendors[role] = {
+      accountId,
+      secretKey: KeyPair.fromRandom("ed25519").toString(),
+    };
+    await writeFile(keyPath, JSON.stringify(key), { mode: 0o600 });
+  }
+  const vendorKey = KeyPair.fromString(key.vendors[role].secretKey);
+  let account;
+  try {
+    account = await provider.viewAccount({ accountId });
+  } catch (error) {
+    if (!/does not exist|UNKNOWN_ACCOUNT|not found/i.test(String(error)))
+      throw error;
+    await sponsor.signAndSendTransaction({
+      receiverId: accountId,
+      actions: [
+        actions.createAccount(),
+        actions.transfer(150000000000000000000000n),
+        actions.addFunctionCallAccessKey(
+          vendorKey.getPublicKey(),
+          contractId,
+          ["accept_vendor_policy"],
+          100000000000000000000000n,
+        ),
+      ],
+      waitUntil: "FINAL",
+    });
+    account = await provider.viewAccount({ accountId });
+  }
+  assert.equal(account.code_hash, "11111111111111111111111111111111");
+  const keys = await provider.viewAccessKeyList({ accountId });
+  assert.equal(keys.keys.length, 1);
+  assert.equal(
+    keys.keys[0].public_key.toString(),
+    vendorKey.getPublicKey().toString(),
+  );
+  const permission = keys.keys[0].access_key.permission.FunctionCall;
+  assert.equal(permission.receiver_id, contractId);
+  assert.deepEqual(permission.method_names, ["accept_vendor_policy"]);
+  const policy = await provider.callFunction({
+    contractId,
+    method: "get_vendor_policy",
+    args: {},
+  });
+  if (!policy.vendors.find((v) => v.account_id === accountId)?.accepted) {
+    const vendor = new Account(
+      accountId,
+      provider,
+      new KeyPairSigner(vendorKey),
+    );
+    await vendor.callFunction({
+      contractId,
+      methodName: "accept_vendor_policy",
+      args: { policy_id: policy.policy_id },
+      gas: 30000000000000n,
+      waitUntil: "FINAL",
+    });
+  }
+}
 const prizes = await provider.callFunction({
   contractId,
   method: "get_prize_snapshot",
@@ -110,7 +175,7 @@ let challenge = await provider.callFunction({
   method: "get_challenge",
   args: {},
 });
-assert.equal(challenge.id, "moonpark-v4");
+assert.equal(challenge.id, "moonpark-v5");
 if (process.argv.includes("--open") && !challenge.open) {
   await call("open_challenge");
   challenge = await provider.callFunction({
@@ -127,6 +192,12 @@ const config = {
   codeHash: state.code_hash,
   network: "testnet",
   immutable: true,
+  vendors: Object.fromEntries(
+    Object.entries(key.vendors).map(([role, vendor]) => [
+      role,
+      vendor.accountId,
+    ]),
+  ),
 };
 await writeFile(
   "public/moon-config.json",
@@ -157,7 +228,7 @@ await writeFile(
   "public/moon-build.json",
   JSON.stringify(
     {
-      version: "moonpark-v4",
+      version: "moonpark-v5",
       contractSha256: createHash("sha256").update(code).digest("hex"),
       engineSha256: createHash("sha256")
         .update(await readFile("public/engine/moon.wasm"))

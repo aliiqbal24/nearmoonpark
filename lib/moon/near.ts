@@ -8,6 +8,8 @@ export type Config = {
   fallbackRpcUrl: string;
   network: string;
   codeHash: string;
+  archivedVersion?: "v4";
+  vendors?: { omar: string; mina: string; logistics: string };
 };
 export type Credentials = {
   accountId: string;

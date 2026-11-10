@@ -21,6 +21,7 @@ import {
   type RecordState,
 } from "@/lib/moon/model";
 import type { MoonWorld as World } from "@/lib/moon/world";
+import archivedV4 from "@/public/moon-v4-config.json";
 import "../moonpark.css";
 function visitorPreview(source: Run) {
   const run = structuredClone(source);
@@ -67,7 +68,10 @@ export default function PublicPark({ accountId }: { accountId: string }) {
   const world = useRef<World | null>(null);
   useEffect(() => {
     let active = true;
-    void publicPark(accountId)
+    const archived =
+      new URLSearchParams(location.search).get("version") === "v4" ||
+      accountId.endsWith(".moonpark-mw65jiya.testnet");
+    void publicPark(accountId, archived ? (archivedV4 as Config) : undefined)
       .then((v) => {
         if (active) setData(v);
       })

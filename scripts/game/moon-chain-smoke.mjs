@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
+import { verifyEconomy } from "./moon-economy-proof.mjs";
 import {
   Account,
   FailoverRpcProvider,
@@ -13,7 +14,7 @@ const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
 assert.equal(cfg.network, "testnet");
 assert.ok(cfg.contractId.endsWith(".testnet"));
 const rootKey = JSON.parse(
-  await readFile(".near-local/moon-v4-deployer.json", "utf8"),
+  await readFile(".near-local/moon-v5-deployer.json", "utf8"),
 );
 const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
   cfg.rpcUrl,
@@ -51,7 +52,7 @@ await root.callFunction({
 let state = await player.callFunction({
   contractId: cfg.contractId,
   methodName: "create_run",
-  args: { challenge_id: "moonpark-v4", request_id: "real-chain-proof" },
+  args: { challenge_id: "moonpark-v5", request_id: "real-chain-proof" },
   gas: 180000000000000n,
   waitUntil: "EXECUTED",
 });
@@ -107,6 +108,7 @@ for (let i = 0; i < replay.frames.length; i++) {
     args: { run_id: state.run_id },
   });
   assert.deepEqual(state.run, f.run);
+  await verifyEconomy(p, cfg.contractId, state);
   const gas = (raw?.receipts_outcome || []).reduce(
     (n, o) => n + BigInt(o.outcome.gas_burnt),
     0n,
@@ -120,7 +122,7 @@ for (let i = 0; i < replay.frames.length; i++) {
     trades: state.run.trade_count,
   });
   await writeFile(
-    "outputs/moon-v4-chain-progress.json",
+    "outputs/moon-v5-chain-progress.json",
     JSON.stringify({ state, checkpoints, maxGas: maxGas.toString() }),
   );
   if (i % 9 === 0 || state.run.finished)
@@ -137,6 +139,26 @@ assert.equal(state.run.finished, true);
 assert.ok(state.run.score.total >= 7000);
 assert.equal(state.ranked, false);
 assert.deepEqual(state.run.partnerships, []);
+const economyProof = await verifyEconomy(p, cfg.contractId, state);
+const vendorPolicy = await p.callFunction({
+  contractId: cfg.contractId,
+  method: "get_vendor_policy",
+  args: {},
+});
+for (const vendor of vendorPolicy.vendors) {
+  assert.equal(vendor.accepted, true);
+  await p.viewAccount({ accountId: vendor.account_id });
+  const keys = await p.viewAccessKeyList({ accountId: vendor.account_id });
+  assert.equal(keys.keys.length, 1);
+  assert.equal(
+    keys.keys[0].access_key.permission.FunctionCall.receiver_id,
+    cfg.contractId,
+  );
+  assert.deepEqual(
+    keys.keys[0].access_key.permission.FunctionCall.method_names,
+    ["accept_vendor_policy"],
+  );
+}
 const transactions = [];
 async function call(account, methodName, args, deposit = 0n) {
   const raw = await account.callFunctionRaw({
@@ -217,7 +239,7 @@ await call(root, "register_player", {
   display_name: "Blueprint visitor",
 });
 const buying = await call(buyer, "create_run", {
-  challenge_id: "moonpark-v4",
+  challenge_id: "moonpark-v5",
   request_id: "license-test",
 });
 const fee = 5000000000000000000000n;
@@ -307,7 +329,7 @@ const access = await p.viewAccessKeyList({ accountId: cfg.contractId });
 assert.equal(access.keys.length, 0);
 await mkdir("docs", { recursive: true });
 await writeFile(
-  "docs/moon-v4-testnet-smoke.json",
+  "docs/moon-v5-testnet-smoke.json",
   JSON.stringify(
     {
       contractId: cfg.contractId,
@@ -322,6 +344,8 @@ await writeFile(
       reservedFunding: state.run.grant_escrow,
       availableFunding: state.run.grant_cash,
       ownershipProof,
+      economyProof,
+      vendorPolicy,
       fundSafety,
       contractAccessKeys: access.keys.length,
       storageDepositRetainedYocto: storageRefund,

@@ -1,4 +1,6 @@
 "use client";
+import { VendorWallets } from "./vendor-wallets";
+import type { Config } from "@/lib/moon/near";
 import { AttractionDesign } from "./attraction-design";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -111,6 +113,7 @@ export function Inspector({
   onClose,
   onRide,
   readOnly = false,
+  config,
 }: {
   run: Run;
   building?: Building;
@@ -119,19 +122,17 @@ export function Inspector({
   onClose: () => void;
   onRide: (id: number) => void;
   readOnly?: boolean;
+  config?: Config | null;
 }) {
   const actionRef = useRef(action);
   useEffect(() => {
     actionRef.current = action;
   }, [action]);
   const price = building?.price ?? 0,
-    rent = building?.rent ?? 0,
     id = building?.id,
     kind = building?.kind;
-  const [priceEdit, setPriceDraft] = useState({ base: price, value: price }),
-    [rentEdit, setRentDraft] = useState({ base: rent, value: rent });
-  const priceDraft = priceEdit.base === price ? priceEdit.value : price,
-    rentDraft = rentEdit.base === rent ? rentEdit.value : rent;
+  const [priceEdit, setPriceDraft] = useState({ base: price, value: price });
+  const priceDraft = priceEdit.base === price ? priceEdit.value : price;
   useEffect(() => {
     if (id === undefined || !kind || priceDraft === price || !isRide(kind))
       return;
@@ -146,20 +147,6 @@ export function Inspector({
     );
     return () => clearTimeout(timer);
   }, [id, price, kind, priceDraft]);
-  useEffect(() => {
-    if (id === undefined || !kind || rentDraft === rent || !isTenant(kind))
-      return;
-    const timer = setTimeout(
-      () =>
-        actionRef.current({
-          kind: "rent",
-          building: id,
-          value: rentDraft,
-        }),
-      250,
-    );
-    return () => clearTimeout(timer);
-  }, [id, rent, kind, rentDraft]);
   if (guest)
     return (
       <aside className="mp-inspector">
@@ -217,7 +204,7 @@ export function Inspector({
       : !b.connected
         ? "Needs a path"
         : b.insolvent
-          ? "Closed · needs working capital"
+          ? "Waiting for supplies"
           : !b.enabled
             ? "Closed by owner"
             : !b.powered
@@ -266,7 +253,8 @@ export function Inspector({
           <Users size={16} /> {b.queue.length} waiting
         </span>
         <span>
-          <Ticket size={16} /> {b.served} served
+          <Ticket size={16} /> {b.served}{" "}
+          {b.kind === "depot" ? "repairs" : "served"}
         </span>
         {ride && (
           <span>
@@ -376,39 +364,31 @@ export function Inspector({
               {Math.max(0, b.delivery_at - run.tick)}s
             </p>
           )}
-          {b.kind !== "depot" && (
-            <>
-              <label className="mp-control-label" htmlFor="revenue-share">
-                Your revenue share <strong>{rentDraft}%</strong>
-              </label>
-              <input
-                id="revenue-share"
-                aria-label="Revenue share"
-                type="range"
-                min="0"
-                max="30"
-                step="5"
-                value={rentDraft}
-                disabled={disabled}
-                onChange={(e) =>
-                  setRentDraft({ base: rent, value: Number(e.target.value) })
-                }
-                onPointerUp={() => {
-                  if (rentDraft !== b.rent)
-                    action({ kind: "rent", building: b.id, value: rentDraft });
-                }}
-                onBlur={() => {
-                  if (rentDraft !== b.rent)
-                    action({ kind: "rent", building: b.id, value: rentDraft });
-                }}
-              />
-              <p className="mp-fine">
-                The owner sets prices and buys stock. A larger share leaves less
-                cash to restock.
-              </p>
-            </>
+          <p className="mp-fine">
+            Shares <strong>{b.rent}% of sales</strong> with your park. Pricing
+            and restocking are automatic.{" "}
+            {run.version === "moonpark-v4"
+              ? "This archived day retains its original operating costs."
+              : "Running costs are paid only when a customer is served."}
+          </p>
+          {config?.vendors && (
+            <a
+              className="mp-vendor-link"
+              target="_blank"
+              rel="noreferrer"
+              href={`https://testnet.nearblocks.io/address/${config.vendors[b.kind === "food" ? "omar" : "mina"]}`}
+            >
+              <NearMark /> {b.kind === "food" ? "Omar’s" : "Mina’s"} testnet
+              wallet <ExternalLink size={12} />
+            </a>
           )}
         </>
+      )}
+      {b.kind === "depot" && (
+        <p className="mp-fine">
+          Nia’s park robots automatically repair connected rides. Parts and
+          service cost 10 credits per repair, paid only when needed.
+        </p>
       )}
       {!disabled && (
         <div className="mp-inspector-bottom">
@@ -739,10 +719,14 @@ export function Ledger({
   run,
   txs,
   contractId,
+  config,
+  runId,
 }: {
   run: Run;
   txs: string[];
   contractId?: string;
+  config?: Config | null;
+  runId?: string;
 }) {
   const actor = (s: string) =>
     s.startsWith("guest:")
@@ -757,8 +741,16 @@ export function Ledger({
     <>
       <p className="mp-subtle">
         Visitors spend finite budgets. Businesses pay for stock, maintenance and
-        rent. These are actual simulation transfers, in lunar credits.
+        a fixed park share. Pricing and deliveries are automatic.
+        {contractId
+          ? config?.vendors
+            ? " NEAR confirms the game and clears its token balances together."
+            : " NEAR confirms this archived simulation under its original rules."
+          : " Practice uses the same rules locally."}
       </p>
+      {config?.vendors && runId && (
+        <VendorWallets key={runId} cfg={config} runId={runId} />
+      )}
       <div className="mp-ledger">
         {run.trades
           .slice(-22)
@@ -800,8 +792,12 @@ export function Ledger({
           </a>
         ))}
       <p className="mp-fine">
-        NPC treasuries are contract-managed balances. Lunar credits are game
-        currency. Gas uses sponsored testnet NEAR.
+        Lunar credits and stock are opening-day game assets with no cash value.
+        {contractId
+          ? config?.vendors
+            ? " The vendor accounts authorize fixed rules in the immutable contract. Testnet gas is sponsored."
+            : " This earlier version uses contract-managed merchant treasuries."
+          : " Offline practice has no blockchain transactions."}
       </p>
     </>
   );

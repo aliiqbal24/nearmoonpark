@@ -1,4 +1,4 @@
-export const VERSION = "moonpark-v4";
+export const VERSION = "moonpark-v5";
 export const LANDING = 10;
 export const END = 550;
 export const DAY_SECONDS = END - LANDING;
@@ -139,7 +139,7 @@ export const blueprint = (kind: string) =>
 export const isRide = (kind: string) =>
   ["bounce", "wheel", "rover", "coaster"].includes(kind);
 export const isTenant = (kind: string) =>
-  ["food", "drink", "depot"].includes(kind);
+  ["food", "drink"].includes(kind);
 export const resaleValue = (b: Building) =>
   Math.floor(
     (b.invested *
@@ -288,8 +288,6 @@ export type Command = {
     | "launch"
     | "upgrade"
     | "toggle"
-    | "rent"
-    | "invest"
     | "partner"
     | "design"
     | "theme"

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::VecDeque;
 
-pub const VERSION: &str = "moonpark-v4";
+pub const VERSION: &str = "moonpark-v5";
 pub const WIDTH: u16 = 32;
 pub const HEIGHT: u16 = 24;
 pub const LANDING: u16 = 10;
@@ -280,14 +280,8 @@ fn make_building(
         served: 0,
         revenue: 0,
         cash: if tenant(kind) { 6000 } else { 0 },
-        stock: if kind == "depot" {
-            8
-        } else if tenant(kind) {
-            12
-        } else {
-            0
-        },
-        rent: 10,
+        stock: if tenant(kind) { 12 } else { 0 },
+        rent: catalog::VENDOR_RENT,
         delivery_qty: 0,
         delivery_at: 0,
         recent: 0,
@@ -805,39 +799,8 @@ impl Run {
                     "toggle" => {
                         self.buildings[i].enabled = !self.buildings[i].enabled;
                     }
-                    "rent" => {
-                        if self
-                            .partnerships
-                            .iter()
-                            .any(|p| p.building == Some(c.building))
-                        {
-                            return Err(
-                                "Your signed concession fixes the revenue share for opening day."
-                                    .into(),
-                            );
-                        }
-                        if !matches!(k.as_str(), "food" | "drink")
-                            || !(0..=30).contains(&c.value)
-                            || c.value % 5 != 0
-                        {
-                            return Err("Revenue share must be 0–30%.".into());
-                        }
-                        self.buildings[i].rent = c.value as u8;
-                    }
-                    "invest" => {
-                        if !tenant(&k) || c.value != 10000 || self.cash < c.value {
-                            return Err("An investment costs 100 credits.".into());
-                        }
-                        self.cash -= c.value;
-                        self.buildings[i].cash += c.value;
-                        self.buildings[i].insolvent = false;
-                        self.trade(
-                            "Park",
-                            format!("business:{}", c.building),
-                            c.value,
-                            "investment",
-                            1,
-                        );
+                    "rent" | "invest" => {
+                        return Err("Vendors manage their own working capital and pay a fixed 10% park share.".into());
                     }
                     "sell" => {
                         if self
@@ -889,6 +852,8 @@ impl Run {
             let kind = self.buildings[i].kind.clone();
             if tenant(&kind) {
                 self.merchant(i);
+            } else if kind == "depot" {
+                self.maintain(i);
             }
             if self.buildings[i].cycle_left > 0 {
                 self.buildings[i].cycle_left -= 1;
@@ -977,6 +942,7 @@ impl Run {
                         self.trade(format!("guest:{id}"), "Park", price, &kind, 1);
                     } else {
                         self.buildings[i].cash += price;
+                        self.vendor_overhead(i, catalog::SHOP_OVERHEAD);
                         self.buildings[i].stock -= 1;
                         self.consumed[if kind == "food" { 0 } else { 1 }] += 1;
                         self.buildings[i].recent += 1;
@@ -1159,6 +1125,17 @@ impl Run {
             self.event("Last boarding call. Your first day on the Moon is complete.");
         }
     }
+    fn vendor_overhead(&mut self, i: usize, amount: i64) {
+        self.buildings[i].cash -= amount;
+        self.supplier_cash += amount;
+        self.trade(
+            format!("business:{}", self.buildings[i].id),
+            "Lunar Logistics",
+            amount,
+            "service supplies",
+            1,
+        );
+    }
     fn merchant(&mut self, i: usize) {
         let kind = self.buildings[i].kind.clone();
         if self.buildings[i].ready_at > self.tick {
@@ -1173,32 +1150,10 @@ impl Run {
                 item(&kind).unwrap().name
             ));
         }
-        if self.tick % 15 == 0 {
-            let fee = self.buildings[i].cash.min(200);
-            self.buildings[i].cash -= fee;
-            self.supplier_cash += fee;
-            if fee < 200 || self.buildings[i].cash == 0 {
-                self.buildings[i].insolvent = true;
-                self.buildings[i].powered = false;
-            }
-            self.trade(
-                format!("business:{}", i + 1),
-                "Lunar Logistics",
-                fee,
-                "operating supplies",
-                1,
-            );
-        }
-        let good = if kind == "food" {
-            0
-        } else if kind == "drink" {
-            1
-        } else {
-            2
-        };
-        let unit = [200, 100, 500][good];
-        let target = if kind == "depot" { 8 } else { 16 };
-        let threshold = if kind == "depot" { 2 } else { 4 };
+        let good = if kind == "food" { 0 } else { 1 };
+        let unit = [200, 100][good];
+        let target = 16;
+        let threshold = 4;
         if self.buildings[i].stock <= threshold
             && self.buildings[i].delivery_qty == 0
             && self.buildings[i].cash > unit + 200
@@ -1222,70 +1177,54 @@ impl Run {
                 );
             }
         }
-        if kind != "depot" {
-            let b = &mut self.buildings[i];
-            b.price = catalog::merchant_price(&kind, b.stock, b.recent);
-            b.reason = if b.insolvent {
-                "I couldn't cover operating supplies. Closed until an investment restores working capital."
-            } else if b.stock == 0 && b.delivery_qty == 0 {
-                "No stock and not enough cash to reorder. An investment would help."
-            } else if b.delivery_qty > 0 {
-                "Restocking order paid. A supply rover is on its way."
-            } else if b.stock < 5 {
-                "Stock is low, so I raised my price to protect the next delivery."
-            } else if b.recent >= 6 {
-                "Recent demand is strong, so I raised my price by one credit."
-            } else {
-                "Stock is healthy. Keeping the regular price."
-            }
-            .into();
-            if self.tick % 30 == 0 {
-                b.recent = 0;
-            }
-        } else if self.tick % 5 == 0
-            && self.buildings[i].powered
-            && self.buildings[i].stock > 0
-            && self.cash >= 1000
+        let b = &mut self.buildings[i];
+        b.price = catalog::merchant_price(&kind, b.stock, b.recent);
+        b.reason = if b.stock == 0 && b.delivery_qty == 0 {
+            "Waiting for Lunar Logistics to replenish supplies."
+        } else if b.delivery_qty > 0 {
+            "Restocking order paid. A supply rover is on its way."
+        } else if b.stock < 5 {
+            "Stock is low, so I raised my price to protect the next delivery."
+        } else if b.recent >= 6 {
+            "Recent demand is strong, so I raised my price by one credit."
+        } else {
+            "Stock is healthy. Keeping the regular price."
+        }
+        .into();
+        if self.tick % 30 == 0 {
+            b.recent = 0;
+        }
+    }
+    fn maintain(&mut self, i: usize) {
+        if self.tick % 5 != 0
+            || !self.buildings[i].powered
+            || self.cash < catalog::REPAIR_FEE
+            || self.supplies[2] == 0
         {
-            if let Some(j) = self
-                .buildings
-                .iter()
-                .position(|b| !b.sold && ride(&b.kind) && b.connected && b.condition < 65)
-            {
-                self.cash -= 1000;
-                self.buildings[i].cash += 1000;
-                self.buildings[i].stock -= 1;
-                self.buildings[i].served += 1;
-                self.consumed[2] += 1;
-                self.buildings[j].condition = (self.buildings[j].condition + 30).min(100);
-                self.trade(
-                    "Park",
-                    format!("business:{}", i + 1),
-                    1000,
-                    "maintenance",
-                    1,
-                );
-                if self
-                    .partnerships
-                    .iter()
-                    .any(|p| p.building == Some(i as u32 + 1))
-                {
-                    let share = 1000 * self.buildings[i].rent as i64 / 100;
-                    self.buildings[i].cash -= share;
-                    self.cash += share;
-                    self.trade(
-                        format!("business:{}", i + 1),
-                        "Park",
-                        share,
-                        "revenue share",
-                        1,
-                    );
-                }
-                self.event(format!(
-                    "Nia's robot serviced {}.",
-                    item(&self.buildings[j].kind).unwrap().name
-                ));
-            }
+            return;
+        }
+        if let Some(j) = self
+            .buildings
+            .iter()
+            .position(|b| !b.sold && ride(&b.kind) && b.connected && b.condition < 65)
+        {
+            self.cash -= catalog::REPAIR_FEE;
+            self.supplier_cash += catalog::REPAIR_FEE;
+            self.supplies[2] -= 1;
+            self.consumed[2] += 1;
+            self.buildings[i].served += 1;
+            self.buildings[j].condition = (self.buildings[j].condition + 30).min(100);
+            self.trade(
+                "Park",
+                "Lunar Logistics",
+                catalog::REPAIR_FEE,
+                "maintenance",
+                1,
+            );
+            self.event(format!(
+                "Nia's park robot serviced {}.",
+                item(&self.buildings[j].kind).unwrap().name
+            ));
         }
     }
     fn choose(&mut self, gi: usize) {

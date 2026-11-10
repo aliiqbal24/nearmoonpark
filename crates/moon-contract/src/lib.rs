@@ -4,6 +4,7 @@ use near_sdk::{
     collections::{LookupMap, UnorderedMap},
     env, near, AccountId, PanicOnDefault,
 };
+mod economy;
 mod ownership;
 mod parks;
 use near_contract_standards::non_fungible_token::NonFungibleToken;
@@ -26,6 +27,9 @@ pub struct Entry {
 #[derive(PanicOnDefault)]
 pub struct Moonpark {
     sponsor: AccountId,
+    vendor_consents: LookupMap<AccountId, bool>,
+    asset_balances: LookupMap<String, u128>,
+    asset_supplies: LookupMap<String, u128>,
     parks: UnorderedMap<String, Park>,
     park_owners: LookupMap<AccountId, String>,
     park_operators: LookupMap<AccountId, String>,
@@ -61,6 +65,9 @@ impl Moonpark {
     pub fn new(sponsor: AccountId) -> Self {
         Self {
             sponsor,
+            vendor_consents: LookupMap::new(b"v5consent".to_vec()),
+            asset_balances: LookupMap::new(b"v5balance".to_vec()),
+            asset_supplies: LookupMap::new(b"v5supply".to_vec()),
             parks: UnorderedMap::new(b"v4p".to_vec()),
             park_owners: LookupMap::new(b"v4o".to_vec()),
             park_operators: LookupMap::new(b"v4s".to_vec()),
@@ -176,6 +183,7 @@ impl Moonpark {
         let now = env::block_timestamp();
         let park_id = self.ensure_park(&owner);
         let run = Run::new();
+        self.open_economy(&id, &owner, &run);
         let record = serde_json::json!({"run_id":id,"park_id":park_id,"owner":owner,"player_id":player["player_id"],"display_name":name,"ranked":ranked,"started_at":now.to_string(),"deadline":(now+(END as u64+CONFIRMATION_GRACE)*1_000_000_000).to_string(),"last_request":"","run":run});
         self.runs.insert(&id, &record.to_string());
         self.requests.insert(&req, &id);
@@ -231,6 +239,7 @@ impl Moonpark {
                 "Park operator authorization has changed"
             );
         }
+        let before = run.clone();
         let previous_deals: Vec<_> = run.partnerships.iter().map(|p| p.status.clone()).collect();
         self.validate_licenses(&env::predecessor_account_id(), &commands);
         run.apply(&commands, ticks)
@@ -246,6 +255,7 @@ impl Moonpark {
                 ));
             }
         }
+        self.clear_economy(&run_id, &env::predecessor_account_id(), &before, &run);
         if run.finished {
             self.close_business_reserves(&run_id, &run);
         }
@@ -304,7 +314,7 @@ impl Moonpark {
             .collect()
     }
     pub fn get_challenge(&self) -> serde_json::Value {
-        serde_json::json!({"id":VERSION,"seconds":END-moonpark_sim::LANDING,"approach_seconds":moonpark_sim::LANDING,"simulation_ticks":END,"width":32,"height":24,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":60000,"partnerships":3,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"contract-managed","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":if self.prize_fund>0 {"testnet_escrow"}else{"conditional_unfunded"},"concession_standard":"NEP-171","game_currency":"virtual lunar credits","reward_currency":"testnet NEAR"})
+        serde_json::json!({"id":VERSION,"seconds":END-moonpark_sim::LANDING,"approach_seconds":moonpark_sim::LANDING,"simulation_ticks":END,"width":32,"height":24,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":0,"partnerships":0,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"signed_policy_accounts","vendor_policy":self.get_vendor_policy(),"asset_standard":"NEP-245","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":if self.prize_fund>0 {"testnet_escrow"}else{"conditional_unfunded"},"concession_standard":"NEP-171","game_currency":"opening-day lunar credit tokens","reward_currency":"testnet NEAR"})
     }
 }
 fn better(a: &Entry, b: &Entry) -> bool {

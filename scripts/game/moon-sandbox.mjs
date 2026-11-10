@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
+import { verifyEconomy } from "./moon-economy-proof.mjs";
 const tmp = resolve(".sites-runtime/moon-sandbox");
 await mkdir(tmp, { recursive: true });
 process.env.TMPDIR = tmp;
@@ -52,6 +53,20 @@ try {
       waitUntil: "FINAL",
     });
   await call(root, "new", { sponsor: root.accountId });
+  for (const role of ["omar", "mina", "logistics"]) {
+    const key = KeyPair.fromRandom("ed25519"),
+      id = `${role}.${root.accountId}`;
+    await root.createAccount({
+      newAccountId: id,
+      publicKey: key.getPublicKey(),
+      nearToTransfer: 1000000000000000000000000n,
+    });
+    await call(
+      new Account(id, p, new KeyPairSigner(key)),
+      "accept_vendor_policy",
+      { policy_id: "moonpark-v5-fixed-vendors-1" },
+    );
+  }
   await call(root, "fund_prizes", {}, 500000000000000000000000n);
   await call(root, "register_player", {
     account_id: alice.accountId,
@@ -60,13 +75,13 @@ try {
   });
   await call(root, "open_challenge", {});
   let state = await call(alice, "create_run", {
-    challenge_id: "moonpark-v4",
+    challenge_id: "moonpark-v5",
     request_id: "sandbox",
   });
   assert.deepEqual(
     state,
     await call(alice, "create_run", {
-      challenge_id: "moonpark-v4",
+      challenge_id: "moonpark-v5",
       request_id: "sandbox",
     }),
   );
@@ -78,6 +93,25 @@ try {
       commands: [],
       ticks: 1,
     }),
+  );
+  const openingAssets = await verifyEconomy(p, contract.accountId, state);
+  await assert.rejects(() =>
+    call(
+      alice,
+      "mt_transfer",
+      {
+        receiver_id: `omar.${root.accountId}`,
+        token_id: `${state.run_id}:credits`,
+        amount: "1",
+        approval: null,
+        memo: null,
+      },
+      1n,
+    ),
+  );
+  assert.deepEqual(
+    await verifyEconomy(p, contract.accountId, state),
+    openingAssets,
   );
   const native = spawnSync("target/release/examples/moon_replay", ["gold"], {
     encoding: "utf8",
@@ -160,6 +194,7 @@ try {
       args: { run_id: state.run_id },
     });
     assert.deepEqual(state.run, expected);
+    await verifyEconomy(p, contract.accountId, state);
     const gas = (raw.receipts_outcome || []).reduce(
       (n, o) => n + BigInt(o.outcome.gas_burnt),
       0n,
@@ -176,6 +211,7 @@ try {
   }
   assert.equal(state.run.finished, true);
   assert.deepEqual(state.run.partnerships, []);
+  const economyProof = await verifyEconomy(p, contract.accountId, state);
   const board = await p.callFunction({
     contractId: contract.accountId,
     method: "get_leaderboard",
@@ -228,7 +264,7 @@ try {
     display_name: "Bob",
   });
   const buyer = await call(bob, "create_run", {
-    challenge_id: "moonpark-v4",
+    challenge_id: "moonpark-v5",
     request_id: "buyer",
   });
   await assert.rejects(() =>
@@ -292,6 +328,50 @@ try {
     creatorEarnings: earned,
     privateCallbackRejected: true,
     duplicateLicenseRefunded: true,
+  };
+  // Transfers unlock only after closing. Failed receiver calls refund fully.
+  await call(
+    bob,
+    "register_asset_storage",
+    { token_id: `${state.run_id}:credits` },
+    10000000000000000000000n,
+  );
+  const originalBalance = economyProof.wallets.find((w) => w.role === "park")
+    .balances[0];
+  const transferArgs = {
+    receiver_id: bob.accountId,
+    token_id: `${state.run_id}:credits`,
+    amount: "100",
+    approval: null,
+    memo: null,
+  };
+  const unused = await call(
+    alice,
+    "mt_transfer_call",
+    { ...transferArgs, msg: "refund-test" },
+    1n,
+  );
+  assert.deepEqual(unused, ["0"]);
+  assert.equal(
+    await call(alice, "mt_balance_of", {
+      account_id: alice.accountId,
+      token_id: transferArgs.token_id,
+    }),
+    originalBalance,
+  );
+  await call(alice, "mt_transfer", transferArgs, 1n);
+  assert.equal(
+    await call(bob, "mt_balance_of", {
+      account_id: bob.accountId,
+      token_id: transferArgs.token_id,
+    }),
+    "100",
+  );
+  const transferProof = {
+    receiver: bob.accountId,
+    token_id: transferArgs.token_id,
+    amount: "100",
+    failedReceiverRefunded: true,
   };
   const cutoff = 1795046340000000000n;
   let finalHeader = (await p.viewBlock({ finality: "final" })).header;
@@ -371,6 +451,8 @@ try {
         score: state.run.score,
         leaderboard: board,
         ownershipProof,
+        economyProof,
+        transferProof,
       },
       null,
       2,

@@ -102,26 +102,33 @@ fn closed_round_rejects_actions() {
     assert!(r.apply(&[cmd("sell", 1)], 0).is_err());
 }
 #[test]
-fn a_struggling_tenant_can_reopen_after_investment() {
+fn an_idle_vendor_remains_viable_without_bailouts() {
     let mut r = Run::new();
     r.apply(&[cmd("toggle", 2)], 0).unwrap();
+    let cash = r.buildings[1].cash;
     for _ in 0..46 {
         r.apply(&[], 10).unwrap();
     }
-    assert!(r.buildings[1].insolvent);
-    let before = r.total_money();
-    r.apply(
-        &[Command {
-            kind: "invest".into(),
-            building: 2,
-            value: 10000,
-            ..Default::default()
-        }],
-        0,
-    )
-    .unwrap();
     assert!(!r.buildings[1].insolvent);
-    assert_eq!(r.total_money(), before);
+    assert_eq!(r.buildings[1].cash, cash);
+    r.apply(&[cmd("toggle", 2)], 0).unwrap();
+    assert!(r.buildings[1].powered);
+    assert_eq!(r.total_money(), r.money_supply);
+    for kind in ["rent", "invest"] {
+        let before = r.hash.clone();
+        assert!(r
+            .apply(
+                &[Command {
+                    kind: kind.into(),
+                    building: 2,
+                    value: 10000,
+                    ..Default::default()
+                }],
+                0
+            )
+            .is_err());
+        assert_eq!(r.hash, before);
+    }
 }
 #[test]
 fn paths_can_be_removed_and_reconnected() {
@@ -329,4 +336,26 @@ fn recommendations_change_bookings_and_conserve_guest_budgets() {
         4
     );
     assert_eq!(poor.total_money(), poor.money_supply);
+}
+
+#[test]
+fn eight_building_types_include_only_two_merchants_and_automatic_maintenance() {
+    assert_eq!(catalog::CATALOG.len(), 8);
+    assert_eq!(
+        catalog::CATALOG.iter().filter(|a| tenant(a.kind)).count(),
+        2
+    );
+    let mut r = Run::new();
+    r.apply(&[build("depot", 27, 17), cmd("connect", 3)], 0)
+        .unwrap();
+    r.buildings[0].condition = 40;
+    let before = r.cash;
+    r.apply(&[], 15).unwrap();
+    assert_eq!(r.buildings[2].served, 1);
+    assert_eq!(r.buildings[2].cash, 0);
+    assert_eq!(r.buildings[2].stock, 0);
+    assert_eq!(r.cash, before - catalog::REPAIR_FEE);
+    assert_eq!(r.consumed[2], 1);
+    assert_eq!(r.supplies[2], 2047);
+    assert_eq!(r.total_money(), r.money_supply);
 }

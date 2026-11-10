@@ -127,8 +127,12 @@ pub fn ride(kind: &str) -> bool {
     matches!(kind, "bounce" | "wheel" | "rover" | "coaster")
 }
 pub fn tenant(kind: &str) -> bool {
-    matches!(kind, "food" | "drink" | "depot")
+    matches!(kind, "food" | "drink")
 }
+// Fixed terms keep vendor finances automatic. Costs are charged on a sale, never while idle.
+pub const VENDOR_RENT: u8 = 10;
+pub const SHOP_OVERHEAD: i64 = 50;
+pub const REPAIR_FEE: i64 = 1000;
 pub fn merchant_price(kind: &str, stock: u16, recent: u16) -> i64 {
     let base = if kind == "food" { 500 } else { 400 };
     base + if stock < 5 {

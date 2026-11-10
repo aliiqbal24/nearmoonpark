@@ -6,16 +6,28 @@ type Exports = {
   sim_free: (p: number, n: number) => void;
   sim_call: (p: number, n: number) => bigint;
 };
-let loading: Promise<Exports> | undefined;
-export async function engine() {
-  return (loading ??= (async () => {
-    const r = await fetch(`/engine/moon.wasm?v=${VERSION}`);
-    if (!r.ok) throw Error("Moonpark engine could not load.");
-    return new WebAssembly.Instance(
-      await WebAssembly.compile(await r.arrayBuffer()),
-      {},
-    ).exports as Exports;
-  })());
+const loading = new Map<string, Promise<Exports>>();
+export async function engine(version = VERSION) {
+  if (version !== VERSION && version !== "moonpark-v4")
+    throw Error("This park uses an unsupported engine version.");
+  let result = loading.get(version);
+  if (!result) {
+    result = (async () => {
+      const path =
+        version === "moonpark-v4"
+          ? "/engine/moon-v4.wasm"
+          : "/engine/moon.wasm";
+      const r = await fetch(`${path}?v=${version}`);
+      if (!r.ok) throw Error("Moonpark engine could not load.");
+      return new WebAssembly.Instance(
+        await WebAssembly.compile(await r.arrayBuffer()),
+        {},
+      ).exports as Exports;
+    })();
+    loading.set(version, result);
+    void result.catch(() => loading.delete(version));
+  }
+  return result;
 }
 export async function simulate(input: {
   op: "new" | "step";
@@ -23,7 +35,7 @@ export async function simulate(input: {
   commands?: Command[];
   ticks?: number;
 }): Promise<Run> {
-  const e = await engine(),
+  const e = await engine(input.run?.version),
     bytes = new TextEncoder().encode(JSON.stringify(input)),
     p = e.sim_alloc(bytes.length);
   new Uint8Array(e.memory.buffer, p, bytes.length).set(bytes);

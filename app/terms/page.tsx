@@ -53,7 +53,7 @@ export default function Terms() {
         eligibility review and mainnet payment described above.
       </p>
       <p>
-        Parks are recorded on the current Moonpark v4 NEAR testnet contract. A
+        Parks are recorded on the current Moonpark v5 NEAR testnet contract. A
         generated game account initially owns its park. Claiming requires the
         nominated wallet account to sign acceptance onchain. The authorized game
         account may update the park, publish designs and rotate its sponsored
@@ -65,8 +65,10 @@ export default function Terms() {
         stay with their recipient when park ownership changes. These testnet
         tokens have no cash value. Earlier v3 concession ownership and funded
         claims remain accessible through the earlier-claims page. At the v4
-        transition, the v3 eligible prize board was empty. The current giveaway
-        uses the separate v4 challenge and its published rules.
+        transition, the v3 eligible prize board was empty. Earlier v4 parks,
+        licenses and earnings remain accessible through the earlier-parks desk.
+        Saved unfinished v4 rounds use their original engine and contract. The
+        current giveaway uses the separate v5 challenge and its published rules.
       </p>
       <a href="/">Return to Moonpark</a>
     </main>

@@ -1,8 +1,13 @@
 {
-  "contractId": "game.moonpark-mw65jiya.testnet",
+  "contractId": "game.moonpark-mwam94si.testnet",
   "rpcUrl": "https://test.rpc.fastnear.com",
   "fallbackRpcUrl": "https://rpc.testnet.near.org",
-  "codeHash": "HXVUbBWAQLD4znnbzs97RdPz2y664QCYRBmKCkHJVHWy",
+  "codeHash": "G9Xs4xBpk4bWbDp8ZCK2UbkFPJ84xqXKZsxheB3oYHum",
   "network": "testnet",
-  "immutable": true
+  "immutable": true,
+  "vendors": {
+    "omar": "omar.moonpark-mwam94si.testnet",
+    "mina": "mina.moonpark-mwam94si.testnet",
+    "logistics": "logistics.moonpark-mwam94si.testnet"
+  }
 }

@@ -187,10 +187,11 @@ impl Moonpark {
     pub fn get_merchant_wallets(&self, run_id: String) -> serde_json::Value {
         let record = self.get_run(run_id.clone());
         let run: Run = serde_json::from_value(record["run"].clone()).unwrap();
-        let wallets:Vec<_>=run.buildings.iter().filter(|b|moonpark_sim::catalog::tenant(&b.kind)).map(|b|{
-            serde_json::json!({"id":format!("{run_id}:business:{}",b.id),"kind":b.kind,"cash_credits_cents":b.cash,"stock":b.stock,"incoming_stock":b.delivery_qty,"price_credits_cents":b.price,"revenue_share_percent":b.rent,"reason":b.reason,"insolvent":b.insolvent,"custody":"contract-managed"})
+        let wallets: Vec<_> = run.buildings.iter().filter(|b|moonpark_sim::catalog::tenant(&b.kind)).map(|b| {
+            let account_id = self.vendor_id(if b.kind == "food" { "omar" } else { "mina" });
+            serde_json::json!({"id":format!("{run_id}:business:{}",b.id),"account_id":account_id,"kind":b.kind,"branch_cash_credits_cents":b.cash,"stock":b.stock,"incoming_stock":b.delivery_qty,"price_credits_cents":b.price,"revenue_share_percent":b.rent,"reason":b.reason,"custody":"signed_deterministic_policy","wallet_balances":self.mt_batch_balance_of(account_id,(0..4).map(|a|format!("{run_id}:{}",economy::ASSETS[a])).collect())})
         }).collect();
-        serde_json::json!({"run_id":run_id,"wallets":wallets,"currency":"lunar game credits","independent_access_keys":false})
+        serde_json::json!({"run_id":run_id,"wallets":wallets,"currency":"opening-day lunar credit tokens","independent_access_keys":true,"policy":self.get_vendor_policy()})
     }
     pub fn claim_business_reward(&mut self, token_id: String) -> Promise {
         assert!(

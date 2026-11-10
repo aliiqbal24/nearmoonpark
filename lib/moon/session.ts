@@ -96,9 +96,9 @@ export class ParkSession {
       config: Config | null;
     } | null;
     if (!saved) return null;
-    if (saved.state.run.version !== VERSION)
+    if (![VERSION, "moonpark-v4"].includes(saved.state.run.version))
       throw Error(
-        "This saved park uses the previous rules. Start a new opening day to try the park ownership and signature rides.",
+        "This saved park uses the previous rules. Start a new opening day for the automatic vendor wallets. Earlier parks remain available in the archive.",
       );
     let record = saved.state.record;
     if (record && saved.config)
@@ -164,7 +164,7 @@ export class ParkSession {
           last &&
           last.ticks === 0 &&
           last.commands.length === 1 &&
-          ["price", "rent", "launch"].includes(command.kind) &&
+          ["price", "launch"].includes(command.kind) &&
           last.commands[0].kind === command.kind &&
           last.commands[0].building === command.building
         )

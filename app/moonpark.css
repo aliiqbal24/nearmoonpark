@@ -3531,3 +3531,14 @@ button.mp-chain .mp-near-mark svg {
   background: transparent;
   color: #c1f2d5;
 }
+
+.mp-vendor-wallets { margin: 16px 0; padding: 14px; border: 1px solid #45756e33; border-radius: 14px; background: #70d5bd0c; }
+.mp-vendor-wallets summary { display: flex; gap: 9px; align-items: center; cursor: pointer; font-weight: 700; }
+.mp-vendor-wallets summary .mp-near-mark, .mp-vendor-link .mp-near-mark { width: 18px; }
+.mp-vendor-wallets summary .mp-near-mark svg, .mp-vendor-link .mp-near-mark svg { width: 16px; height: 16px; }
+.mp-wallet-list { display: grid; gap: 12px; margin: 14px 0; }
+.mp-wallet-list > div { display: grid; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid #45756e22; }
+.mp-wallet-list a, .mp-vendor-link { display: flex; align-items: center; gap: 6px; font-size: 12px; overflow-wrap: anywhere; }
+.mp-wallet-list strong { font-size: 14px; }
+.mp-wallet-list small { font-size: 11px; opacity: .75; }
+.mp-vendor-link { margin: 12px 0; }

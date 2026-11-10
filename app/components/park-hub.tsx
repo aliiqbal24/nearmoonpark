@@ -73,6 +73,7 @@ export function ParkHub({
   const accountId = credentials?.accountId;
   const credentialIdentity = credentials?.identity;
   const ownerCredentials = cfg && park ? credentialsFor(cfg, park.owner) : null;
+  const versionQuery = cfg?.archivedVersion === "v4" ? "?version=v4" : "";
   const loadKey = `${cfg?.contractId ?? "local"}:${accountId ?? "guest"}`;
   const loading = loadedFor !== loadKey;
   const refresh = useCallback(async () => {
@@ -335,7 +336,7 @@ export function ParkHub({
               </div>
               <a
                 className="mp-secondary full"
-                href={`/park/${park.owner}`}
+                href={`/park/${park.owner}${versionQuery}`}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -640,7 +641,7 @@ export function ParkHub({
                   <img src={`/art/${b.kind}-v1.webp`} alt="" />
                   <strong>{b.name}</strong>
                   <a
-                    href={`/park/p-${b.park_id}`}
+                    href={`/park/p-${b.park_id}${versionQuery}`}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -732,7 +733,7 @@ export function ParkHub({
                 </span>
                 <a
                   className="mp-primary"
-                  href={`/park/${p.owner}`}
+                  href={`/park/${p.owner}${versionQuery}`}
                   target="_blank"
                   rel="noreferrer"
                 >
