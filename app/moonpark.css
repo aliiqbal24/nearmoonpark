@@ -3593,3 +3593,62 @@ button.mp-chain .mp-near-mark svg {
   flex: 1;
   margin: 0;
 }
+
+.mp-film-credit {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #fff4dc;
+  white-space: nowrap;
+}
+.mp-film-credit .mp-near-mark svg {
+  width: 42px;
+  height: 42px;
+}
+.mp-film-credit .mp-near-mark b {
+  font-size: 40px;
+  letter-spacing: -2px;
+}
+.mp-film-credit > span {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #b3f2d8;
+}
+.mp-film-credit small {
+  display: block;
+  margin-top: 6px;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: #fff4dc;
+}
+.mp-cinema-top > button {
+  margin-left: auto;
+}
+.mp-intro-captions.is-finale h1 {
+  font-size: clamp(52px, 8vw, 110px);
+  line-height: 0.95;
+  letter-spacing: -4px;
+}
+@media (max-width: 800px) {
+  .mp-film-credit {
+    gap: 9px;
+  }
+  .mp-film-credit .mp-near-mark svg {
+    width: 25px;
+    height: 25px;
+  }
+  .mp-film-credit .mp-near-mark b {
+    font-size: 27px;
+  }
+  .mp-film-credit > span {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  .mp-film-credit small {
+    font-size: 5px;
+    letter-spacing: 0.5px;
+  }
+}

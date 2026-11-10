@@ -25,7 +25,7 @@ The articulated visitor rig has human faces, six skin and hair combinations, hel
 
 Omar and Mina stand behind their service counters. Nia works inside Lunar Care. The delivery robot has treaded wheels, a face display, antenna, grippers and a cargo tray. Its wheels turn during deliveries and servicing.
 
-The arrival plaza has a curved entrance gantry, glazed terminal wings, planted pressure domes, brass lamps, seating, luggage, a compass inlay and a flight board driven by the shuttle phase. The transit rocket has a shaped nose and hull, swept fins, framed portholes, hull seams, fasteners, landing pistons and engine bells. Its passenger hatch faces the actual boarding route. Existing landing, unloading and departure timing drives the scene.
+The arrival plaza has a curved entrance gantry, glazed terminal wings, planted pressure domes, brass lamps, seating, luggage, a compass inlay and a flight board driven by the shuttle phase. The official NEAR mark appears on the spacecraft, docking-pad inlay, entrance, transit banners, launch station and crew patches. The transit rocket has a shaped nose and hull, swept fins, framed portholes, hull seams, fasteners, landing pistons and engine bells. Its passenger hatch faces the actual boarding route. Existing landing, unloading and departure timing drives the scene.
 
 ## Terrain, materials and cameras
 
@@ -41,6 +41,7 @@ Hardware rendering uses separately bounded desktop and mobile resolution. Sustai
 
 ## Editable sources and reproduction
 
+- `lib/near-brand.ts` shares the official mark between the interface and 3D artwork. `public/art/near-protocol-film-v1.svg` supplies the baked movie credit.
 - `lib/moon/art-kit.ts` contains shared geometry, material finishes, signs, batching and resource ownership.
 - `lib/moon/characters.ts` contains the articulated visitor rig.
 - `lib/moon/spacecraft.ts` contains the transit rocket and service rover.
@@ -84,8 +85,8 @@ The Earth texture is bundled from the [Three.js examples](https://threejs.org/ex
 
 ## November 10 verification
 
-The production build, TypeScript checks and focused source lint pass. All 17 simulation and 35 contract tests pass. All 18 routine browser cases pass in the production build with software rendering, including a complete opening day, first landing, three-family customization, reload recovery, movie playback and fallback, compact screens, sound, public parks and archived v4 saves. The same 18 cases were exercised with hardware rendering, with the movie playback case repeated after its final encode completed. Four optional transaction-spending browser cases retain their existing opt-in gate.
+The production build, TypeScript checks and focused source lint pass. All 17 simulation and 35 contract tests pass. All 18 routine browser cases pass in the production build with software rendering, including a complete opening day, first landing, three-family customization, reload recovery, movie playback and fallback, compact screens, sound, public parks and archived v4 saves. After the final NEAR-branded film encode, all 18 cases passed again with hardware rendering. Four focused software cases also passed again for complete-day play, final-film playback, movie failure fallback and compact-screen entry. Four optional transaction-spending browser cases retain their existing opt-in gate.
 
-Both complete delivery videos decode for all 1,200 frames at 30 fps and 40 seconds. Desktop is 1920 by 1080, and mobile is 720 by 1280. Exported spacecraft, founder, robot, overview and front-seat frames were inspected. The original audio master measures −18.0 LUFS integrated and −4.3 dBTP in delivery. A new subjective listening session was outside this visual pass.
+Both complete delivery videos decode for all 1,200 frames at 30 fps and 40 seconds. Desktop is 1920 by 1080, and mobile is 720 by 1280. The v5 brand pass re-renders both full timelines and includes the NEAR credit inside the delivered movies. Exported spacecraft, founder, robot, overview and front-seat frames were inspected. The original audio master measures approximately −18.1 LUFS integrated and −4.3 dBTP in delivery. A new subjective listening session was outside this visual pass.
 
-An isolated populated scene at 1600 by 1000 on the local RTX 5080 measured about 6.2–7.2 ms per frame across two 60-frame passes, with a GPU finish after each frame. The earlier unmerged scene measured about 8.6 ms in the same authoring harness. These are workstation world-render measurements. Physical-phone performance is outstanding. Compact viewport layout and portrait movie playback are covered by browser checks.
+An isolated populated scene at 1600 by 1000 on the local RTX 5080 measured about 6.2–7.2 ms per frame across two 60-frame passes, with a GPU finish after each frame. The earlier unmerged scene measured about 8.6 ms in the same authoring harness. These are workstation world-render measurements. Physical-phone performance still needs testing. Compact viewport layout and portrait movie playback are covered by browser checks.

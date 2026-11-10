@@ -49,15 +49,19 @@ export function cinematicPose(
     const u = (t - 14) / 7;
     position = path(
       [
-        [-20, 6, 24],
-        [-11, 9, 24],
-        [10, 11, 25],
+        [0, 1.55, 20.6],
+        [4, 3.8, 21],
+        [12, 6.5, 21],
         [23, 13, 17],
       ],
       u,
     );
-    target = new T.Vector3(-1, 1.5, -1);
-    fov = 48;
+    target = new T.Vector3(
+      -0.6 - ease(u) * 0.4,
+      T.MathUtils.lerp(2, 1.5, ease(u)),
+      T.MathUtils.lerp(8, -1, ease(u)),
+    );
+    fov = T.MathUtils.lerp(52, 48, ease(u));
   } else if (t < 29 && coaster) {
     const u = 0.055 + ease((t - 21) / 8) * 0.79;
     position = coaster.curve.getPointAt(u % 1);

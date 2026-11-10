@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "duration": 40,
   "fps": 30,
   "frames": 1200,
@@ -12,20 +12,21 @@
   "score": "Original Moonpark score and synthesized effects",
   "cameraSource": "lib/moon/cinema.ts",
   "sceneSource": "lib/moon/world.ts",
+  "brandSource": "public/art/near-protocol-film-v1.svg",
   "variants": [
     {
-      "file": "/video/moonpark-opening-v4.mp4",
+      "file": "/video/moonpark-opening-v5.mp4",
       "width": 1920,
       "height": 1080,
-      "bytes": 16941846,
-      "sha256": "0916ccf5693f99e4242aeab7c6f345d36a28c1b0795b16f7693aa8c746035ef5"
+      "bytes": 16967009,
+      "sha256": "c73a9425ec8f94ec79b392c924e29a869da6a3e922c7f79ecc76e973c8ee613e"
     },
     {
-      "file": "/video/moonpark-opening-v4-mobile.mp4",
+      "file": "/video/moonpark-opening-v5-mobile.mp4",
       "width": 720,
       "height": 1280,
-      "bytes": 8922160,
-      "sha256": "a9cd96068f1d32b8a94b0dec4fae0f295e5efc0d7565a2df0dd75b631d1a90f2"
+      "bytes": 8863145,
+      "sha256": "ca98bf973a363b882a5b6202b4c20b3a4c6c9e9be643a2f208f2daa1be5d2558"
     }
   ]
 }

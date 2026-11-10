@@ -2,6 +2,7 @@ import * as T from "three";
 import type { Building } from "./model";
 import {
   palette,
+  nearMark,
   material,
   metal,
   fabric,
@@ -407,6 +408,10 @@ export function massDriver(
       c.accent,
     );
   }
+  const protocol = label("NEAR LAUNCH SYSTEMS", "#b0efd5", 2.1);
+  protocol.position.set(0.16, 1.13, 1.04);
+  station.add(protocol);
+  nearMark(station, c.primary, 0.29).position.set(-1.09, 1.13, 1.05);
   g.add(station);
   const moving = new T.Group();
   moving.userData.animated = true;

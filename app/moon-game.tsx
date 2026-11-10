@@ -613,7 +613,7 @@ export default function Game() {
   const introBeat =
     introTime < 6
       ? {
-          k: "A LITTLE FARTHER FROM ORDINARY",
+          k: "A NEAR PROTOCOL PRESENTATION",
           title: "We came here to build a future.",
           text: "384,000 kilometres from the everyday.",
         }
@@ -648,9 +648,9 @@ export default function Game() {
                     text: "Some jobs are bigger than they look.",
                   }
                 : {
-                    k: "YOUR PARK. YOUR OPENING DAY.",
-                    title: "Give the Moon a reason to smile.",
-                    text: "Build something worth coming back for.",
+                    k: "YOUR PARK. YOUR CREATIONS. ON NEAR.",
+                    title: "MOONPARK",
+                    text: "Your ideas. Your park. A NEAR future.",
                   };
   const activeConfig =
     snapshot?.run.version === "moonpark-v4" ? (archivedV4 as Config) : cfg;
@@ -679,7 +679,7 @@ export default function Game() {
       <video
         ref={videoRef}
         className={`mp-opening-film ${screen === "intro" && !videoFailed ? "playing" : ""} ${introLeaving ? "leaving" : ""}`}
-        poster="/video/moonpark-opening-v4-poster.jpg"
+        poster="/video/moonpark-opening-v5-poster.jpg"
         preload="auto"
         playsInline
         muted={muted}
@@ -694,12 +694,12 @@ export default function Game() {
         }}
       >
         <source
-          src="/video/moonpark-opening-v4-mobile.mp4"
+          src="/video/moonpark-opening-v5-mobile.mp4"
           media="(max-width: 800px)"
           type="video/mp4"
         />
         <source
-          src="/video/moonpark-opening-v4.mp4"
+          src="/video/moonpark-opening-v5.mp4"
           type="video/mp4"
           onError={() => setVideoFailed(true)}
         />
@@ -707,7 +707,7 @@ export default function Game() {
       {screen === "intro" && !videoFailed && (
         <img
           className="mp-opening-still"
-          src="/video/moonpark-opening-v4-poster.jpg"
+          src="/video/moonpark-opening-v5-poster.jpg"
           alt="A lunar park under the stars"
         />
       )}
@@ -847,9 +847,16 @@ export default function Game() {
       {screen === "intro" && (
         <div className="mp-intro">
           <div className="mp-cinema-top">
-            <span className="mp-wordmark">
-              MOONPARK <small>A NEAR FUTURE</small>
-            </span>
+            <div className="mp-film-credit">
+              {videoFailed && (
+                <>
+                  <NearMark word />
+                  <span>
+                    PROTOCOL<small>PRESENTS MOONPARK</small>
+                  </span>
+                </>
+              )}
+            </div>
             <button
               onClick={toggleAudio}
               aria-label={muted ? "Enable sound" : "Mute sound"}
@@ -857,7 +864,10 @@ export default function Game() {
               {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
           </div>
-          <div className="mp-intro-captions" key={introBeat.k}>
+          <div
+            className={`mp-intro-captions${introTime >= 35 ? " is-finale" : ""}`}
+            key={introBeat.k}
+          >
             <span className="mp-eyebrow">{introBeat.k}</span>
             <h1>{introBeat.title}</h1>
             <p>{introBeat.text}</p>

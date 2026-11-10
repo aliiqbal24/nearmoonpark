@@ -484,6 +484,9 @@ test("opening film decodes, advances smoothly and hands over to the park", async
     .getByRole("button", { name: "Practice offline", exact: true })
     .click();
   await expect(video).toHaveClass(/playing/);
+  await expect(
+    page.getByText("A NEAR PROTOCOL PRESENTATION", { exact: true }),
+  ).toBeVisible();
   await expect
     .poll(() => video.evaluate((e: HTMLVideoElement) => e.currentTime), {
       timeout: 10000,
@@ -499,6 +502,21 @@ test("opening film decodes, advances smoothly and hands over to the park", async
   await video.evaluate((e: HTMLVideoElement) => (e.currentTime = 15));
   await page.waitForTimeout(600);
   await page.screenshot({ path: "outputs/moon-opening-playback.png" });
+  await video.evaluate((e: HTMLVideoElement) => (e.currentTime = 36));
+  await expect(page.locator(".mp-intro-captions.is-finale h1")).toHaveText(
+    "MOONPARK",
+  );
+  await expect(
+    page.getByText("YOUR PARK. YOUR CREATIONS. ON NEAR.", { exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .locator(".mp-intro-captions.is-finale")
+        .evaluate((element) => getComputedStyle(element).opacity),
+    )
+    .toBe("1");
+  await page.screenshot({ path: "outputs/moon-opening-near-finale.png" });
   await page.getByRole("button", { name: "Skip intro" }).click();
   await expect(
     page.getByRole("button", { name: "Build Mass-Driver Coaster" }),

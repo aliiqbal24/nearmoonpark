@@ -143,7 +143,7 @@ export class MoonWorld {
     this.renderer.shadowMap.type = T.PCFShadowMap;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.98;
+    this.renderer.toneMappingExposure = 0.94;
     host.appendChild(this.renderer.domElement);
     this.renderer.autoClear = false;
     this.renderer.setClearColor("#03060c");
@@ -190,7 +190,7 @@ export class MoonWorld {
     }
     this.rideNose.visible = false;
     this.camera.add(this.rideNose);
-    this.scene.add(new T.HemisphereLight("#c7deee", "#586269", 0.62));
+    this.scene.add(new T.HemisphereLight("#c7deee", "#586269", 0.55));
     const sun = new T.DirectionalLight("#ffecd0", 3.4);
     this.sun = sun;
     sun.position.copy(SUN_DIRECTION).multiplyScalar(60);
@@ -375,7 +375,7 @@ export class MoonWorld {
       cinematic === null && rideId === null && !this.attractMode;
     if (returnToPark) {
       this.home();
-      this.renderer.toneMappingExposure = 0.98;
+      this.renderer.toneMappingExposure = 0.94;
     }
     if (this.run !== run) {
       this.run = run;
@@ -1087,9 +1087,14 @@ export class MoonWorld {
     this.camera.up.copy(pose.up);
     this.camera.position.copy(pose.position);
     this.camera.lookAt(pose.target);
-    this.camera.fov = pose.fov;
+    let lens = pose.fov;
+    if (this.camera.aspect < 0.85) {
+      if (t >= 14 && t < 21) lens *= 1.6;
+      if (t >= 35) lens *= 1.45;
+    }
+    this.camera.fov = Math.min(82, lens);
     this.camera.updateProjectionMatrix();
-    this.renderer.toneMappingExposure = 0.98 * pose.fade;
+    this.renderer.toneMappingExposure = 0.94 * pose.fade;
   }
   private animateShuttle(t: number) {
     const phase = t % 40,
@@ -1160,7 +1165,7 @@ export class MoonWorld {
     this.paused = value;
     if (!value) {
       this.last = performance.now();
-      this.renderer.toneMappingExposure = 0.98;
+      this.renderer.toneMappingExposure = 0.94;
     }
   }
   setAttractMode(value: boolean) {

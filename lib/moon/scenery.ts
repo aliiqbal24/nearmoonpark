@@ -1,8 +1,10 @@
 import * as T from "three";
+import { NEAR_MARK_PATH } from "../near-brand";
 import {
   SCALE,
   artSegments,
   palette,
+  nearMark,
   box,
   sphere,
   cylinder,
@@ -359,12 +361,22 @@ function padArtwork() {
   p.beginPath();
   p.arc(512, 512, 33, 0, Math.PI * 2);
   p.fill();
-  p.font = "700 22px sans-serif";
+  p.fillStyle = "#233f47";
+  p.beginPath();
+  p.arc(512, 512, 142, 0, Math.PI * 2);
+  p.fill();
+  p.save();
+  p.translate(512 - 112, 512 - 112);
+  p.scale(14, 14);
+  p.fillStyle = "#efe2bd";
+  p.fill(new Path2D(NEAR_MARK_PATH));
+  p.restore();
   p.textAlign = "center";
-  p.fillStyle = "#d8e4dd";
-  p.fillText("LUNAR TRANSIT  /  01", 512, 805);
-  p.font = "600 15px sans-serif";
-  p.fillText("A NEAR FUTURE", 512, 835);
+  p.font = "800 52px sans-serif";
+  p.fillStyle = "#fff0d7";
+  p.fillText("NEAR PROTOCOL", 512, 808);
+  p.font = "600 21px sans-serif";
+  p.fillText("LUNAR TRANSIT / 01", 512, 846);
   const map = new T.CanvasTexture(canvas);
   map.colorSpace = T.SRGBColorSpace;
   map.anisotropy = 8;
@@ -457,6 +469,16 @@ export function spaceport(scene: T.Scene) {
   gate.add(sign);
   ellipsoid(gate, "#f3dca5", 0, 4.52, 0.1, 0.3, 0.26, 0.1);
   ring(gate, palette.gold, 0.43, 0.026, 0, 4.51, 0.12, false).scale.y = 0.5;
+  const protocol = label("POWERED BY NEAR PROTOCOL", "#aff0d5", 3.0);
+  protocol.position.set(0, 2.88, 0.68);
+  protocol.scale.y = 0.34;
+  for (const x of [-1.1, 1.1])
+    box(gate, palette.gold, x, 3.12, 0.65, 0.03, 0.22, 0.04).material = metal(
+      palette.gold,
+    );
+  gate.add(protocol);
+  for (const x of [-2.45, 2.45])
+    nearMark(gate, palette.gold, 0.24).position.set(x, 0.5, 0.53);
   port.add(gate);
   for (const side of [-1, 1]) {
     const wing = new T.Group();
@@ -501,6 +523,31 @@ export function spaceport(scene: T.Scene) {
     ring(caseGroup, palette.gold, 0.07, 0.018, 0, 0.75, 0, false).scale.y = 0.7;
     box(caseGroup, palette.ivory, 0, 0.45, 0.15, 0.04, 0.42, 0.02);
     port.add(caseGroup);
+  }
+  for (const side of [-1, 1]) {
+    const banner = new T.Group();
+    banner.position.set(side * 6.0, 0, 19.45);
+    cylinder(banner, palette.navy, 0, 0.12, 0, 0.25, 0.24);
+    cylinder(banner, palette.gold, 0, 1.4, 0, 0.035, 2.6).material = metal(
+      palette.gold,
+    );
+    shapedBox(
+      banner,
+      palette.gold,
+      0,
+      2.02,
+      0,
+      1.05,
+      1.61,
+      0.085,
+      0.14,
+    ).material = metal(palette.gold);
+    shapedBox(banner, palette.navy, 0, 2.02, 0.06, 0.98, 1.54, 0.08, 0.12);
+    nearMark(banner, "#a8efd3", 0.51).position.set(0, 2.28, 0.12);
+    const brand = label("NEAR", palette.ivory, 0.77);
+    brand.position.set(0, 1.7, 0.12);
+    banner.add(brand);
+    port.add(banner);
   }
   const board = new T.Group();
   board.position.set(-3.5, 0, 20.1);

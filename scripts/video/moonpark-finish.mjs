@@ -17,14 +17,22 @@ const verifyOnly = process.argv.includes("--verify-only");
 const delivery = verifyOnly
   ? "public/video"
   : await mkdtemp("outputs/moonpark-cinema/delivery-");
-const desktop = `${delivery}/moonpark-opening-v4.mp4`,
-  mobile = `${delivery}/moonpark-opening-v4-mobile.mp4`;
+const desktop = `${delivery}/moonpark-opening-v5.mp4`,
+  mobile = `${delivery}/moonpark-opening-v5-mobile.mp4`;
 if (!verifyOnly) {
   run([
     "-i",
     "outputs/moonpark-cinema/picture-master.mp4",
     "-i",
     "outputs/moonpark-cinema/score-master.wav",
+    "-i",
+    "public/art/near-protocol-film-v1.svg",
+    "-filter_complex",
+    "[2:v]scale=360:-1[brand];[0:v][brand]overlay=(W-w)/2:H*0.075:format=auto[branded]",
+    "-map",
+    "[branded]",
+    "-map",
+    "1:a:0",
     "-c:v",
     "libx264",
     "-threads",
@@ -58,8 +66,12 @@ if (!verifyOnly) {
     "outputs/moonpark-cinema/picture-mobile-master.mp4",
     "-i",
     desktop,
+    "-i",
+    "public/art/near-protocol-film-v1.svg",
+    "-filter_complex",
+    "[2:v]scale=300:-1[brand];[0:v][brand]overlay=(W-w)/2:H*0.075:format=auto[branded]",
     "-map",
-    "0:v:0",
+    "[branded]",
     "-map",
     "1:a:0",
     "-c:v",
@@ -91,7 +103,7 @@ if (!verifyOnly)
     "1",
     "-q:v",
     "2",
-    `${delivery}/moonpark-opening-v4-poster.jpg`,
+    `${delivery}/moonpark-opening-v5-poster.jpg`,
   ]);
 const variants = [];
 for (const [file, width, height] of [
@@ -129,7 +141,7 @@ if (!verifyOnly) {
     `${delivery}/moonpark-opening.json`,
     JSON.stringify(
       {
-        version: 4,
+        version: 5,
         duration: 40,
         fps: 30,
         frames: 1200,
@@ -142,6 +154,7 @@ if (!verifyOnly) {
         score: "Original Moonpark score and synthesized effects",
         cameraSource: "lib/moon/cinema.ts",
         sceneSource: "lib/moon/world.ts",
+        brandSource: "public/art/near-protocol-film-v1.svg",
         variants,
       },
       null,
@@ -152,7 +165,7 @@ if (!verifyOnly) {
   for (const file of [
     desktop,
     mobile,
-    `${delivery}/moonpark-opening-v4-poster.jpg`,
+    `${delivery}/moonpark-opening-v5-poster.jpg`,
     `${delivery}/moonpark-opening.json`,
   ]) {
     await rename(file, `public/video/${basename(file)}`);

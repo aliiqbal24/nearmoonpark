@@ -1,4 +1,6 @@
 import * as T from "three";
+import { SVGLoader } from "three/addons/loaders/SVGLoader.js";
+import { NEAR_MARK_PATH } from "../near-brand";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 export const SCALE = 1.25;
@@ -48,6 +50,35 @@ const sharedGeometries = new Set<T.BufferGeometry>([
   compactSphereGeo,
   compactCylinderGeo,
 ]);
+
+let nearGeometry: T.BufferGeometry | undefined;
+export function nearMark(parent: T.Object3D, color: string, width = 1) {
+  if (!nearGeometry) {
+    const svg = new SVGLoader().parse(
+      `<svg xmlns="http://www.w3.org/2000/svg"><path d="${NEAR_MARK_PATH}"/></svg>`,
+    );
+    const shapes = svg.paths.flatMap((path) => SVGLoader.createShapes(path));
+    nearGeometry = new T.ExtrudeGeometry(shapes, {
+      depth: 0.35,
+      bevelEnabled: true,
+      bevelSize: 0.05,
+      bevelThickness: 0.05,
+      bevelSegments: 1,
+      steps: 1,
+      curveSegments: 8,
+    });
+    nearGeometry
+      .translate(-8, -8, 0)
+      .rotateX(Math.PI)
+      .scale(1 / 15, 1 / 15, 1 / 15);
+    sharedGeometries.add(nearGeometry);
+  }
+  const mark = new T.Mesh(nearGeometry, material(color));
+  mark.scale.setScalar(width);
+  mark.castShadow = true;
+  parent.add(mark);
+  return mark;
+}
 
 export const palette = {
   ivory: "#fff0d7",

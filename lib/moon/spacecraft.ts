@@ -1,6 +1,7 @@
 import * as T from "three";
 import {
   palette,
+  nearMark,
   material,
   metal,
   glass,
@@ -168,10 +169,11 @@ export function rocket() {
     box(door, palette.gold, x, -0.12, 0.11, 0.025, 0.36, 0.025).material =
       metal(palette.gold);
   g.add(door);
-  const emblem = label("NEAR", palette.ivory, 0.86);
-  emblem.position.set(0, 2.33, 1.002);
+  const emblem = label("NEAR", palette.ivory, 1.06);
+  emblem.position.set(0, 2.12, 1.035);
+  nearMark(g, palette.navy, 0.47).position.set(0, 2.57, 1.035);
   g.add(emblem);
-  const badge = ring(g, palette.gold, 0.53, 0.025, 0, 2.33, 0.987, false);
+  const badge = ring(g, palette.gold, 0.64, 0.025, 0, 2.4, 0.987, false);
   badge.material = metal(palette.gold);
   for (const x of [-0.36, 0.36]) {
     const nozzle = new T.Mesh(

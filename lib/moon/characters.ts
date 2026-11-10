@@ -1,6 +1,7 @@
 import * as T from "three";
 import {
   palette,
+  nearMark,
   artSegments,
   box,
   sphere,
@@ -46,7 +47,8 @@ export function astronaut(color: string, size = 1, variant = 0) {
     0.035,
     0.018,
   ).material = metal(palette.gold);
-  box(g, palette.navy, 0, 0.58, 0.204, 0.17, 0.062, 0.014);
+  shapedBox(g, palette.navy, 0, 0.6, 0.204, 0.17, 0.12, 0.015, 0.02);
+  nearMark(g, "#a7efd4", 0.085).position.set(0, 0.6, 0.22);
   for (const x of [-0.045, 0, 0.045])
     sphere(g, "#fce6a5", x, 0.52, 0.206, 0.013);
   const patch = cylinder(g, palette.gold, 0.08, 0.66, 0.202, 0.038, 0.015);

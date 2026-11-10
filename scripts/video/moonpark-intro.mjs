@@ -66,7 +66,7 @@ try {
     }, t);
   };
   if (sample) {
-    for (const t of [2, 8, 12, 16, 20, 23, 26, 30, 34, 38]) {
+    for (const t of [2, 8, 12, 15, 16, 18, 20, 23, 26, 30, 34, 38]) {
       await render(t);
       await page.screenshot({
         path: `outputs/moonpark-cinema/sample-${portrait ? "portrait-" : ""}${t}.png`,

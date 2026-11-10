@@ -1,6 +1,6 @@
 # Moonpark opening film
 
-The v4 opening is a 40-second film rendered deterministically from the game's original Three.js scene, at 1920×1080 and 30 fps. A separately rendered 720×1280 portrait variant serves smaller viewports. Both use H.264 video, stereo AAC audio and a fast-start MP4 container. The complete assets are checked in; playing the game needs no rendering tools, model download or AI service.
+The v5 opening is a 40-second film rendered deterministically from the game's original Three.js scene, at 1920×1080 and 30 fps. A separately rendered 720×1280 portrait variant serves smaller viewports. Both use H.264 video, stereo AAC audio and a fast-start MP4 container. The complete assets are checked in; playing the game needs no rendering tools, model download or AI service.
 
 The scene begins with Earth in the distant sky, follows the shuttle's approach, reveals the park, rides the mass driver, meets the founder and ends on the park's dream. Short exposure dips conceal deliberate shot changes. Camera paths ease in and out, coaster frames use updated world matrices, and the movie dissolves into the live park. The underlying WebGL renderer pauses during normal film playback. A live camera sequence remains available if video playback fails. Reduced-motion settings use a still image with the narrative text and audio.
 
@@ -8,12 +8,12 @@ Earth and stars render through a separate sky camera that copies orientation but
 
 ## Editable sources
 
-- `lib/moon/cinema.ts`: shot timing, positions, look targets, lenses and transition exposure.
-- `lib/moon/world.ts`, `assets.ts`, `scenery.ts`, `dream.ts`: scene, model integration, lighting and staged park. Editable models are split between `characters.ts`, `spacecraft.ts`, `rides.ts`, `shops.ts`, `resort-props.ts` and `art-kit.ts`.
-- `scripts/video/moonpark-intro.mjs`: deterministic browser capture and picture-master encoding.
-- `scripts/video/moonpark-score.py`: original narration script, score, effects, voice timing, ducking and fades.
-- `scripts/video/moonpark-finish.mjs`: delivery encoding, poster generation, full decode checks and manifest.
-- `app/moon-game.tsx` and `moonpark.css`: editable narrative headlines, letterboxing, sound controls, playback and the transition to gameplay.
+- `lib/moon/cinema.ts` controls shot timing, positions, look targets, lenses and transition exposure.
+- `lib/moon/world.ts`, `assets.ts`, `scenery.ts` and `dream.ts` integrate the scene, lighting and staged park. Editable models are split between `characters.ts`, `spacecraft.ts`, `rides.ts`, `shops.ts`, `resort-props.ts` and `art-kit.ts`.
+- `scripts/video/moonpark-intro.mjs` captures deterministic browser frames and encodes picture masters.
+- `scripts/video/moonpark-score.py` contains the original narration script, score, effects, voice timing, ducking and fades.
+- `scripts/video/moonpark-finish.mjs` encodes deliveries, generates the poster, checks full decoding and writes the manifest.
+- `app/moon-game.tsx` and `moonpark.css` control editable narrative headlines, letterboxing, sound controls, playback and the transition to gameplay.
 
 To regenerate pictures, start `npx vite --config scripts/game/visual-preview.config.mjs`, then run `GAME_URL=http://127.0.0.1:5174 node scripts/video/moonpark-intro.mjs`. `--sample` captures representative stills first. Run the capture a second time with `--portrait` to produce the mobile picture master. The pipeline uses the configured Chromium binary and FFmpeg; masters and QA files stay in the ignored `outputs/moonpark-cinema` directory.
 
@@ -21,16 +21,22 @@ Audio generation uses Python, NumPy and optionally `kokoro-onnx`. Set `MOON_KOKO
 
 ## Sound and provenance
 
-Narration is generated locally with Kokoro 82M v1.0, voice `bm_george`, through Kokoro ONNX. The model uses Apache-2.0 licensing: https://huggingface.co/hexgrad/Kokoro-82M . The inference wrapper is MIT: https://github.com/thewh1teagle/kokoro-onnx . The script, musical composition, rocket/rail/popcorn effects, mixing and scene are original. The bundled Three.js Earth texture is credited in `VISUALS.md`.
+Narration is generated locally with Kokoro 82M v1.0, voice `bm_george`, through Kokoro ONNX. The model uses Apache-2.0 licensing and the inference wrapper uses MIT licensing. The script, musical composition, rocket/rail/popcorn effects, mixing and scene are original. The bundled Three.js Earth texture is credited in `VISUALS.md`. [Kokoro model](https://huggingface.co/hexgrad/Kokoro-82M), [Kokoro ONNX wrapper](https://github.com/thewh1teagle/kokoro-onnx).
 
-The delivered file decodes for all 1,200 video frames. Audio analysis measured approximately −18.0 LUFS integrated loudness, −4.3 dBTP peak and 3.9 LU loudness range. Representative exported shots and browser playback are checked separately from media metadata. The spoken-line durations fit inside their intended shots. Narrative headlines follow the editable scene timing.
+The delivered file decodes for all 1,200 video frames. Audio analysis measured approximately −18.1 LUFS integrated loudness, −4.3 dBTP peak and 3.6 LU loudness range. Representative exported shots and browser playback are checked separately from media metadata. The spoken-line durations fit inside their intended shots. Narrative headlines follow the editable scene timing.
 
 ## Visual-upgrade delivery
 
-The v4 film includes the rebuilt lunar resort, glazed arrival terminal, pressure gardens, human-faced visitors, three architectural families, magnetic launch collars, warm/cool HDR lighting and smoothed coaster banking. It re-renders the complete upgraded live park with the same deterministic camera timing and original audio master. Desktop and mobile files are `public/video/moonpark-opening-v4.mp4` and `public/video/moonpark-opening-v4-mobile.mp4`. The matching still is `public/video/moonpark-opening-v4-poster.jpg`. The finish script decodes both complete exports and records their hashes in `public/video/moonpark-opening.json`. Earlier media remains in Git history and local `outputs/moonpark-cinema/v2-originals` and `v3-originals`.
+The v5 film includes the rebuilt lunar resort, glazed arrival terminal, pressure gardens, human-faced visitors, three architectural families, magnetic launch collars, warm/cool HDR lighting and smoothed coaster banking. It re-renders the complete upgraded live park with the same deterministic camera timing and original audio master. Desktop and mobile files are `public/video/moonpark-opening-v5.mp4` and `public/video/moonpark-opening-v5-mobile.mp4`. The matching still is `public/video/moonpark-opening-v5-poster.jpg`. The finish script decodes both complete exports and records their hashes in `public/video/moonpark-opening.json`. Earlier media remains in Git history and local `outputs/moonpark-cinema/v2-originals` and `v3-originals`.
 
 On this workstation, the native Chromium binary can render through the NVIDIA Vulkan backend. The verified capture command is `GAME_URL=http://127.0.0.1:5174 MOON_CAPTURE_GPU=1 CHROMIUM_PATH=/usr/lib/chromium/chromium node scripts/video/moonpark-intro.mjs`. Add `--portrait` for the mobile master. Omit these environment variables to retain the portable software-compatible path. Chromium documents headless GPU enablement at https://chromium.googlesource.com/chromium/src.git/+/main/docs/gpu/using-gpu-hardware-in-headless-chrome.md . This is a local production setting and does not change visitors' browser configuration.
 
-The November 10 export includes a recaptured front-seat shot with low side padding. Its eight-second picture insert was joined to the preserved full picture master with lossless H.264 encoding before delivery encoding. The complete current scene can be regenerated using the standard capture commands above. Original v4 picture masters are retained locally in `outputs/moonpark-cinema/v4-originals`.
+The v5 export re-renders the complete scene with the current low side padding, smoothed visitor movement, NEAR-branded spacecraft, docking pad, entrance, banners, launch station and crew suits. The arrival shot begins at passenger eye level and rises into a park reveal. Portrait arrival and closing shots use separate lens framing. Earlier v4 masters and the final pre-branding edit are retained locally in `outputs/moonpark-cinema/v4-originals` and `v4-final`.
 
 The finish script encodes into a private staging directory, decodes both variants, verifies their frame counts and publishes complete files through atomic renames. The manifest is published last. `--verify-only` checks existing deliveries without rewriting them.
+
+## NEAR Protocol presentation
+
+`lib/near-brand.ts` holds the official NEAR mark used by the React interface and extruded 3D emblems. `public/art/near-protocol-film-v1.svg` is the editable film lockup. The finish script composites it inside both movie files within a centered safe area. Standalone playback therefore includes the NEAR Protocol credit. The in-game live fallback uses the shared mark, and the closing chapter displays the Moonpark title and NEAR identity.
+
+The visual benchmark supplied during the pass is [Kevin Ngo’s boat-world demo](https://x.com/kevin_t_ngo/status/2119868968307695818). Representative reference frames were reviewed for foreground layering, warm/cool contrast, material detail and deliberate reveals. Moonpark retains its lunar-resort art direction. The reference footage stays in ignored local QA output.
