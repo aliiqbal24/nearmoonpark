@@ -21,7 +21,7 @@ The existing design values persist in local saves, verified parks and licensed b
 
 ## Characters and arrival
 
-The articulated visitor rig has human faces, six skin and hair combinations, helmet shells and transparent visors, suit panels, harnesses, buckles, backpacks, hoses, gloves and padded boots. Walking, queuing, boarding, waving and ride occupancy follow actual simulation state. Visitors glance around while idle. Walking lanes and wider queue spacing reduce overlapping bodies. Ride seats show their current occupants.
+The articulated visitor rig has human faces, six skin and hair combinations, helmet shells and transparent visors, suit panels, harnesses, buckles, backpacks, hoses, gloves and padded boots. Walking, queuing, boarding, waving and ride occupancy follow actual simulation state. Visitors glance around while idle. Walking lanes and wider queue spacing reduce overlapping bodies. Frame-bounded movement smooths lane changes and joining a queue. Stride follows the distance each character actually moves. Ride seats show their current occupants.
 
 Omar and Mina stand behind their service counters. Nia works inside Lunar Care. The delivery robot has treaded wheels, a face display, antenna, grippers and a cargo tray. Its wheels turn during deliveries and servicing.
 

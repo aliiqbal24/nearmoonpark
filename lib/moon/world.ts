@@ -973,9 +973,11 @@ export class MoonWorld {
       const target = new T.Vector3(x, 0.22, z),
         d = target.clone().sub(p.position);
       d.y = 0;
-      const walking =
-        ["walking", "arriving", "leaving", "boarding"].includes(g.status) &&
-        d.lengthSq() > 0.000001;
+      const movementDistance = d.length();
+      const walking = movementDistance > 0.015;
+      const maximumStep = dt * Math.max(0.4, this.speed) * 3.2;
+      const following =
+        movementDistance > 0 ? Math.min(1, maximumStep / movementDistance) : 1;
       if (d.lengthSq() > 0.000001) {
         const heading = Math.atan2(d.x, d.z);
         const turn =
@@ -985,11 +987,12 @@ export class MoonWorld {
           ) - Math.PI;
         p.rotation.y += turn * (1 - Math.exp(-14 * dt));
       }
-      p.userData.walkDistance = (p.userData.walkDistance ?? 0) + d.length();
+      p.userData.walkDistance =
+        (p.userData.walkDistance ?? 0) + movementDistance * following;
       const stride = p.userData.walkDistance * 5.4 + g.id;
       (p.userData.head as T.Object3D).rotation.y =
         Math.sin(time * 0.65 + g.id * 2.4) * (walking ? 0.06 : 0.15);
-      p.position.copy(target);
+      p.position.lerp(target, following);
       p.position.y = 0.22 + (walking ? Math.abs(Math.sin(stride)) * 0.045 : 0);
       for (let i = 0; i < 2; i++) {
         (p.userData.legs[i] as T.Object3D).rotation.x = walking
