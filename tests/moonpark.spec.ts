@@ -533,11 +533,19 @@ test("published park visits show the verified layout and allow coaster rides", a
   );
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/park/p-1");
+  await page.goto("/park/p-1?version=v5");
   await expect(
     page.getByRole("heading", { name: /Earthrise Gardens/ }),
   ).toBeVisible({ timeout: 30000 });
   await expect(page.getByText("7,161 points", { exact: true })).toBeVisible();
+  const current = JSON.parse(await readFile("public/moon-config.json", "utf8"));
+  await expect(
+    page.getByRole("link", { name: /Park ownership & day/ }),
+  ).toHaveAttribute(
+    "href",
+    `https://testnet.nearblocks.io/address/${current.contractId}`,
+  );
+
   await expect(page.locator('[data-testid="moon-world"] canvas')).toBeVisible();
   await page.screenshot({ path: "outputs/moon-public-park-desktop.png" });
   await page
@@ -1180,9 +1188,19 @@ test("earlier park ownership and public visits stay accessible", async ({
   const proof = JSON.parse(
     await readFile("docs/moon-v4-testnet-smoke.json", "utf8"),
   );
-  await page.goto(`/park/p-${proof.ownershipProof.park.id}?version=v4`);
+  await page.goto(`/park/p-${proof.ownershipProof.park.id}`);
   await expect(
     page.getByRole("heading", { name: /Earthrise Gardens/ }),
   ).toBeVisible({ timeout: 30000 });
+  await expect(
+    page.getByRole("link", { name: /Park ownership & day/ }),
+  ).toHaveAttribute("href", /game\.moonpark-mw65jiya\.testnet$/);
+  await page.goto(`/park/${proof.ownershipProof.park.owner}`);
+  await expect(
+    page.getByRole("heading", { name: /Earthrise Gardens/ }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(
+    page.getByRole("link", { name: /Park ownership & day/ }),
+  ).toHaveAttribute("href", /game\.moonpark-mw65jiya\.testnet$/);
   expect(errors).toEqual([]);
 });

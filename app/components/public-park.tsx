@@ -21,7 +21,6 @@ import {
   type RecordState,
 } from "@/lib/moon/model";
 import type { MoonWorld as World } from "@/lib/moon/world";
-import archivedV4 from "@/public/moon-v4-config.json";
 import "../moonpark.css";
 function visitorPreview(source: Run) {
   const run = structuredClone(source);
@@ -53,7 +52,13 @@ function visitorPreview(source: Run) {
   }
   return run;
 }
-export default function PublicPark({ accountId }: { accountId: string }) {
+export default function PublicPark({
+  accountId,
+  version,
+}: {
+  accountId: string;
+  version?: "v4" | "v5";
+}) {
   const [data, setData] = useState<{
       cfg: Config;
       park: Park;
@@ -68,10 +73,7 @@ export default function PublicPark({ accountId }: { accountId: string }) {
   const world = useRef<World | null>(null);
   useEffect(() => {
     let active = true;
-    const archived =
-      new URLSearchParams(location.search).get("version") === "v4" ||
-      accountId.endsWith(".moonpark-mw65jiya.testnet");
-    void publicPark(accountId, archived ? (archivedV4 as Config) : undefined)
+    void publicPark(accountId, version)
       .then((v) => {
         if (active) setData(v);
       })
@@ -81,7 +83,7 @@ export default function PublicPark({ accountId }: { accountId: string }) {
     return () => {
       active = false;
     };
-  }, [accountId]);
+  }, [accountId, version]);
   const record = data?.record;
   const run = useMemo(
     () => (record ? visitorPreview(record.run) : null),

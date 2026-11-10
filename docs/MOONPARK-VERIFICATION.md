@@ -18,6 +18,8 @@ The public replay checks all fifty-five game checkpoints against native Rust, pu
 
 The v4 eligible prize board was empty before the v5 transition. V4 ownership, licenses and funded earnings stay in their immutable contract. The main game resumes v4 saves with its archived WASM engine, and earlier public visits select that contract. V3 funded claims remain accessible through `/legacy-claims`.
 
+The canonical Vercel site also completed a fresh sponsored opening day, displayed the account balances, confirmed its score, published the park and published a signature ride. Its public proof is in `moon-v5-browser-smoke.json`. Public links include their registry version. Regression checks distinguish the current v5 park from unversioned v4 numeric IDs and earlier owner-address bookmarks.
+
 ## Vendor-asset verification
 
 Every Sandbox and live testnet checkpoint compares all five account holdings with canonical game state, including paid inventory in transit. Credit supply stays constant and food, drink and part consumption reduces their supplies exactly. Each opening day has separate token IDs. Deployment verifies that the three NPC accounts exist, have one restricted policy key each and signed acceptance. The game contract itself has zero access keys.

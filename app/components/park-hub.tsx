@@ -73,7 +73,8 @@ export function ParkHub({
   const accountId = credentials?.accountId;
   const credentialIdentity = credentials?.identity;
   const ownerCredentials = cfg && park ? credentialsFor(cfg, park.owner) : null;
-  const versionQuery = cfg?.archivedVersion === "v4" ? "?version=v4" : "";
+  const versionQuery =
+    cfg?.archivedVersion === "v4" ? "?version=v4" : "?version=v5";
   const loadKey = `${cfg?.contractId ?? "local"}:${accountId ?? "guest"}`;
   const loading = loadedFor !== loadKey;
   const refresh = useCallback(async () => {

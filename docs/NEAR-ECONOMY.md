@@ -18,7 +18,7 @@ All native funding comes from free testnet funds. Credits and inventory have no 
 
 ## Persistent park ownership
 
-Every admitted game account gets a park registry entry when it starts its first opening day. The entry records a stable park ID, owner account ID, authorized game operator, name, emblem, published opening day and signature designs. New scored days use standardized resources. Publishing a finished day gives that persistent park a public layout at `/park/OWNER_ACCOUNT`, with a stable alternative at `/park/p-PARK_ID`.
+Every admitted game account gets a park registry entry when it starts its first opening day. The entry records a stable park ID, owner account ID, authorized game operator, name, emblem, published opening day and signature designs. New scored days use standardized resources. Publishing a finished day gives that persistent park a public layout at `/park/OWNER_ACCOUNT`, with an ID alternative at `/park/p-PARK_ID`. Public links select `?version=v4` or `?version=v5` to keep numeric IDs distinct across registries. Unversioned earlier links resolve the v4 registry first.
 
 The generated account initially owns its park. Claiming connects a supported wallet through NEAR Connect on testnet, nominates its account and requires that account to sign `accept_park`. A nomination alone does not transfer ownership. The recipient cannot already own another park. The game operator can update and publish the park. Its owner can replace that operator, including when restoring on a new browser.
 

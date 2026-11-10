@@ -1,4 +1,5 @@
 import { config, view, type Config, type Credentials } from "./near";
+import archivedV4 from "@/public/moon-v4-config.json";
 import { failoverRpc } from "./rpc";
 import type { Design, Kind, RecordState } from "./model";
 export type Park = {
@@ -271,14 +272,25 @@ export async function parkSnapshot(cfg: Config, park: Park) {
   if (!park.run_id) return null;
   return view<RecordState>(cfg, "get_run", { run_id: park.run_id });
 }
-export async function publicPark(accountId: string, archived?: Config) {
-  const cfg = archived ?? (await config());
-  if (!cfg) throw Error("NEAR configuration is unavailable.");
-  const park = /^p-\d+$/.test(accountId)
-    ? await view<Park | null>(cfg, "get_park", { park_id: accountId.slice(2) })
-    : await view<Park | null>(cfg, "get_park_by_owner", {
-        account_id: accountId,
-      });
-  if (!park) throw Error("This account has not published a Moonpark yet.");
-  return { cfg, park, record: await parkSnapshot(cfg, park) };
+export async function publicPark(accountId: string, version?: "v4" | "v5") {
+  const current = version === "v4" ? null : await config();
+  // Unversioned links existed before v5. New links explicitly select their registry.
+  const candidates =
+    version === "v4"
+      ? [archivedV4 as Config]
+      : version === "v5"
+        ? [current]
+        : [archivedV4 as Config, current];
+  for (const cfg of candidates) {
+    if (!cfg) continue;
+    const park = /^p-\d+$/.test(accountId)
+      ? await view<Park | null>(cfg, "get_park", {
+          park_id: accountId.slice(2),
+        })
+      : await view<Park | null>(cfg, "get_park_by_owner", {
+          account_id: accountId,
+        });
+    if (park) return { cfg, park, record: await parkSnapshot(cfg, park) };
+  }
+  throw Error("This account has not published a Moonpark yet.");
 }
