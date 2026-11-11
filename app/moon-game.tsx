@@ -1,8 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Rocket,
-  Orbit,
   Zap,
   Route,
   Coins,
@@ -668,7 +666,7 @@ export default function Game() {
         placement={screen === "playing" ? placement : null}
         selected={selectedBuilding?.id ?? null}
         cinematic={screen === "intro" && videoFailed ? introTime : null}
-        paused={screen === "intro" && !videoFailed}
+        paused={screen === "title" || (screen === "intro" && !videoFailed)}
         attractMode={screen === "title"}
         rideId={rideId}
         onPick={pick}
@@ -721,112 +719,96 @@ export default function Game() {
               aria-label="Explore NEAR Protocol"
             >
               <NearMark word />
-              <span>
-                PROTOCOL<span>BUILT ON NEAR</span>
-              </span>
+              <span>PROTOCOL</span>
             </button>
             <nav aria-label="Welcome menu">
               <button disabled={!initial} onClick={() => setPanel("help")}>
-                <BookOpen size={15} /> How to play
+                <BookOpen size={16} /> <span>How to play</span>
               </button>
               <button
+                disabled={!initial}
+                onClick={() => setPanel("leaderboard")}
+                aria-label="Top five & conditional prizes"
+              >
+                <Trophy size={16} /> <span>Leaderboard & prizes</span>
+              </button>
+              <button
+                className="mp-title-sound"
                 onClick={toggleAudio}
                 aria-label={muted ? "Enable sound" : "Mute sound"}
+                title={muted ? "Enable sound" : "Mute sound"}
               >
-                {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
-                <span>{muted ? "Sound off" : "Sound on"}</span>
+                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
               </button>
             </nav>
           </header>
           <div className="mp-title-content">
-            <p className="mp-eyebrow">
-              <span /> THE MOON IS OPEN FOR BUSINESS
-            </p>
-            <h1>
-              MOON
-              <span>
-                PARK
-                <span className="mp-title-star" aria-hidden="true">
-                  ✦
-                </span>
-              </span>
-            </h1>
-            <p className="mp-title-tagline">
-              Low gravity.
-              <br />
-              High expectations.
-            </p>
-            <p className="mp-title-description">
-              Build extraordinary rides. Welcome rocketloads of guests. Turn a
-              little lunar plot into everyone&apos;s favourite escape.
-            </p>
-            <div className="mp-title-actions">
-              <button
-                className="mp-primary"
-                disabled={!initial || !cfg || launching}
-                onClick={() => start("near", !!player && challengeOpen)}
-              >
-                <Play size={17} />
-                {initial ? "Open your park" : "Preparing…"}
-                <ArrowUpRight size={18} />
-              </button>
-              <button
-                className="mp-secondary"
-                disabled={!initial || launching}
-                onClick={() => start("practice")}
-              >
-                Practice offline
-              </button>
-              {resumeAvailable && (
+            <img
+              className="mp-title-art"
+              src="/art/moonpark-cover-v1.webp"
+              width={1672}
+              height={941}
+              fetchPriority="high"
+              alt="Moonpark cover artwork with a teal mass-driver coaster, a golden observation wheel and a rocket arriving at a luminous lunar resort."
+            />
+            <div className="mp-title-wordmark">
+              <h1>MOONPARK</h1>
+              <p>Your theme park. On the Moon.</p>
+            </div>
+            <div className="mp-title-launch">
+              <div className="mp-title-pitch">
+                <h2>
+                  Build the Moon’s
+                  <br />
+                  best day out.
+                </h2>
+                <p>
+                  Dream up wild rides. Welcome rocketloads of guests. Make
+                  opening day unforgettable.
+                </p>
+              </div>
+              <div className="mp-title-entry">
+                <p className="mp-title-details">
+                  Free to play <span aria-hidden="true">·</span> 9-minute
+                  opening day
+                </p>
                 <button
-                  className="mp-resume"
-                  disabled={launching}
-                  onClick={() => void resume()}
+                  className="mp-primary"
+                  disabled={!initial || !cfg || launching}
+                  onClick={() => start("near", !!player && challengeOpen)}
                 >
-                  Return to your park →
+                  <span>{initial ? "Open your park" : "Preparing…"}</span>
+                  <span className="mp-title-play-icon" aria-hidden="true">
+                    <ArrowUpRight size={22} />
+                  </span>
                 </button>
-              )}
-            </div>
-            <div className="mp-title-details">
-              <span>
-                <Orbit size={14} />
-                <strong>9 minutes</strong> to make your mark
-              </span>
-              <span>
-                <Rocket size={14} />
-                <strong>96 guests.</strong> One big dream.
-              </span>
-            </div>
-            <div className="mp-title-links">
-              <button
-                disabled={!initial}
-                onClick={() => setPanel("leaderboard")}
-              >
-                <Trophy size={14} /> Top five & conditional prizes
-              </button>
-              <button disabled={!initial} onClick={() => setPanel("near")}>
-                My park & ride exchange <ArrowUpRight size={13} />
-              </button>
+                <button
+                  className="mp-secondary"
+                  disabled={!initial || launching}
+                  onClick={() => start("practice")}
+                >
+                  <Play size={13} /> Practice offline
+                </button>
+                {resumeAvailable && (
+                  <button
+                    className="mp-resume"
+                    disabled={launching}
+                    onClick={() => void resume()}
+                  >
+                    Return to your park <ArrowUpRight size={14} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-          <aside className="mp-title-caption">
-            <span>
-              <i /> A LITTLE FARTHER FROM ORDINARY
-            </span>
-            <p>
-              Your next great idea.
-              <br />
-              384,000 km from the everyday.
-            </p>
-          </aside>
           <footer className="mp-title-footer">
             <div className="mp-title-ownership">
               <NearMark />
               <div>
                 <strong>Your park. Your designs. Yours on NEAR.</strong>
                 <p>
-                  Own your park, license signature rides and leave a verified
-                  score.
+                  Real vendor wallets, ride licenses and verified scores.
+                  Account and gas included.
                 </p>
               </div>
             </div>
@@ -836,11 +818,11 @@ export default function Game() {
               disabled={!initial}
               onClick={() => setPanel("near")}
             >
-              Explore the economy <ArrowUpRight size={16} />
+              Explore the economy <ArrowUpRight size={17} />
             </button>
-            <span className="mp-title-built">
-              NEAR TESTNET · ACCOUNT & GAS INCLUDED · NO CASH VALUE
-            </span>
+            <small className="mp-title-built">
+              NEAR testnet · Test currency has no cash value
+            </small>
           </footer>
         </section>
       )}

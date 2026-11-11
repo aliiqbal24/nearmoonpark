@@ -1,0 +1,14 @@
+Moonpark landing-page cover artwork, November 11, 2026
+Generated with the built-in image generation tool.
+Delivery asset: public/art/moonpark-cover-v1.webp
+The original PNG remains in outputs/moonpark-landing-v2/cover-original.png.
+Reference: the game's actual park models photographed in outputs/moonpark-cinematic-rework/environment-v3-38.png.
+The reference establishes attraction identities. The cover is an illustration.
+
+Generation prompt
+
+Use case: ads-marketing. Asset type: cinematic game cover artwork for Moonpark's new desktop landing page, wide landscape composition, high resolution. The attached image is a reference for the game's actual attraction identities and lunar setting, NOT a composition to copy. Create spectacular polished CGI key art that feels like a lovingly crafted premium theme-park game cover. A small theme park on the Moon at golden sidelight: a majestic teal magnetic-launch roller coaster with a steep narrow arch and sweeping track, a gold-rimmed observation wheel with small glass cabins, ivory-and-orange food pavilions and glass-fronted lunar transit terminal. A stainless passenger rocket on a landing pad at the far right with a few tiny suited visitors. The park fills the middle and right of the image, layered with architectural detail, luminous mint practical lighting, warm amber windows, tiny lights along paths and physically convincing silver lunar rock and crater ground. A crater ridge recedes into black space, restrained pinprick stars, a small distant crescent-blue Earth in the upper-right sky, a low warm sun just off frame. Three-quarter perspective view at a low aerial angle, close enough for the rides and architecture to have visual weight. Refined materials, brushed metal, enamel, glass, tactile soil, beautifully composed lighting and long shadows. A subtle sense of exuberance and discovery, premium playful aerospace aesthetic. Dark quiet sky across the upper quarter for an oversized HTML wordmark, and clean dark foreground in the lower-left for HTML copy. The principal coaster and wheel should sit around the middle-right of the frame and remain recognizable when cropped to a tall central slice. Deep navy, ivory, silver, teal, restrained coral and warm gold. Make the park the hero. No large foreground characters, no giant domes, no Earth sitting on the ground. No text, letters, logos, watermarks, UI, borders or captions. The output is only the artwork, not a webpage mockup.
+
+Delivery preparation
+
+The generated 1672-by-941 PNG is encoded to WebP at quality 92 with FFmpeg. The original remains intact. Responsive framing uses CSS object positioning. The Archivo Black display font comes from the Google Fonts repository under the SIL Open Font License. Its license accompanies the font in public/fonts/ArchivoBlack-OFL.txt.
