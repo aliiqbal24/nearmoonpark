@@ -14,6 +14,7 @@ import {
   ellipsoid,
   arch,
   line,
+  label,
 } from "./art-kit";
 import {
   pressureGarden,
@@ -21,6 +22,9 @@ import {
   pieSculpture,
   vault,
   marquee,
+  equipmentPanel,
+  windowPanel,
+  safetyRail,
   type ResortColors,
   type StyledBuilding,
 } from "./resort-props";
@@ -149,6 +153,41 @@ function serviceShell(
     );
     sphere(g, "#ffe4a4", x, 1.39, 0.38, 0.065).material = glow("#ffcb7f");
   }
+  for (const side of [-1, 1]) {
+    const service = equipmentPanel(g, 0.74, 0.6);
+    service.position.set(side * 1.13, 0.85, -0.25);
+    service.rotation.y = (side * Math.PI) / 2;
+    line(
+      g,
+      [
+        new T.Vector3(side * 0.85, 0.5, -0.65),
+        new T.Vector3(side * 1.14, 0.6, -0.65),
+        new T.Vector3(side * 1.14, 1.38, -0.65),
+      ],
+      0.025,
+      "#819ba9",
+      "metal",
+    );
+    shapedBox(g, "#273a48", side * 0.75, 0.52, -0.87, 0.35, 0.22, 0.25, 0.025);
+  }
+  if (style !== 1) {
+    for (const x of [-0.56, 0, 0.56]) {
+      const pane = windowPanel(g, 0.48, 0.62);
+      pane.position.set(x, 1.45, -0.88);
+      pane.rotation.y = Math.PI;
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = (i - 4) * 0.245;
+      box(g, "#8b9ea9", x, 1.99, -0.06, 0.018, 0.025, 1.47).material =
+        metal("#8b9ea9");
+    }
+  }
+  box(g, "#7be6d6", 0, 1.51, 1.15, 1.78, 0.017, 0.018).material =
+    glow("#7be6d6");
+  const menu = label("FRESH FROM EARTH / MADE ON THE MOON", "#b7d8db", 1.4);
+  menu.position.set(0, 0.7, 1.183);
+  menu.scale.y *= 0.38;
+  g.add(menu);
 }
 
 export function kitchen(g: T.Group, b: StyledBuilding, c: ResortColors) {
@@ -166,14 +205,14 @@ export function kitchen(g: T.Group, b: StyledBuilding, c: ResortColors) {
     style === 1 ? 0.78 : 0,
     style === 1 ? 2.46 : 2.26,
     style === 1 ? -0.45 : 0,
-    style === 1 ? 0.38 : 0.58,
+    style === 1 ? 0.28 : 0.39,
   ).g;
   pie.rotation.x = 0.12;
   pie.rotation.z = -0.12;
   const orbit = ring(
     g,
     c.accent,
-    style === 1 ? 0.46 : 0.74,
+    style === 1 ? 0.34 : 0.51,
     0.025,
     style === 1 ? 0.78 : 0,
     style === 1 ? 2.61 : 2.46,
@@ -220,11 +259,11 @@ export function drinks(g: T.Group, b: StyledBuilding, c: ResortColors) {
       g.add(crystal);
     }
   } else {
-    const cup = cylinder(g, c.primary, 0, 2.52, 0, 0.38, 0.6);
+    const cup = cylinder(g, c.primary, 0, 2.52, 0, 0.29, 0.5);
     cup.material = glass;
-    cylinder(g, "#4baec2", 0, 2.45, 0, 0.34, 0.44);
-    cylinder(g, c.light, 0, 2.85, 0, 0.42, 0.09);
-    cylinder(g, c.accent, 0.12, 3.07, 0, 0.035, 0.53).rotation.z = -0.25;
+    cylinder(g, "#4baec2", 0, 2.45, 0, 0.26, 0.36);
+    cylinder(g, c.light, 0, 2.8, 0, 0.31, 0.065);
+    cylinder(g, c.accent, 0.1, 2.99, 0, 0.025, 0.45).rotation.z = -0.25;
     for (let i = 0; i < 4; i++) {
       const ice = shapedBox(
         g,
@@ -325,6 +364,37 @@ export function maintenance(
   robot.position.set(0, 0.43, 0.5);
   g.add(robot);
   marquee(g, b.design.name || "LUNAR CARE", c.light, 2.28, 1.82, 1.29);
+  for (const side of [-1, 1]) {
+    const panel = equipmentPanel(g, 0.95, 0.68);
+    panel.position.set(side * 1.46, 0.95, 0.1);
+    panel.rotation.y = (side * Math.PI) / 2;
+    for (let i = 0; i < 5; i++)
+      box(
+        g,
+        "#a6b8bf",
+        side * 1.43,
+        1.56,
+        -0.95 + i * 0.48,
+        0.06,
+        0.06,
+        0.22,
+      ).material = metal("#a6b8bf");
+    const rail = safetyRail(g, 0.6);
+    rail.position.set(side * 1.12, 0.38, 1.47);
+  }
+  box(g, "#9ddfcd", 0, 2.0, 1.26, 2.48, 0.018, 0.025).material =
+    glow("#9ddfcd");
+  for (let i = 0; i < 10; i++)
+    box(
+      g,
+      i % 2 ? "#ac9865" : "#1c2d37",
+      -1.1 + i * 0.24,
+      0.41,
+      1.46,
+      0.13,
+      0.013,
+      0.18,
+    ).rotation.y = -0.38;
   return (t: number) => {
     robot.position.x = Math.sin(t * 0.4) * 0.4;
     for (const wheel of robot.userData.wheels as T.Object3D[])
@@ -424,6 +494,21 @@ export function solar(
     if (b.design.style === 1) ring(g, c.primary, 1.35, 0.045, 0, 0.9);
   }
   shapedBox(g, c.primary, 0, 0.64, h / 2 - 0.42, 0.65, 0.55, 0.46, 0.075);
+  const inverter = equipmentPanel(g, 0.62, 0.42);
+  inverter.position.set(0, 0.88, -h / 2 + 0.29);
+  inverter.rotation.y = Math.PI;
+  for (const side of [-1, 1])
+    line(
+      g,
+      [
+        new T.Vector3(side * 0.18, 0.56, -h / 2 + 0.3),
+        new T.Vector3(side * 0.45, 0.44, -0.5),
+        new T.Vector3(side * 0.13, 0.52, 0),
+      ],
+      0.023,
+      "#77949f",
+      "metal",
+    );
   for (let i = 0; i < 4; i++)
     box(
       g,

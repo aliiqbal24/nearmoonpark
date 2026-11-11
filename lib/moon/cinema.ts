@@ -1,4 +1,5 @@
 import * as T from "three";
+import { EARTH_DIRECTION } from "./sky";
 export const INTRO_SECONDS = 40;
 export const INTRO_CUTS = [6, 14, 21, 29, 33, 35];
 const ease = (n: number) => {
@@ -31,8 +32,8 @@ export function cinematicPose(
       ],
       u,
     );
-    target = new T.Vector3(-300, 90, -1000);
-    fov = 38;
+    target = position.clone().addScaledVector(EARTH_DIRECTION, 1000);
+    fov = 30;
   } else if (t < 14) {
     const u = (t - 6) / 8;
     position = path(
@@ -43,7 +44,7 @@ export function cinematicPose(
       ],
       u,
     );
-    target = new T.Vector3(0, 32 * (1 - ease(u)) + 2.8, 22);
+    target = new T.Vector3(0, 32 * (1 - ease(u)) + 4.1, 22);
     fov = 44;
   } else if (t < 21) {
     const u = (t - 14) / 7;
@@ -84,12 +85,12 @@ export function cinematicPose(
       ],
       u,
     );
-    target = new T.Vector3(2, 1.35, 15.7);
+    target = new T.Vector3(2, 1.8, 15.7);
     fov = 40;
   } else if (t < 35) {
-    position = new T.Vector3(4.5, 2, 17);
-    target = new T.Vector3(3, 1.1, 13.5);
-    fov = 43;
+    position = new T.Vector3(-4.7, 1.8, 24);
+    target = new T.Vector3(-2, 1.3, 20.3);
+    fov = 48;
   } else {
     const u = (t - 35) / 5;
     position = path(

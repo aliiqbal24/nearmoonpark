@@ -4,7 +4,8 @@ import { once } from "node:events";
 import { mkdir } from "node:fs/promises";
 const base = process.env.GAME_URL || "http://127.0.0.1:5173",
   sample = process.argv.includes("--sample"),
-  portrait = process.argv.includes("--portrait");
+  portrait = process.argv.includes("--portrait"),
+  robotShot = process.argv.includes("--robot-shot");
 await mkdir("outputs/moonpark-cinema", { recursive: true });
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
@@ -53,7 +54,8 @@ try {
     });
     const run = dreamPark(await simulate({ op: "new" }));
     world.update(run, 1, null, null, 0, null);
-    await new Promise((r) => setTimeout(r, 1000));
+    await world.sceneryReady;
+    await document.fonts.ready;
     window.film = { world, run };
   });
   page.on("pageerror", (error) => {
@@ -98,18 +100,21 @@ try {
         "-an",
         "-movflags",
         "+faststart",
-        `outputs/moonpark-cinema/picture-${portrait ? "mobile-" : ""}master.mp4`,
+        `outputs/moonpark-cinema/picture-${robotShot ? "robot-" : ""}${portrait ? "mobile-" : ""}master.mp4`,
       ],
       { stdio: ["pipe", "inherit", "inherit"] },
     );
     let ffError;
     ff.on("error", (e) => (ffError = e));
-    for (let i = 0; i < 1200; i++) {
+    const first = robotShot ? 990 : 0;
+    const last = robotShot ? 1050 : 1200;
+    for (let i = first; i < last; i++) {
       if (ffError) throw ffError;
       await render(i / 30);
       const png = await page.screenshot({ type: "png", animations: "allow" });
       if (!ff.stdin.write(png)) await once(ff.stdin, "drain");
-      if (i % 150 === 0) console.log(`Intro render ${i}/1200 frames`);
+      if ((i - first) % 150 === 0)
+        console.log(`Intro render ${i - first}/${last - first} frames`);
     }
     ff.stdin.end();
     const [code] = await once(ff, "exit");

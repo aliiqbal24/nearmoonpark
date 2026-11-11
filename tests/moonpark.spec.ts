@@ -409,14 +409,14 @@ test("attraction customization previews immediately and persists through reload"
     .click();
   await expect(page.locator(".mp-building-icon img")).toHaveAttribute(
     "src",
-    "/art/coaster-s2-v2.webp",
+    "/art/coaster-s2-v3.webp",
   );
   await families
     .getByRole("button", { name: "Retro Resort", exact: true })
     .click();
   await expect(page.locator(".mp-building-icon img")).toHaveAttribute(
     "src",
-    "/art/coaster-s0-v2.webp",
+    "/art/coaster-s0-v3.webp",
   );
   await page.getByRole("button", { name: "Orbital", exact: true }).click();
   await page.getByRole("button", { name: "Neon", exact: true }).click();

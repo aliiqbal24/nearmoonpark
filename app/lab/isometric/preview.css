@@ -1,0 +1,258 @@
+.camera-preview {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #050b12;
+  color: #e5edf0;
+  font-family: "DM Sans", sans-serif;
+}
+.camera-preview-world {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+.camera-preview-world canvas {
+  display: block;
+}
+.camera-preview button,
+.camera-preview select,
+.camera-preview a {
+  font: inherit;
+  color: inherit;
+}
+.camera-preview button,
+.camera-preview select {
+  border: 1px solid #b1c6d329;
+  background: #142431de;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.camera-preview button:hover {
+  background: #294656;
+}
+.camera-preview button:focus-visible,
+.camera-preview select:focus-visible,
+.camera-preview a:focus-visible {
+  outline: 2px solid #9ce4d8;
+  outline-offset: 4px;
+}
+.camera-preview-header {
+  position: absolute;
+  top: 22px;
+  left: 26px;
+  right: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  pointer-events: none;
+}
+.camera-preview-header > * {
+  pointer-events: auto;
+}
+.camera-preview-identity {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  text-decoration: none;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 12px #000;
+}
+.camera-preview-identity svg {
+  width: 28px;
+  height: 28px;
+  fill: #a6e4d8;
+}
+.camera-preview-identity small {
+  display: block;
+  color: #a6becb;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+.camera-preview-projections {
+  display: flex;
+  padding: 5px;
+  border: 1px solid #d6e9f127;
+  border-radius: 11px;
+  background: #0a1721e8;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 40px #0005;
+}
+.camera-preview-projections button {
+  min-width: 130px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  padding: 12px 16px;
+  font-size: 12px;
+}
+.camera-preview-projections button[aria-pressed="true"] {
+  background: #a2dfd2;
+  color: #102c32;
+  font-weight: 700;
+}
+.camera-preview-live {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  font-size: 12px;
+}
+.camera-preview-scene {
+  position: absolute;
+  top: 104px;
+  left: 26px;
+  display: grid;
+  gap: 10px;
+  width: 186px;
+  padding: 15px;
+  background: #0a1721e8;
+  border: 1px solid #b7c9d328;
+  border-radius: 10px;
+  backdrop-filter: blur(16px);
+}
+.camera-preview-scene label {
+  color: #adc2ce;
+  font-size: 10px;
+}
+.camera-preview-scene select {
+  padding: 9px 8px;
+  font-size: 12px;
+  width: 100%;
+}
+.camera-preview-time {
+  display: flex;
+  gap: 5px;
+}
+.camera-preview-time button {
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  flex: 1;
+  font-size: 11px;
+}
+.camera-preview-time button[aria-pressed="true"] {
+  border-color: #88ccbb;
+  color: #bce8dd;
+}
+.camera-preview-footer {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 16px 14px 21px;
+  background: #0b1923eb;
+  border: 1px solid #b8d5df33;
+  border-radius: 11px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 45px #0005;
+}
+.camera-preview-footer strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.camera-preview-footer p {
+  color: #a2b8c6;
+  font-size: 10px;
+  margin: 5px 0 0;
+  white-space: nowrap;
+}
+.camera-preview-footer button {
+  display: grid;
+  place-items: center;
+  padding: 11px;
+}
+.camera-preview-selection {
+  position: absolute;
+  right: 26px;
+  top: 105px;
+  min-width: 190px;
+  padding: 16px 40px 16px 18px;
+  background: #10222bea;
+  border: 1px solid #9bcabb44;
+  border-radius: 9px;
+}
+.camera-preview-selection span {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 1.3px;
+  color: #91cabb;
+  margin-bottom: 7px;
+}
+.camera-preview-selection strong {
+  font-size: 14px;
+}
+.camera-preview-selection button {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  border: 0;
+  padding: 3px 7px;
+}
+.camera-preview-loading {
+  position: absolute;
+  inset: 42% 10% auto;
+  text-align: center;
+  padding: 24px;
+  color: #bfdadf;
+  pointer-events: none;
+}
+@media (max-width: 700px) {
+  .camera-preview-header {
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .camera-preview-projections {
+    order: 3;
+    width: 100%;
+  }
+  .camera-preview-projections button {
+    flex: 1;
+    min-width: 0;
+  }
+  .camera-preview-live {
+    font-size: 10px;
+  }
+  .camera-preview-identity {
+    font-size: 16px;
+  }
+  .camera-preview-scene {
+    top: 131px;
+    left: 15px;
+    width: 172px;
+    padding: 11px;
+  }
+  .camera-preview-footer {
+    bottom: 16px;
+    width: calc(100% - 30px);
+    gap: 12px;
+    justify-content: space-between;
+    padding: 13px;
+  }
+  .camera-preview-footer p {
+    font-size: 9px;
+    white-space: normal;
+    max-width: 260px;
+    line-height: 1.7;
+  }
+  .camera-preview-selection {
+    top: auto;
+    bottom: 112px;
+    left: 15px;
+    right: 15px;
+  }
+}

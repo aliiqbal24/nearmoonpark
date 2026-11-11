@@ -24,6 +24,9 @@ import { astronaut } from "./characters";
 import {
   vault,
   marquee,
+  equipmentPanel,
+  safetyRail,
+  windowPanel,
   type ResortColors,
   type StyledBuilding,
 } from "./resort-props";
@@ -232,6 +235,47 @@ export function massDriver(
   );
   spine.castShadow = true;
   g.add(spine);
+  const tower = new T.Group();
+  tower.position.set(w * 0.29, 0, -h * 0.37);
+  const towerColor = style === 2 ? "#435b6b" : "#8298a6";
+  for (const x of [-0.45, 0.45])
+    for (const z of [-0.38, 0.38]) {
+      box(tower, towerColor, x, 5.4, z, 0.11, 10.0, 0.11).material =
+        metal(towerColor);
+      shapedBox(tower, c.dark, x, 0.48, z, 0.37, 0.16, 0.34, 0.025);
+    }
+  for (let level = 0; level < 8; level++) {
+    const y = 0.7 + level * 1.22;
+    box(tower, c.dark, 0, y, 0, 1.18, 0.075, 1.04);
+    for (const z of [-0.38, 0.38]) {
+      beam(
+        tower,
+        new T.Vector3(-0.4, y, z),
+        new T.Vector3(0.4, y + 1.16, z),
+        0.032,
+        towerColor,
+      ).material = metal(towerColor);
+      beam(
+        tower,
+        new T.Vector3(0.4, y, z),
+        new T.Vector3(-0.4, y + 1.16, z),
+        0.032,
+        towerColor,
+      ).material = metal(towerColor);
+    }
+    if (level % 2 === 0) {
+      const rail = safetyRail(tower, 1.17);
+      rail.position.set(0, y, 0.54);
+    }
+    box(tower, c.primary, 0, y + 0.2, 0.56, 0.035, 0.15, 0.02).material = glow(
+      c.primary,
+    );
+  }
+  const towerBrand = label("NEAR", "#a2e8db", 0.88);
+  towerBrand.position.set(0, 7.4, 0.57);
+  tower.add(towerBrand);
+  nearMark(tower, "#8dd5ce", 0.57).position.set(0, 8.7, 0.57);
+  g.add(tower);
   for (let i = 0; i < 104; i++) {
     const u = i / 104,
       p = curve.getPointAt(u),
@@ -412,6 +456,24 @@ export function massDriver(
   protocol.position.set(0.16, 1.13, 1.04);
   station.add(protocol);
   nearMark(station, c.primary, 0.29).position.set(-1.09, 1.13, 1.05);
+  const stationRail = safetyRail(station, w * 0.61);
+  stationRail.position.set(0, 0.71, -0.72);
+  for (const side of [-1, 1]) {
+    const unit = equipmentPanel(station, 0.66, 0.55);
+    unit.position.set(side * w * 0.29, 1.25, -0.74);
+    unit.rotation.y = Math.PI;
+  }
+  for (let i = 0; i < 8; i++)
+    box(
+      station,
+      "#a9bac1",
+      (i - 3.5) * w * 0.084,
+      2.19,
+      -0.09,
+      0.035,
+      0.045,
+      1.75,
+    ).material = metal("#a9bac1");
   g.add(station);
   const moving = new T.Group();
   moving.userData.animated = true;
@@ -561,6 +623,15 @@ export function earthrise(
     batch(pod);
   }
   cylinder(g, c.dark, 0, hubY, 0, 0.37, 0.75).rotation.x = Math.PI / 2;
+  const motor = equipmentPanel(g, 0.9, 0.7);
+  motor.position.set(0, hubY, -0.63);
+  motor.rotation.y = Math.PI;
+  for (const side of [-1, 1]) {
+    const loadingRail = safetyRail(g, 1.0);
+    loadingRail.position.set(side * 1.31, 0.39, h / 2 - 0.27);
+    const cabinet = equipmentPanel(g, 0.62, 0.48);
+    cabinet.position.set(side * 1.66, 0.97, -0.39);
+  }
   sphere(g, c.accent, 0, hubY, 0.48, 0.3).material = metal(c.accent);
   const medallion = label("✦", c.light, 0.4);
   medallion.position.set(0, hubY, 0.76);
@@ -592,6 +663,13 @@ export function lunarBounce(
   h: number,
 ): RideRig {
   const style = b.design.style;
+  for (const side of [-1, 1]) {
+    const controls = equipmentPanel(g, 0.6, 0.49);
+    controls.position.set(side * 1.1, 0.72, -0.82);
+    controls.rotation.y = side * 0.8;
+    const fence = safetyRail(g, 1.05);
+    fence.position.set(side * 0.9, 0.35, h / 2 - 0.16);
+  }
   cylinder(g, c.dark, 0, 0.54, 0, 1.48, 0.32);
   cylinder(g, c.primary, 0, 0.77, 0, 1.37, 0.22);
   ring(g, c.accent, 1.43, 0.045, 0, 0.86).material = metal(c.accent);
@@ -710,6 +788,27 @@ export function roverRally(
   h: number,
 ): RideRig {
   const style = b.design.style;
+  const raceControl = new T.Group();
+  raceControl.position.set(-w * 0.33, 0, -h * 0.34);
+  shapedBox(raceControl, c.dark, 0, 1.12, 0, 0.68, 1.4, 0.64, 0.06);
+  const controlWindow = windowPanel(raceControl, 0.55, 0.58, false);
+  controlWindow.position.set(0, 1.5, 0.35);
+  shapedBox(
+    raceControl,
+    "#acbbc3",
+    0,
+    1.92,
+    0,
+    0.89,
+    0.09,
+    0.86,
+    0.025,
+  ).material = metal("#acbbc3");
+  const raceStatus = label("ROVER CONTROL", "#9bdcd3", 0.7);
+  raceStatus.position.set(0, 1.0, 0.35);
+  raceStatus.scale.y *= 0.6;
+  raceControl.add(raceStatus);
+  g.add(raceControl);
   const curve = new T.CatmullRomCurve3(
     [
       new T.Vector3(-w * 0.32, 0.65, h * 0.29),

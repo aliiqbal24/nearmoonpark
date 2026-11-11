@@ -679,7 +679,7 @@ export default function Game() {
       <video
         ref={videoRef}
         className={`mp-opening-film ${screen === "intro" && !videoFailed ? "playing" : ""} ${introLeaving ? "leaving" : ""}`}
-        poster="/video/moonpark-opening-v5-poster.jpg"
+        poster="/video/moonpark-opening-v6-poster.jpg"
         preload="auto"
         playsInline
         muted={muted}
@@ -694,12 +694,12 @@ export default function Game() {
         }}
       >
         <source
-          src="/video/moonpark-opening-v5-mobile.mp4"
+          src="/video/moonpark-opening-v6-mobile.mp4"
           media="(max-width: 800px)"
           type="video/mp4"
         />
         <source
-          src="/video/moonpark-opening-v5.mp4"
+          src="/video/moonpark-opening-v6.mp4"
           type="video/mp4"
           onError={() => setVideoFailed(true)}
         />
@@ -707,7 +707,7 @@ export default function Game() {
       {screen === "intro" && !videoFailed && (
         <img
           className="mp-opening-still"
-          src="/video/moonpark-opening-v5-poster.jpg"
+          src="/video/moonpark-opening-v6-poster.jpg"
           alt="A lunar park under the stars"
         />
       )}
@@ -1018,7 +1018,7 @@ export default function Game() {
             !panel && (
               <div className="mp-advisor">
                 <span className="mp-advisor-avatar">
-                  <img src="/art/advisor-v2.webp" alt="" />
+                  <img src="/art/advisor-v3.webp" alt="" />
                 </span>
                 <div>
                   <strong>MAKE IT A DAY TO REMEMBER</strong>
@@ -1159,7 +1159,7 @@ export default function Game() {
                         style={{ color: a.color }}
                       >
                         <img
-                          src={`/art/${a.kind}-s0-v2.webp`}
+                          src={`/art/${a.kind}-s0-v3.webp`}
                           alt=""
                           draggable={false}
                         />
@@ -1468,6 +1468,41 @@ export default function Game() {
                 <a href="/privacy">Privacy</a> ·{" "}
                 <a href="/terms">Competition terms</a> ·{" "}
                 <a href="/legacy">Earlier Mars prototype</a>
+              </p>
+              <p className="mp-fine">
+                Scenery:{" "}
+                <a
+                  href="https://svs.gsfc.nasa.gov/4851/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  NASA/Goddard SVS · ESA/Gaia/DPAC
+                </a>{" "}
+                star map;{" "}
+                <a
+                  href="https://www.solarsystemscope.com/textures/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Solar System Scope
+                </a>{" "}
+                Earth maps ({" "}
+                <a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  CC BY 4.0
+                </a>
+                , resized and encoded for the game);{" "}
+                <a
+                  href="https://polyhaven.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Poly Haven
+                </a>{" "}
+                lunar soil and scanned rocks (CC0).
               </p>
             </div>
           )}

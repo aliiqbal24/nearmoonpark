@@ -341,7 +341,7 @@ export function foundation(
 ) {
   shapedBox(
     g,
-    c.dark,
+    "#27343e",
     0,
     0.14,
     0,
@@ -352,7 +352,7 @@ export function foundation(
   );
   shapedBox(
     g,
-    c.light,
+    "#697984",
     0,
     0.3,
     0,
@@ -360,7 +360,7 @@ export function foundation(
     0.12,
     h - 0.22,
     style === 1 ? 0.4 : 0.16,
-  ).material = surface(c.light, "stone");
+  ).material = surface("#697984", "stone");
   for (const side of [-1, 1]) {
     box(
       g,
@@ -375,10 +375,121 @@ export function foundation(
     for (const z of [-h / 2 + 0.22, h / 2 - 0.22])
       bolt(g, side * (w / 2 - 0.22), 0.38, z, 0.032);
   }
+  for (const z of [-h / 2 + 0.12, h / 2 - 0.12]) {
+    box(g, "#263944", 0, 0.37, z, w - 0.48, 0.018, 0.06);
+    for (let i = 0; i < Math.floor(w / 0.28); i++)
+      box(g, "#c1c8c9", -w / 2 + 0.3 + i * 0.28, 0.385, z, 0.13, 0.006, 0.025);
+  }
   if (w >= 3.7 && h >= 3.7) {
     pressureGarden(g, -w / 2 + 0.46, h / 2 - 0.5, 0.3, 0.37);
     pressureGarden(g, w / 2 - 0.46, h / 2 - 0.5, 0.3, 0.4);
   }
+}
+
+export function equipmentPanel(parent: T.Object3D, width = 0.7, height = 0.55) {
+  const group = new T.Group();
+  shapedBox(group, "#263640", 0, 0, 0, width, height, 0.12, 0.025);
+  shapedBox(
+    group,
+    "#74848d",
+    0,
+    0,
+    0.065,
+    width - 0.08,
+    height - 0.08,
+    0.025,
+    0.012,
+  ).material = metal("#74848d");
+  for (let i = 0; i < 7; i++)
+    box(
+      group,
+      "#17252f",
+      0,
+      (i - 3) * height * 0.095,
+      0.085,
+      width * 0.69,
+      0.018,
+      0.016,
+    );
+  for (const side of [-1, 1])
+    for (const vertical of [-1, 1]) {
+      const fastener = cylinder(
+        group,
+        "#adbfc6",
+        side * width * 0.4,
+        vertical * height * 0.34,
+        0.095,
+        0.014,
+        0.01,
+      );
+      fastener.rotation.x = Math.PI / 2;
+      fastener.material = metal("#adbfc6");
+    }
+  parent.add(group);
+  return group;
+}
+
+export function windowPanel(
+  parent: T.Object3D,
+  width: number,
+  height: number,
+  warm = true,
+) {
+  const group = new T.Group();
+  shapedBox(group, "#1b2b35", 0, 0, 0, width, height, 0.09, 0.025);
+  const pane = shapedBox(
+    group,
+    "#608894",
+    0,
+    0,
+    0.055,
+    width - 0.08,
+    height - 0.08,
+    0.025,
+    0.015,
+  );
+  pane.material = glass;
+  pane.castShadow = false;
+  box(
+    group,
+    warm ? "#d4a16e" : "#6497b3",
+    0,
+    -height * 0.22,
+    0.035,
+    width * 0.83,
+    height * 0.32,
+    0.015,
+  ).material = glow(warm ? "#d4a16e" : "#6497b3");
+  box(group, "#bbc9cc", 0, 0, 0.075, 0.022, height - 0.08, 0.018).material =
+    metal("#bbc9cc");
+  box(
+    group,
+    "#627a87",
+    0,
+    height * 0.17,
+    0.078,
+    width - 0.08,
+    0.018,
+    0.018,
+  ).material = metal("#627a87");
+  parent.add(group);
+  return group;
+}
+
+export function safetyRail(parent: T.Object3D, width: number) {
+  const group = new T.Group();
+  for (const y of [0.42, 0.77])
+    box(group, "#a2b0b7", 0, y, 0, width, 0.035, 0.035).material =
+      metal("#a2b0b7");
+  const segments = Math.max(1, Math.ceil(width / 0.65));
+  for (let i = 0; i <= segments; i++) {
+    const x = (i / segments - 0.5) * width;
+    box(group, "#728793", x, 0.42, 0, 0.035, 0.77, 0.035).material =
+      metal("#728793");
+    shapedBox(group, "#293943", x, 0.06, 0, 0.14, 0.06, 0.12, 0.012);
+  }
+  parent.add(group);
+  return group;
 }
 
 export function marquee(

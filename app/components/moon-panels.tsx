@@ -158,7 +158,7 @@ export function Inspector({
         </div>
         <div className={`mp-avatar group-${guest.group}`}>
           <img
-            src={`/art/guest-${guest.group}-${guest.id % 6}-v2.webp`}
+            src={`/art/guest-${guest.group}-${guest.id % 6}-v3.webp`}
             alt=""
           />
         </div>
@@ -226,7 +226,7 @@ export function Inspector({
         </button>
       </div>
       <div className="mp-building-icon" style={{ color: a.color }}>
-        <img src={`/art/${b.kind}-s${b.design?.style ?? 0}-v2.webp`} alt="" />
+        <img src={`/art/${b.kind}-s${b.design?.style ?? 0}-v3.webp`} alt="" />
       </div>
       <h2>{b.design?.name || a.name}</h2>
       {!readOnly && (
@@ -362,7 +362,7 @@ export function Inspector({
         <>
           <div className="mp-shop-update">
             <img
-              src={`/art/owner-${b.kind}-v2.webp`}
+              src={`/art/owner-${b.kind}-v3.webp`}
               alt={b.kind === "food" ? "Omar" : "Mina"}
             />
             <blockquote>“{b.reason}”</blockquote>
@@ -395,7 +395,7 @@ export function Inspector({
       )}
       {b.kind === "depot" && (
         <div className="mp-shop-update">
-          <img src="/art/owner-depot-v2.webp" alt="Nia" />
+          <img src="/art/owner-depot-v3.webp" alt="Nia" />
           <p className="mp-fine">
             Nia’s park robots automatically repair connected rides. Parts and
             service cost 10 credits per repair, paid only when needed.

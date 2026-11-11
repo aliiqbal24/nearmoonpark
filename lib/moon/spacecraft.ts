@@ -23,189 +23,201 @@ export function rocket() {
   const hull = new T.Mesh(
     new T.LatheGeometry(
       [
-        [0.7, 0.48],
-        [0.9, 0.64],
-        [0.98, 1.0],
-        [0.98, 3.7],
-        [0.93, 3.96],
-        [0.82, 4.18],
+        [0.65, 0.65],
+        [0.94, 0.9],
+        [1.01, 1.25],
+        [1.01, 5.65],
+        [0.99, 6.05],
+        [0.87, 6.65],
+        [0.67, 7.25],
+        [0.38, 7.82],
+        [0.03, 8.3],
       ].map(([r, y]) => new T.Vector2(r, y)),
-      64,
+      80,
     ),
-    material(palette.ivory),
+    metal("#aeb8bd"),
   );
-  hull.castShadow = true;
-  hull.receiveShadow = true;
+  hull.castShadow = hull.receiveShadow = true;
   g.add(hull);
   const nose = new T.Mesh(
     new T.LatheGeometry(
       [
-        [0.83, 0],
-        [0.84, 0.15],
-        [0.79, 0.48],
-        [0.64, 0.93],
-        [0.43, 1.43],
-        [0.2, 1.86],
-        [0, 2.13],
+        [0.89, 0],
+        [0.83, 0.32],
+        [0.65, 0.83],
+        [0.39, 1.37],
+        [0.03, 1.88],
       ].map(([r, y]) => new T.Vector2(r, y)),
       64,
     ),
-    material(palette.coral),
+    material("#18232c"),
   );
-  nose.position.y = 4.12;
+  nose.position.y = 6.45;
   nose.castShadow = true;
   g.add(nose);
-  for (const y of [0.78, 1.12, 2.0, 3.85, 4.15])
-    ring(g, palette.gold, y === 4.15 ? 0.835 : 0.985, 0.027, 0, y).material =
-      metal(palette.gold);
-  cylinder(g, palette.navy, 0, 0.6, 0, 0.72, 0.24);
-  for (let i = 0; i < 8; i++) {
-    const a = (i * Math.PI) / 4;
-    const band = new T.Group();
-    band.rotation.y = a;
-    line(
-      band,
-      [
-        new T.Vector3(0, 1.18, 0.984),
-        new T.Vector3(0, 2.1, 0.987),
-        new T.Vector3(0, 3.76, 0.984),
-      ],
-      0.009,
-      "#d4c2a0",
-      "metal",
-    );
-    for (const y of [1.18, 2.05, 3.78])
-      sphere(band, palette.gold, 0, y, 0.995, 0.018).material = metal(
-        palette.gold,
-      );
-    g.add(band);
-    const window = new T.Group();
-    window.position.set(Math.sin(a) * 0.99, 3.28, Math.cos(a) * 0.99);
-    window.rotation.y = a;
-    ring(window, palette.gold, 0.205, 0.035, 0, 0, 0, false).material = metal(
-      palette.gold,
-    );
-    ellipsoid(window, palette.navy, 0, 0, 0.003, 0.17, 0.17, 0.035);
-    const pane = ellipsoid(window, "#8bc6ce", 0, 0, 0.03, 0.176, 0.176, 0.034);
-    pane.material = glass;
-    pane.castShadow = false;
-    line(
-      window,
-      [
-        new T.Vector3(-0.1, 0.07, 0.06),
-        new T.Vector3(-0.04, 0.11, 0.066),
-        new T.Vector3(0.04, 0.12, 0.065),
-      ],
-      0.01,
-      "#c5f0e9",
-    );
-    g.add(window);
-  }
-  for (let i = 0; i < 4; i++) {
-    const fin = new T.Group();
-    fin.rotation.y = Math.PI / 4 + (i * Math.PI) / 2;
-    const shape = new T.Shape();
-    shape.moveTo(0.82, 1.2);
-    shape.lineTo(1.62, 0.53);
-    shape.quadraticCurveTo(1.78, 0.45, 1.69, 0.84);
-    shape.lineTo(1.18, 2.45);
-    shape.quadraticCurveTo(1.0, 2.86, 0.93, 2.95);
-    shape.closePath();
-    const shell = new T.Mesh(
-      new T.ExtrudeGeometry(shape, {
-        depth: 0.13,
-        bevelEnabled: true,
-        bevelSize: 0.035,
-        bevelThickness: 0.035,
-        bevelSegments: 3,
-      }),
-      material(palette.coral),
-    );
-    shell.position.z = -0.065;
-    shell.castShadow = true;
-    fin.add(shell);
-    line(
-      fin,
-      [
-        new T.Vector3(0.97, 1.38, 0.11),
-        new T.Vector3(1.48, 0.89, 0.11),
-        new T.Vector3(1.12, 2.31, 0.11),
-      ],
-      0.02,
-      palette.gold,
-      "metal",
-    );
-    beam(
-      fin,
-      new T.Vector3(0.83, 1.42, 0),
-      new T.Vector3(1.53, 0.16, 0),
-      0.07,
-      palette.steel,
-    ).material = metal(palette.steel);
-    shapedBox(fin, palette.navy, 1.56, 0.13, 0, 0.58, 0.15, 0.6, 0.1);
-    shapedBox(
-      fin,
-      palette.gold,
-      1.56,
-      0.22,
+  for (let i = 0; i < 17; i++) {
+    const y = 1.12 + i * 0.31;
+    ring(
+      g,
+      i % 4 === 0 ? "#5d707b" : "#89969e",
+      1.014,
+      i % 4 === 0 ? 0.012 : 0.004,
       0,
-      0.4,
-      0.08,
-      0.42,
-      0.05,
-    ).material = metal(palette.gold);
-    g.add(fin);
+      y,
+    ).material = metal("#89969e");
+  }
+  for (let i = 0; i < 12; i++) {
+    const a = (i * Math.PI) / 6;
+    const seam = new T.Group();
+    seam.rotation.y = a;
+    box(seam, "#657680", 0, 3.65, 1.013, 0.006, 4.95, 0.004).material =
+      metal("#657680");
+    for (const y of [1.33, 2.52, 3.78, 5.25])
+      sphere(seam, "#303f49", 0, y, 1.018, 0.012);
+    g.add(seam);
+  }
+  for (let row = 0; row < 2; row++) {
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      const window = new T.Group();
+      window.position.set(
+        Math.sin(a) * 1.014,
+        4.8 + row * 0.58,
+        Math.cos(a) * 1.014,
+      );
+      window.rotation.y = a;
+      shapedBox(window, "#26333c", 0, 0, 0, 0.4, 0.36, 0.07, 0.11);
+      shapedBox(
+        window,
+        "#7196a0",
+        0,
+        0,
+        0.043,
+        0.31,
+        0.265,
+        0.025,
+        0.08,
+      ).material = glass;
+      box(window, "#ffe4ab", 0, -0.11, 0.065, 0.22, 0.012, 0.006).material =
+        glow("#ffd49a");
+      g.add(window);
+    }
   }
   const door = new T.Group();
-  door.position.set(0, 1.18, -0.987);
+  door.position.set(0, 1.8, -1.008);
   door.rotation.y = Math.PI;
-  shapedBox(door, palette.navy, 0, 0, 0.025, 0.7, 1.34, 0.075, 0.28);
-  const trim = ring(door, palette.gold, 0.46, 0.035, 0, 0, 0.075, false);
-  trim.scale.set(0.79, 1.5, 1);
-  trim.material = metal(palette.gold);
-  const window = ellipsoid(door, "#80c5ce", 0, 0.24, 0.08, 0.18, 0.2, 0.025);
-  window.material = glass;
-  for (const x of [-0.26, 0.26])
-    box(door, palette.gold, x, -0.12, 0.11, 0.025, 0.36, 0.025).material =
-      metal(palette.gold);
+  shapedBox(door, "#25333d", 0, 0, 0, 0.72, 1.65, 0.08, 0.21);
+  shapedBox(door, "#667c87", 0, 0.04, 0.055, 0.59, 1.46, 0.035, 0.17);
+  shapedBox(door, "#162a35", 0, 0.35, 0.085, 0.33, 0.4, 0.025, 0.1).material =
+    glass;
+  for (const x of [-0.28, 0.28])
+    box(door, "#c8d8dc", x, -0.15, 0.095, 0.025, 0.5, 0.025).material =
+      metal("#c8d8dc");
+  for (const y of [-0.58, 0.58])
+    box(door, "#8fe4d5", 0, y, 0.09, 0.38, 0.018, 0.015).material =
+      glow("#8fe4d5");
   g.add(door);
-  const emblem = label("NEAR", palette.ivory, 1.06);
-  emblem.position.set(0, 2.12, 1.035);
-  nearMark(g, palette.navy, 0.47).position.set(0, 2.57, 1.035);
-  g.add(emblem);
-  const badge = ring(g, palette.gold, 0.64, 0.025, 0, 2.4, 0.987, false);
-  badge.material = metal(palette.gold);
-  for (const x of [-0.36, 0.36]) {
-    const nozzle = new T.Mesh(
-      new T.CylinderGeometry(0.16, 0.28, 0.36, 24, 1, true),
-      metal(palette.navy),
+  for (let i = 0; i < 4; i++) {
+    const leg = new T.Group();
+    leg.rotation.y = Math.PI / 4 + (i * Math.PI) / 2;
+    const shape = new T.Shape();
+    shape.moveTo(0.94, 2.8);
+    shape.lineTo(1.17, 2.8);
+    shape.lineTo(1.66, 0.53);
+    shape.lineTo(1.52, 0.44);
+    shape.lineTo(0.95, 1.3);
+    shape.closePath();
+    const housing = new T.Mesh(
+      new T.ExtrudeGeometry(shape, {
+        depth: 0.16,
+        bevelEnabled: true,
+        bevelSize: 0.018,
+        bevelThickness: 0.018,
+        bevelSegments: 2,
+      }),
+      material("#25313b"),
     );
-    nozzle.position.set(x, 0.37, 0);
-    g.add(nozzle);
+    housing.position.z = -0.08;
+    housing.castShadow = true;
+    leg.add(housing);
+    beam(
+      leg,
+      new T.Vector3(0.93, 2.0, 0.12),
+      new T.Vector3(1.7, 0.3, 0.12),
+      0.055,
+      "#a7bbc3",
+    ).material = metal("#a7bbc3");
+    beam(
+      leg,
+      new T.Vector3(1.15, 1.52, 0.12),
+      new T.Vector3(1.65, 0.4, 0.12),
+      0.09,
+      "#374954",
+    ).material = metal("#374954");
+    shapedBox(leg, "#26333c", 1.72, 0.15, 0, 0.7, 0.16, 0.63, 0.04);
+    for (const z of [-0.23, 0.23])
+      box(leg, "#8b9ba4", 1.72, 0.25, z, 0.45, 0.035, 0.035).material =
+        metal("#8b9ba4");
+    g.add(leg);
   }
+  const brand = new T.Group();
+  nearMark(brand, "#142c37", 0.66).position.set(0, 3.95, 1.027);
+  const name = label("N E A R", "#d8e9e5", 1.15);
+  name.position.set(0, 3.23, 1.035);
+  brand.add(name);
+  const transit = label("LUNAR TRANSIT", "#8bdecd", 1.12);
+  transit.position.set(0, 2.9, 1.035);
+  transit.scale.y *= 0.5;
+  brand.add(transit);
+  g.add(brand);
+  const engine = new T.Group();
+  for (let i = 0; i < 5; i++) {
+    const a = (i * Math.PI * 2) / 5;
+    const x = Math.cos(a) * 0.45,
+      z = Math.sin(a) * 0.45;
+    const nozzle = new T.Mesh(
+      new T.CylinderGeometry(0.115, 0.22, 0.43, 28, 1, true),
+      metal("#2b3740"),
+    );
+    nozzle.position.set(x, 0.57, z);
+    engine.add(nozzle);
+    ring(engine, "#67767d", 0.19, 0.012, x, 0.48, z).material =
+      metal("#67767d");
+  }
+  g.add(engine);
   batch(g);
   const flame = new T.Group();
-  for (const [radius, height, color, opacity] of [
-    [0.43, 2.6, "#66cde4", 0.38],
-    [0.24, 1.85, "#c4f7f8", 0.72],
-    [0.12, 1.2, "#fff4cc", 0.92],
+  const plumeMaterials: T.ShaderMaterial[] = [];
+  for (const [radius, height, shade] of [
+    [0.42, 3.2, "#93c5f4"],
+    [0.24, 2.5, "#fff0cd"],
   ] as const) {
-    const mesh = new T.Mesh(
-      new T.ConeGeometry(radius, height, 24),
-      new T.MeshBasicMaterial({
-        color,
-        opacity,
-        transparent: true,
-        depthWrite: false,
-        blending: T.AdditiveBlending,
-      }),
+    const plumeMaterial = new T.ShaderMaterial({
+      uniforms: { time: { value: 0 }, tint: { value: new T.Color(shade) } },
+      transparent: true,
+      depthWrite: false,
+      blending: T.AdditiveBlending,
+      side: T.DoubleSide,
+      vertexShader: `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader: `uniform float time;uniform vec3 tint;varying vec2 vUv;
+        void main(){
+          float noise=sin(vUv.x*78.0+time*29.0)*sin(vUv.y*61.0-time*34.0);
+          float glow=pow(sin(vUv.x*3.14159),2.0)*pow(vUv.y,0.55);
+          float bands=0.7+0.3*sin(vUv.y*51.0-time*23.0);
+          gl_FragColor=vec4(tint*1.8,glow*(0.5+noise*0.13)*bands);
+        }`,
+    });
+    const plume = new T.Mesh(
+      new T.CylinderGeometry(radius * 0.38, radius, height, 48, 1, true),
+      plumeMaterial,
     );
-    mesh.rotation.z = Math.PI;
-    mesh.position.y = 0.43 - height / 2;
-    flame.add(mesh);
+    plume.position.y = 0.4 - height / 2;
+    flame.add(plume);
+    plumeMaterials.push(plumeMaterial);
   }
   g.add(flame);
   g.userData.flame = flame;
+  g.userData.plumeMaterials = plumeMaterials;
   return g;
 }
 

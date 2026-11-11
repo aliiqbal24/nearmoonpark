@@ -1,6 +1,6 @@
 # Moonpark opening film
 
-The v5 opening is a 40-second film rendered deterministically from the game's original Three.js scene, at 1920×1080 and 30 fps. A separately rendered 720×1280 portrait variant serves smaller viewports. Both use H.264 video, stereo AAC audio and a fast-start MP4 container. The complete assets are checked in; playing the game needs no rendering tools, model download or AI service.
+The v6 opening is a 40-second film rendered deterministically from the game's original Three.js scene, at 1920×1080 and 30 fps. A separately rendered 720×1280 portrait variant serves smaller viewports. Both use H.264 video, stereo AAC audio and a fast-start MP4 container. The complete assets are checked in; playing the game needs no rendering tools, model download or AI service.
 
 The scene begins with Earth in the distant sky, follows the shuttle's approach, reveals the park, rides the mass driver, meets the founder and ends on the park's dream. Short exposure dips conceal deliberate shot changes. Camera paths ease in and out, coaster frames use updated world matrices, and the movie dissolves into the live park. The underlying WebGL renderer pauses during normal film playback. A live camera sequence remains available if video playback fails. Reduced-motion settings use a still image with the narrative text and audio.
 
@@ -40,3 +40,9 @@ The finish script encodes into a private staging directory, decodes both variant
 `lib/near-brand.ts` holds the official NEAR mark used by the React interface and extruded 3D emblems. `public/art/near-protocol-film-v1.svg` is the editable film lockup. The finish script composites it inside both movie files within a centered safe area. Standalone playback therefore includes the NEAR Protocol credit. The in-game live fallback uses the shared mark, and the closing chapter displays the Moonpark title and NEAR identity.
 
 The visual benchmark supplied during the pass is [Kevin Ngo’s boat-world demo](https://x.com/kevin_t_ngo/status/2119868968307695818). Representative reference frames were reviewed for foreground layering, warm/cool contrast, material detail and deliberate reveals. Moonpark retains its lunar-resort art direction. The reference footage stays in ignored local QA output.
+
+## November 11 v6 delivery
+
+Both full timelines are rendered from the current aerospace scene, including the stainless ferry, industrial terminal, revised character proportions, lattice mass-driver gantry, natural lunar build plot, scanned rocks and the layered Earth. The opening camera centers distant Earth; the landing and founder shots are reframed for the taller models. Background starlight and Earth bypass cinematic depth blur. Portrait arrival and closing shots keep their separate framing. The original score and narration master are reused. `sceneryReady` gates offline capture so texture or mesh loading cannot leak into a recorded frame.
+
+Deliveries use immutable `moonpark-opening-v6` filenames. The previous v5 files remain for cached clients and the previous picture masters are retained in ignored `outputs/moonpark-cinema/v5-originals`. The production manifest is published last after both complete files decode. Environment asset attribution is recorded in `docs/VISUALS.md` and in game Help.

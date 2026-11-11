@@ -32,10 +32,10 @@ export const LICENSE_FEE = 5_000_000_000_000_000_000_000n;
 export const PALETTES = [
   {
     name: "Moonpark",
-    primary: "#2ab7a8",
-    accent: "#d8a34c",
-    dark: "#153e48",
-    light: "#fff0d7",
+    primary: "#179b91",
+    accent: "#a99166",
+    dark: "#101c27",
+    light: "#d3dbdc",
   },
   {
     name: "Earthrise",
@@ -211,8 +211,7 @@ export async function parkAction(
   return { value, tx: raw.transaction.hash };
 }
 let connector:
-  | Promise<import("@hot-labs/near-connect").NearConnector>
-  | undefined;
+  Promise<import("@hot-labs/near-connect").NearConnector> | undefined;
 export function walletConnector(cfg: Config) {
   return (connector ??= import("@hot-labs/near-connect").then(
     ({ NearConnector }) =>

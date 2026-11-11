@@ -580,7 +580,7 @@ export function ParkHub({
                   .map((b) => (
                     <article key={b.id}>
                       <img
-                        src={`/art/${b.kind}-s${b.design?.style ?? 0}-v2.webp`}
+                        src={`/art/${b.kind}-s${b.design?.style ?? 0}-v3.webp`}
                         alt=""
                       />
                       <strong>
@@ -643,7 +643,7 @@ export function ParkHub({
               {designs.map((b) => (
                 <article key={b.id}>
                   <img
-                    src={`/art/${b.kind}-s${b.design?.style ?? 0}-v2.webp`}
+                    src={`/art/${b.kind}-s${b.design?.style ?? 0}-v3.webp`}
                     alt=""
                   />
                   <strong>{b.name}</strong>

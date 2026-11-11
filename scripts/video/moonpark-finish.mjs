@@ -17,8 +17,8 @@ const verifyOnly = process.argv.includes("--verify-only");
 const delivery = verifyOnly
   ? "public/video"
   : await mkdtemp("outputs/moonpark-cinema/delivery-");
-const desktop = `${delivery}/moonpark-opening-v5.mp4`,
-  mobile = `${delivery}/moonpark-opening-v5-mobile.mp4`;
+const desktop = `${delivery}/moonpark-opening-v6.mp4`,
+  mobile = `${delivery}/moonpark-opening-v6-mobile.mp4`;
 if (!verifyOnly) {
   run([
     "-i",
@@ -103,7 +103,7 @@ if (!verifyOnly)
     "1",
     "-q:v",
     "2",
-    `${delivery}/moonpark-opening-v5-poster.jpg`,
+    `${delivery}/moonpark-opening-v6-poster.jpg`,
   ]);
 const variants = [];
 for (const [file, width, height] of [
@@ -141,7 +141,7 @@ if (!verifyOnly) {
     `${delivery}/moonpark-opening.json`,
     JSON.stringify(
       {
-        version: 5,
+        version: 6,
         duration: 40,
         fps: 30,
         frames: 1200,
@@ -165,7 +165,7 @@ if (!verifyOnly) {
   for (const file of [
     desktop,
     mobile,
-    `${delivery}/moonpark-opening-v5-poster.jpg`,
+    `${delivery}/moonpark-opening-v6-poster.jpg`,
     `${delivery}/moonpark-opening.json`,
   ]) {
     await rename(file, `public/video/${basename(file)}`);

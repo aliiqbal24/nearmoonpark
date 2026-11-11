@@ -35,8 +35,9 @@ try {
   );
   await page.evaluate(async () => {
     const T = await import("/node_modules/three/build/three.module.js");
-    const { RoomEnvironment } =
-      await import("/node_modules/three/examples/jsm/environments/RoomEnvironment.js");
+    const { lunarEnvironment, SUN_DIRECTION } = await import(
+      "/lib/moon/sky.ts"
+    );
     const assets = await import("/lib/moon/assets.ts");
     const { simulate } = await import("/lib/moon/engine.ts");
     document.body.style.cssText = "margin:0;background:transparent";
@@ -48,22 +49,19 @@ try {
     renderer.setPixelRatio(2);
     renderer.setSize(512, 384);
     renderer.setClearColor(0, 0);
-    renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.95;
+    renderer.toneMapping = T.AgXToneMapping;
+    renderer.toneMappingExposure = 1.18;
     document.body.append(renderer.domElement);
     const scene = new T.Scene();
-    const pmrem = new T.PMREMGenerator(renderer),
-      room = new RoomEnvironment();
-    scene.environment = pmrem.fromScene(room, 0.04).texture;
-    scene.environmentIntensity = 0.45;
-    room.dispose();
-    pmrem.dispose();
-    scene.add(new T.HemisphereLight("#c4ddf5", "#48565e", 0.55));
-    const sun = new T.DirectionalLight("#fff0d6", 3.5);
-    sun.position.set(-6, 10, 8);
+    const environment = lunarEnvironment(renderer);
+    scene.environment = environment.texture;
+    scene.environmentIntensity = 0.75;
+    scene.add(new T.HemisphereLight("#93b8e0", "#555962", 0.23));
+    const sun = new T.DirectionalLight("#ffe4c4", 4.2);
+    sun.position.copy(SUN_DIRECTION).multiplyScalar(60);
     scene.add(sun);
-    const rim = new T.DirectionalLight("#8ec4df", 1.2);
-    rim.position.set(4, 3, -5);
+    const rim = new T.DirectionalLight("#83b9ed", 0.65);
+    rim.position.set(20, 8, -25);
     scene.add(rim);
     window.art = {
       T,
@@ -175,7 +173,7 @@ try {
             size = bounds.getSize(new T.Vector3()),
             center = bounds.getCenter(new T.Vector3());
           const span = portrait
-            ? 1.62
+            ? size.y * 1.15
             : Math.max(size.x, size.y * 1.1, size.z) * 0.95;
           const camera = new T.OrthographicCamera(
             (-span * 4) / 6,
@@ -186,8 +184,7 @@ try {
             100,
           );
           if (portrait) {
-            center.set(0, 0.67, 0.05);
-            camera.position.set(0.6, 1.02, 3.2);
+            camera.position.copy(center).add(new T.Vector3(0.6, 0.22, 3.2));
             object.userData.arms[1].rotation.z = 2.1;
           } else camera.position.copy(center).add(new T.Vector3(8, 6.5, 10));
           camera.lookAt(center);
@@ -249,7 +246,7 @@ try {
       if (encode.status) throw Error(encode.stderr.toString());
       await rename(
         `outputs/moonpark-art/${asset}.webp`,
-        `public/art/${asset}-v2.webp`,
+        `public/art/${asset}-v3.webp`,
       );
       count++;
     }

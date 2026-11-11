@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "duration": 40,
   "fps": 30,
   "frames": 1200,
@@ -15,18 +15,18 @@
   "brandSource": "public/art/near-protocol-film-v1.svg",
   "variants": [
     {
-      "file": "/video/moonpark-opening-v5.mp4",
+      "file": "/video/moonpark-opening-v6.mp4",
       "width": 1920,
       "height": 1080,
-      "bytes": 16967009,
-      "sha256": "c73a9425ec8f94ec79b392c924e29a869da6a3e922c7f79ecc76e973c8ee613e"
+      "bytes": 16101021,
+      "sha256": "02c54679f5754f6e52ce2c48a731014ce1ec3b593b0c1b6a3e2169766e1fed87"
     },
     {
-      "file": "/video/moonpark-opening-v5-mobile.mp4",
+      "file": "/video/moonpark-opening-v6-mobile.mp4",
       "width": 720,
       "height": 1280,
-      "bytes": 8863145,
-      "sha256": "ca98bf973a363b882a5b6202b4c20b3a4c6c9e9be643a2f208f2daa1be5d2558"
+      "bytes": 8513200,
+      "sha256": "e1283c8371203969467a49175333943b256e504a5a505399202a3a4ef7664598"
     }
   ]
 }

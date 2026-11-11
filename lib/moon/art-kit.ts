@@ -12,21 +12,56 @@ export const artSegments = (full: number, compact: number) =>
   compactArt ? compact : full;
 const materials = new Map<string, T.MeshStandardMaterial>();
 export type Finish = "paint" | "metal" | "cloth" | "stone";
+const finishMaps = new Map<Finish, T.CanvasTexture>();
+function finishMap(finish: Finish) {
+  let texture = finishMaps.get(finish);
+  if (texture) return texture;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  const paint = canvas.getContext("2d")!;
+  paint.fillStyle = "#888888";
+  paint.fillRect(0, 0, 256, 256);
+  let seed = 51771;
+  for (let i = 0; i < 12000; i++) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    const x = seed % 256;
+    const y = (seed >>> 12) % 256;
+    const value = 106 + (seed % 42);
+    paint.fillStyle = `rgb(${value},${value},${value})`;
+    paint.fillRect(x, y, finish === "metal" ? 16 : 1, 1);
+  }
+  if (finish === "cloth") {
+    paint.fillStyle = "#999999";
+    for (let i = 0; i < 256; i += 4) {
+      paint.fillRect(i, 0, 1, 256);
+      paint.fillRect(0, i, 256, 1);
+    }
+  }
+  texture = new T.CanvasTexture(canvas);
+  texture.wrapS = texture.wrapT = T.RepeatWrapping;
+  texture.repeat.set(finish === "cloth" ? 5 : 2, finish === "cloth" ? 5 : 2);
+  texture.anisotropy = 4;
+  finishMaps.set(finish, texture);
+  return texture;
+}
 export function surface(color: string | number, finish: Finish = "paint") {
   const key = `${compactArt ? "compact" : "full"}:${finish}:${color}`;
   let result = materials.get(key);
   if (!result) {
     const properties = {
       color,
-      roughness: { paint: 0.34, metal: 0.3, cloth: 0.76, stone: 0.86 }[finish],
-      metalness: finish === "metal" ? 0.78 : 0.02,
+      roughness: { paint: 0.43, metal: 0.27, cloth: 0.88, stone: 0.94 }[finish],
+      metalness: finish === "metal" ? 0.9 : finish === "paint" ? 0.18 : 0,
+      bumpMap: compactArt ? null : finishMap(finish),
+      bumpScale:
+        finish === "cloth" ? 0.008 : finish === "stone" ? 0.014 : 0.002,
     };
     result = compactArt
       ? new T.MeshStandardMaterial(properties)
       : new T.MeshPhysicalMaterial({
           ...properties,
-          clearcoat: finish === "paint" ? 0.55 : finish === "metal" ? 0.25 : 0,
-          clearcoatRoughness: 0.23,
+          clearcoat: finish === "paint" ? 0.25 : finish === "metal" ? 0.1 : 0,
+          clearcoatRoughness: 0.32,
         });
     result.userData.finish = finish;
     materials.set(key, result);
@@ -57,7 +92,7 @@ export function nearMark(parent: T.Object3D, color: string, width = 1) {
     const svg = new SVGLoader().parse(
       `<svg xmlns="http://www.w3.org/2000/svg"><path d="${NEAR_MARK_PATH}"/></svg>`,
     );
-    const shapes = svg.paths.flatMap((path) => SVGLoader.createShapes(path));
+    const shapes = svg.paths.flatMap((path) => path.toShapes());
     nearGeometry = new T.ExtrudeGeometry(shapes, {
       depth: 0.35,
       bevelEnabled: true,
@@ -81,31 +116,31 @@ export function nearMark(parent: T.Object3D, color: string, width = 1) {
 }
 
 export const palette = {
-  ivory: "#fff0d7",
-  navy: "#123e48",
-  mint: "#2ab7a8",
-  gold: "#d8a34c",
-  steel: "#819da4",
-  rubber: "#20383d",
-  coral: "#e4775d",
-  cream: "#ead4b0",
+  ivory: "#cdd4d4",
+  navy: "#101c27",
+  mint: "#42d7c4",
+  gold: "#a99166",
+  steel: "#8c9ca7",
+  rubber: "#111820",
+  coral: "#e5693e",
+  cream: "#a7ada9",
 };
 export const glass = new T.MeshPhysicalMaterial({
-  color: "#8acdd8",
-  metalness: 0.08,
-  roughness: 0.09,
+  color: "#71969c",
+  metalness: 0.55,
+  roughness: 0.16,
   transparent: true,
-  opacity: 0.13,
-  envMapIntensity: 0.65,
+  opacity: 0.35,
+  envMapIntensity: 1.8,
   depthWrite: false,
-  clearcoat: 1,
+  clearcoat: 0.85,
   clearcoatRoughness: 0.08,
   side: T.DoubleSide,
 });
 const suitMaterial = new T.MeshStandardMaterial({
   vertexColors: true,
-  roughness: 0.6,
-  metalness: 0.015,
+  roughness: 0.86,
+  metalness: 0.04,
 });
 const lit = new Map<string, T.MeshStandardMaterial>();
 
@@ -151,7 +186,7 @@ export function ring(
   flat = true,
 ) {
   const m = new T.Mesh(
-    new T.TorusGeometry(radius, tube, 8, 64),
+    new T.TorusGeometry(radius, tube, artSegments(8, 4), artSegments(64, 24)),
     material(color),
   );
   m.position.set(x, y, z);
@@ -260,6 +295,7 @@ export function batchColors(g: T.Object3D) {
 }
 
 export function disposeObject(root: T.Object3D) {
+  root.userData.disposed = true;
   const geometries = new Set<T.BufferGeometry>(),
     owned = new Set<T.Material>();
   root.traverse((o) => {
@@ -288,13 +324,27 @@ export function disposeObject(root: T.Object3D) {
     glass,
     suitMaterial,
   ]);
+  const textures = new Set<T.Texture>();
   owned.forEach((m) => {
     if (shared.has(m)) return;
     const maps = m as T.MeshStandardMaterial;
-    maps.map?.dispose();
-    maps.bumpMap?.dispose();
+    for (const texture of [
+      maps.map,
+      maps.bumpMap,
+      maps.normalMap,
+      maps.roughnessMap,
+      maps.metalnessMap,
+      maps.aoMap,
+      maps.alphaMap,
+      maps.emissiveMap,
+    ])
+      if (texture) textures.add(texture);
+    if (m instanceof T.ShaderMaterial)
+      for (const uniform of Object.values(m.uniforms))
+        if (uniform.value instanceof T.Texture) textures.add(uniform.value);
     m.dispose();
   });
+  textures.forEach((texture) => texture.dispose());
 }
 export function box(
   g: T.Object3D,
@@ -373,23 +423,24 @@ export function label(
   billboard = false,
 ) {
   const c = document.createElement("canvas");
-  c.width = 512;
-  c.height = 128;
+  c.width = 1024;
+  c.height = 256;
   const ctx = c.getContext("2d")!;
-  ctx.fillStyle = "#143d45";
+  ctx.fillStyle = "#07131d";
   ctx.beginPath();
-  ctx.roundRect(4, 4, 504, 120, 48);
+  ctx.roundRect(4, 4, 1016, 248, 12);
   ctx.fill();
   ctx.strokeStyle = color;
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 2;
   ctx.stroke();
   ctx.fillStyle = color;
-  ctx.font = "800 41px sans-serif";
+  ctx.font = "600 72px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, 256, 67, 470);
+  ctx.fillText(text, 512, 133, 934);
   const tex = new T.CanvasTexture(c);
   tex.colorSpace = T.SRGBColorSpace;
+  tex.anisotropy = 8;
   const sign = billboard
     ? new T.Sprite(new T.SpriteMaterial({ map: tex, depthWrite: false }))
     : new T.Mesh(

@@ -1,6 +1,35 @@
 # Moonpark lunar-resort artwork
 
+## November 11 cinematic environment release
+
+The main game uses perspective. The separately accessible `/lab/isometric` camera experiment remains available for comparison. This release completes the aerospace material pass across the live park, construction and design photos, portraits, public parks and both v6 opening films.
+
+The spaceport now uses glazed terminal wings, roof equipment, warm interior panels and industrial service structures. The stainless ferry has welded hull segments, pressure hatches, landing struts and animated exhaust. The mass driver gains a lattice gantry and station machinery. The eight attraction types retain three structural designs each, with extra services, rails, control panels and architectural details. Visitor rigs have longer human proportions, pressure suits, harnesses and reflective visors. Official NEAR marks appear on arrival infrastructure, rides, spacecraft and crew suits.
+
+AgX tone mapping, low warm sunlight, blue earthlight, restrained bloom and ambient occlusion separate the materials. Background Earth and stars stay sharp through the cinematic depth-of-field pass. Earth has independent day, night-city, cloud and atmospheric layers, with a directional terminator and ocean highlights. Its apparent diameter is about two degrees. The orientation-only sky camera keeps it distant during park panning. The Sun uses the same direction as the park's key light.
+
+Fractal lunar relief includes broad basins, small nearby craters and distant mountain ridges. The graded build plot uses lunar soil, with service lamps and boundaries around its perimeter. Scanned boulders form nearby clusters; smaller rubble is batched. Full-quality movie capture waits for all scenery assets before rendering its first frame. Software rendering retains compact geometry and simpler surface detail.
+
+### Environment asset sources
+
+- [NASA Deep Star Maps 2020](https://svs.gsfc.nasa.gov/4851/), NASA/Goddard Space Flight Center Scientific Visualization Studio, using Gaia DR2, ESA/Gaia/DPAC. The 4K linear EXR is converted to sRGB WebP as `public/textures/space/starmap-v3.webp`. No constellation illustrations are used.
+- [Solar System Scope textures](https://www.solarsystemscope.com/textures/), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Day and cloud maps are reduced from 8K to 4K; the night map is 2K. All are encoded to WebP under `public/textures/space/earth-*-v3.webp`. Cloud data drives alpha; day and city maps use sRGB. The game Help contains source and license credits.
+- [Poly Haven Moon 02](https://polyhaven.com/a/moon_02), CC0, supplies the 2K lunar diffuse, normal and roughness textures in `public/textures/lunar/`.
+- [Poly Haven Moon Rock 02](https://polyhaven.com/a/moon_rock_02), CC0, by Greg Zaal, Jenelle van Heerden and Rico Cilliers, captured at Spaceport Rostock's lab. The 1K glTF, mesh data and textures are in `public/models/lunar-rock/`. Instanced, differently sized and rotated copies form the hero rock clusters.
+
+Original downloads and reference footage remain in ignored local outputs. The higher visual benchmark reviewed for this release is [Super Heavy catch](https://www.airsup.ai/lab/catch), also shared in [Konstantin's demo](https://x.com/konstantinsaifo/status/2120356782690443382). It informed engineering detail, surface finishes and scene depth.
+
 The live park, construction cards, design previews, public parks and opening films share the same editable Three.js models. The November 10 upgrade rebuilds the spaceport, all eight building types and the character rig around ivory enamel, deep teal, warm brass, coral and pressure glass.
+
+## Isometric camera experiment
+
+`/lab/isometric` provides an interactive comparison of a true orthographic isometric camera and the perspective camera. Both modes show the same staged park, animated visitors and shuttle. The preview includes an opening-day layout, animation speeds, attraction selection, bounded panning and scroll or pinch zoom. Its state stays inside the preview component. It uses the ongoing visual rework for its models and terrain. The production game continues to use perspective after the camera review.
+
+The isometric camera uses a 45-degree azimuth and 35.264-degree elevation. Projection-aware picking, screen coordinates and ambient occlusion use the active camera. The default game camera is selected independently of this preview.
+
+Both preview browser cases pass with hardware and software rendering. They exercise camera switching, actual rendered pixels, attraction picking, panning, zooming, layout changes, animation controls and phone-sized screens. The saved-park key and outgoing writes are checked during the camera comparison. Software rendering has a substantial startup and frame-time cost in this prototype. The 18 routine game regression cases also pass with hardware rendering. Four optional transaction-spending cases retain their opt-in gate.
+
+The November 11 terrain study uses the 2K diffuse, OpenGL normal and roughness maps from Poly Haven’s Moon 02 material. Original downloads are stored in `public/textures/lunar/`. The asset is CC0 and was captured at Spaceport Rostock’s lab. Surface geometry, crater profiles, spacecraft, architectural details and character rigs are editable game sources. [Moon 02 material and credits](https://polyhaven.com/a/moon_02).
 
 ## Architectural customization
 
@@ -51,7 +80,7 @@ Hardware rendering uses separately bounded desktop and mobile resolution. Sustai
 - `lib/moon/scenery.ts` contains terrain, paths, the spaceport, observatory and derived path amenities.
 - `lib/moon/world.ts` contains lighting, picking, state-driven animation and camera integration.
 - `scripts/game/moon-art.mjs` photographs 24 building variants and 22 portraits from those live models. It checks finite geometry and smooth coaster frames during production.
-- `public/art/*-s0-v2.webp`, `*-s1-v2.webp` and `*-s2-v2.webp` are the building previews. Portraits use `*-v2.webp`. The 18 visitor portraits match all three suit groups and six face variants. Omar, Mina and Nia have matching portraits beside their inspector updates.
+- `public/art/*-s0-v3.webp`, `*-s1-v3.webp` and `*-s2-v3.webp` are the building previews. Portraits use `*-v3.webp`. The 18 visitor portraits match all three suit groups and six face variants. Omar, Mina and Nia have matching portraits beside their inspector updates.
 - `MOONPARK-CINEMA.md` documents the editable film pipeline.
 
 Start the isolated local art server with `npx vite --config scripts/game/visual-preview.config.mjs`. Then run `GAME_URL=http://127.0.0.1:5174 MOON_CAPTURE_GPU=1 node scripts/game/moon-art.mjs`. Omit the GPU flag for portable software capture. Use `--only=food,coaster,guest-0` for a smaller production slice. The art server denies environment files, account keys and Git internals. It runs locally on port 5174.
@@ -81,7 +110,7 @@ The sky prompt requests a two-to-one equirectangular distant-space texture. A ne
 
 The original lunar-resort score, sound effects and narration master are reused. Web Audio separates music and effects, ducks the mix during the opening film, limits peaks and suspends playback in background tabs. Editable audio sources and measured delivery loudness are documented in the cinema file.
 
-The Earth texture is bundled from the [Three.js examples](https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg). Three.js uses [MIT licensing](https://github.com/mrdoob/three.js). Interface controls use Lucide. Narration uses Kokoro 82M v1.0 under Apache-2.0 through the MIT-licensed Kokoro ONNX wrapper. Models, terrain geometry, scripts, score, effects and narration text are original production assets.
+The earlier Earth texture came from the Three.js examples; current Earth and sky map attribution is recorded above. Three.js uses [MIT licensing](https://github.com/mrdoob/three.js). Interface controls use Lucide. Narration uses Kokoro 82M v1.0 under Apache-2.0 through the MIT-licensed Kokoro ONNX wrapper. Models, terrain geometry, scripts, score, effects and narration text are original production assets.
 
 ## November 10 verification
 
@@ -90,3 +119,13 @@ The production build, TypeScript checks and focused source lint pass. All 17 sim
 Both complete delivery videos decode for all 1,200 frames at 30 fps and 40 seconds. Desktop is 1920 by 1080, and mobile is 720 by 1280. The v5 brand pass re-renders both full timelines and includes the NEAR credit inside the delivered movies. Exported spacecraft, founder, robot, overview and front-seat frames were inspected. The original audio master measures approximately −18.1 LUFS integrated and −4.3 dBTP in delivery. A new subjective listening session was outside this visual pass.
 
 An isolated populated scene at 1600 by 1000 on the local RTX 5080 measured about 6.2–7.2 ms per frame across two 60-frame passes, with a GPU finish after each frame. The earlier unmerged scene measured about 8.6 ms in the same authoring harness. These are workstation world-render measurements. Physical-phone performance still needs testing. Compact viewport layout and portrait movie playback are covered by browser checks.
+
+## November 11 release verification
+
+The production build and TypeScript checks pass. Focused lint reports no errors and ten existing image-element optimization warnings. The 18 routine game browser cases pass across the production-suite run and the corrected-host authentication recheck; four optional transaction-spending cases remain opt-in. The initial auth check used `127.0.0.1` against a server whose request origin was `localhost`, correctly receiving a 403. With the runner on the server's host, anonymous ranked provisioning and profile changes return 401 as intended.
+
+Both camera-preview cases pass with hardware graphics and with software rendering. Software uses a 0.6 render ratio and reduced torus geometry for small suit and architectural rings; hardware and offline captures retain their full geometry. Software rendering remains slower. Physical-phone performance is unmeasured.
+
+The v6 desktop and portrait films each decode for 1,200 frames, 30 fps and 40 seconds, with stereo 48 kHz audio. Exported Earth, arrival, founder, coaster, robot and park-overview frames were inspected. The rebuilt terminal initially obscured the robot shot; it is now staged on the empty arrival pad with clear framing in both aspect ratios. Its two-second replacement is assembled from deterministic source frames. Original full picture masters and the first v6 pass remain in ignored local outputs. The unchanged audio master measures about −18.0 LUFS integrated and −4.3 dBTP after delivery encoding. No new subjective audio audition is claimed for this visual pass.
+
+The current Rust/WASM engine and public contract configuration retain their previous SHA-256 hashes. The browser checks include archived v4 saves, published parks and first-landing clock behavior. This visual release performs no new testnet purchases, contract migration or economy changes.
