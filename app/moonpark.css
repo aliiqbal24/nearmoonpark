@@ -3792,3 +3792,398 @@ button.mp-chain .mp-near-mark svg {
   border-radius: 12px;
   background: radial-gradient(ellipse at 50% 65%, #35574f, #10242d 75%);
 }
+
+/* The workshop keeps the drawing area and purchase decision together. */
+.mp-dialog:has(.mp-build-studio) {
+  width: min(1100px, 100%);
+  padding: 22px 26px;
+}
+.mp-build-studio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  gap: 26px;
+}
+.mp-build-studio:not(.with-track) {
+  grid-template-columns: minmax(180px, 1fr) minmax(270px, 1fr);
+  max-width: 720px;
+}
+.mp-dialog:has(.mp-build-studio:not(.with-track)) {
+  width: min(800px, 100%);
+}
+.mp-studio-main {
+  min-width: 0;
+}
+.mp-track-intro {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  color: #315f60;
+}
+.mp-track-intro p {
+  margin: 0;
+  font-size: 12px;
+}
+.mp-track-intro > span {
+  font-size: 10px;
+  color: #617b80;
+  width: 100%;
+}
+.mp-track-tools {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.mp-track-tools button {
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.mp-track-plan {
+  width: 100%;
+  height: min(46dvh, 450px);
+  display: block;
+  touch-action: none;
+  border-radius: 13px;
+  background: #0b2029;
+}
+.mp-track-plan.drawing {
+  cursor: crosshair;
+}
+.mp-track-shadow {
+  stroke: #010b10;
+  stroke-width: 6;
+  fill: none;
+  pointer-events: none;
+}
+.mp-track-rail {
+  stroke: #8adfcd;
+  stroke-width: 2.5;
+  fill: none;
+  pointer-events: none;
+}
+.mp-track-point {
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+}
+.mp-track-point:active {
+  cursor: grabbing;
+}
+.mp-track-point:focus-visible {
+  stroke: #fff;
+  stroke-width: 3;
+}
+.mp-track-insert {
+  cursor: copy;
+}
+.mp-plan-label {
+  font-size: 5px;
+  letter-spacing: 1px;
+  fill: #e5d6ac;
+  pointer-events: none;
+}
+.mp-point-height {
+  fill: #e2eee7;
+  font-size: 7px;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: #0b2029;
+  stroke-width: 2px;
+}
+.mp-height-control {
+  padding: 12px 0 4px;
+}
+.mp-height-control label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #38545b;
+}
+.mp-height-control input {
+  width: 100%;
+  margin-top: 9px;
+  accent-color: #237970;
+}
+.mp-studio-options {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mp-studio-options > label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #506468;
+}
+.mp-studio-options input[type="text"],
+.mp-studio-options label > input {
+  display: block;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #b4c7bf;
+  border-radius: 8px;
+  margin-top: 5px;
+  background: #fffaf0;
+  color: #294b52;
+}
+.mp-studio-options .mp-design-families button {
+  min-width: 0;
+  flex: 1;
+  padding: 4px;
+}
+.mp-studio-options .mp-design-families img {
+  width: 62px;
+  height: 49px;
+  object-fit: contain;
+}
+.mp-studio-options .mp-design-families span {
+  font-size: 9px;
+}
+.mp-attraction-preview {
+  height: 220px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 13px;
+  background: radial-gradient(ellipse at 50% 70%, #b7c9be, #e5eadd 65%);
+  touch-action: none;
+}
+.mp-attraction-preview canvas {
+  display: block;
+}
+.mp-plan-dimensions {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #507476;
+  margin: 0 0 4px;
+}
+.mp-studio-price {
+  padding: 12px 0 5px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: #345e59;
+}
+.mp-studio-price small {
+  width: 100%;
+  font-size: 10px;
+  color: #68807d;
+}
+.mp-studio-error {
+  margin: 0;
+  font-size: 11px;
+  color: #9b4934;
+}
+.mp-catalogue-wrap {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 7px;
+  background: #172e3cef;
+  border: 1px solid #b6d7ce55;
+  border-radius: 17px;
+  box-shadow: 0 8px 32px #07192466;
+}
+.mp-build-dock {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  box-shadow: none;
+  border-radius: 9px;
+  background: none;
+  padding: 2px 2px 8px;
+  overscroll-behavior: contain;
+  scrollbar-width: auto;
+  scrollbar-color: #b5d1bd #25424d;
+}
+.mp-build-dock::-webkit-scrollbar {
+  height: 7px;
+}
+.mp-build-dock::-webkit-scrollbar-thumb {
+  background: #b5d1bd;
+  border-radius: 8px;
+}
+.mp-build-dock::-webkit-scrollbar-track {
+  background: #25424d;
+  border-radius: 8px;
+}
+.moonpark .mp-blueprint {
+  flex: 0 0 123px;
+  min-width: 123px;
+  height: 119px;
+}
+.moonpark .mp-catalogue-arrow {
+  flex: 0 0 25px;
+  padding: 9px 2px;
+  background: #b8d5c714;
+  border-color: #b8d5c724;
+  color: #ddeddf;
+}
+.moonpark .mp-catalogue-arrow:disabled {
+  opacity: 0.2;
+}
+.mp-catalogue-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  z-index: 80;
+  width: 195px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  color: #e7f2e5;
+  background: #102c36f5;
+  border: 1px solid #a2cfc45e;
+  box-shadow: 0 4px 17px #07172466;
+  font-size: 11px;
+  line-height: 1.45;
+  pointer-events: none;
+}
+.mp-cloud-save {
+  font-size: 10px !important;
+  gap: 5px !important;
+  padding: 6px 10px !important;
+  background: #f1f1dfed !important;
+  color: #36585a !important;
+}
+.mp-economy-lesson {
+  position: absolute;
+  left: 80px;
+  top: 147px;
+  max-width: 330px;
+  padding: 15px 18px;
+  border: 1px solid #b4dcd377;
+  background: #102e3bee;
+  border-radius: 15px;
+  color: #eaf3e7;
+  z-index: 6;
+  box-shadow: 0 5px 30px #07192455;
+}
+.mp-economy-lesson p {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.mp-economy-lesson strong {
+  font-size: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.mp-economy-lesson button {
+  font-size: 11px;
+  padding: 6px 9px;
+  margin-right: 5px;
+}
+@media (max-width: 760px) {
+  .mp-dialog:has(.mp-build-studio) {
+    max-height: 94dvh;
+    padding: 16px;
+  }
+  .mp-dialog:has(.mp-build-studio) h2 {
+    font-size: 23px;
+  }
+  .mp-build-studio,
+  .mp-build-studio:not(.with-track) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .mp-track-plan {
+    height: min(58vw, 360px);
+  }
+  .mp-studio-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+  }
+  .mp-studio-options > * {
+    grid-column: 1 / -1;
+  }
+  .mp-studio-options .mp-attraction-preview {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    height: 155px;
+  }
+  .mp-studio-options .mp-plan-dimensions {
+    grid-column: 2;
+    grid-row: 1;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mp-studio-options > label:first-of-type {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    align-self: start;
+  }
+  .mp-track-tools button {
+    font-size: 10px;
+    padding: 7px;
+  }
+  .mp-build-area.inspecting {
+    right: 12px;
+  }
+  .mp-catalogue-wrap {
+    padding: 4px;
+    gap: 2px;
+  }
+  .moonpark .mp-blueprint {
+    flex-basis: 105px;
+    min-width: 105px;
+    height: 99px;
+  }
+  .mp-subhud {
+    overflow-x: auto;
+    scrollbar-width: none;
+    max-width: calc(100% - 20px);
+  }
+  .mp-cloud-save {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .mp-economy-lesson {
+    left: 16px;
+    top: 137px;
+    max-width: 300px;
+  }
+}
+.mp-toast,
+.mp-advisor {
+  pointer-events: none;
+}
+.mp-toast button,
+.mp-toast a {
+  pointer-events: auto;
+}
+.mp-catalogue-wrap.guided {
+  width: max-content;
+}
+.mp-catalogue-wrap.guided .mp-build-dock {
+  flex: none;
+}
+.mp-archive-notice {
+  position: absolute;
+  right: 20px;
+  top: 141px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 6;
+  padding: 8px 12px;
+  background: #fff5deeb;
+  border-radius: 9px;
+  color: #445c60;
+  font-size: 10px;
+}
+.mp-archive-notice button {
+  padding: 5px 8px;
+  font-size: 10px;
+}
+@media (max-width: 760px) {
+  .mp-archive-notice {
+    top: 142px;
+    right: 12px;
+    left: 12px;
+    justify-content: space-between;
+  }
+}

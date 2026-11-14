@@ -7,19 +7,18 @@ import {
   X,
   Link2,
   Play,
-  Pause,
   ArrowUpRight,
   Coins,
   Users,
   Package,
   Heart,
-  Zap,
   Trophy,
   ExternalLink,
   Ticket,
   ShieldCheck,
 } from "lucide-react";
 import {
+  VERSION,
   blueprint,
   coasterDuration,
   parkClosed,
@@ -129,29 +128,6 @@ export function Inspector({
   readOnly?: boolean;
   config?: Config | null;
 }) {
-  const actionRef = useRef(action);
-  useEffect(() => {
-    actionRef.current = action;
-  }, [action]);
-  const price = building?.price ?? 0,
-    id = building?.id,
-    kind = building?.kind;
-  const [priceEdit, setPriceDraft] = useState({ base: price, value: price });
-  const priceDraft = priceEdit.base === price ? priceEdit.value : price;
-  useEffect(() => {
-    if (id === undefined || !kind || priceDraft === price || !isRide(kind))
-      return;
-    const timer = setTimeout(
-      () =>
-        actionRef.current({
-          kind: "price",
-          building: id,
-          value: priceDraft,
-        }),
-      250,
-    );
-    return () => clearTimeout(timer);
-  }, [id, price, kind, priceDraft]);
   if (guest)
     return (
       <aside className="mp-inspector">
@@ -213,13 +189,17 @@ export function Inspector({
         ? "Needs a path"
         : b.insolvent
           ? "Waiting for supplies"
-          : !b.enabled
-            ? "Closed by owner"
-            : !b.powered
-              ? b.condition <= 0
-                ? "Needs maintenance"
-                : "Needs more power"
-              : "Open for business";
+          : b.pending_sale
+            ? "Selling after the current ride…"
+            : !b.enabled
+              ? "Closed by owner"
+              : !b.powered
+                ? b.condition <= 0
+                  ? "Needs maintenance"
+                  : run.version === VERSION
+                    ? "Preparing to open"
+                    : "Needs more power"
+                : "Open for business";
   return (
     <aside className="mp-inspector" data-testid="building-inspector">
       <div className="mp-inspector-top">
@@ -239,6 +219,7 @@ export function Inspector({
           building={b}
           finished={parkClosed(run)}
           cash={run.cash}
+          version={run.version}
           action={action}
         />
       )}
@@ -286,33 +267,8 @@ export function Inspector({
       </div>
       {ride && (
         <>
-          <label className="mp-control-label" htmlFor="ticket-price">
-            Ticket price <strong>{money(priceDraft)} credits</strong>
-          </label>
-          <input
-            id="ticket-price"
-            aria-label="Ticket price"
-            type="range"
-            min="100"
-            max="2000"
-            step="100"
-            value={priceDraft}
-            disabled={disabled}
-            onChange={(e) =>
-              setPriceDraft({ base: price, value: Number(e.target.value) })
-            }
-            onPointerUp={() => {
-              if (priceDraft !== b.price)
-                action({ kind: "price", building: b.id, value: priceDraft });
-            }}
-            onBlur={() => {
-              if (priceDraft !== b.price)
-                action({ kind: "price", building: b.id, value: priceDraft });
-            }}
-          />
           <p className="mp-fine">
-            Higher prices earn more per ticket. Visitors compare value, queues
-            and their remaining budget.
+            Tickets · {money(b.price)} credits · automatic fare
           </p>
           {b.kind === "coaster" && (
             <>
@@ -332,8 +288,8 @@ export function Inspector({
                 ))}
               </div>
               <p className="mp-fine">
-                More launch power means more thrills, wear and power use.
-                Families prefer a gentler ride.
+                A stronger launch adds thrills and increases wear. Families
+                prefer a gentler ride.
               </p>
               <button
                 className="mp-secondary full"
@@ -406,6 +362,12 @@ export function Inspector({
           )}
         </>
       )}
+      {b.kind === "solar" && run.version === VERSION && (
+        <p className="mp-fine">
+          Earns 5 credits every 20 seconds while connected. NEAR records energy
+          export payments from Lunar Logistics to your park.
+        </p>
+      )}
       {b.kind === "depot" && (
         <div className="mp-shop-update">
           <img src="/art/owner-depot-v3.webp" alt="Nia" />
@@ -417,15 +379,18 @@ export function Inspector({
       )}
       {!disabled && (
         <div className="mp-inspector-bottom">
-          <button onClick={() => action({ kind: "toggle", building: b.id })}>
-            {b.enabled ? <Pause size={14} /> : <Play size={14} />}{" "}
-            {b.enabled ? "Close" : "Open"}
-          </button>
+          {run.version !== VERSION && (
+            <button onClick={() => action({ kind: "toggle", building: b.id })}>
+              {b.enabled ? "Close" : "Open"}
+            </button>
+          )}
           <button
-            disabled={!!b.riders.length}
+            disabled={!!b.pending_sale}
             onClick={() => action({ kind: "sell", building: b.id })}
           >
-            Sell · {money(resaleValue(b))}
+            {b.pending_sale
+              ? "Selling after this ride…"
+              : `Sell · ${money(resaleValue(b, run.version))}`}
           </button>
         </div>
       )}
@@ -646,9 +611,10 @@ export function ScoreBreakdown({ run }: { run: Run }) {
         </div>
       ))}
       <p className="mp-fine">
-        Profit measures cash plus the resale value of owned assets, adjusted for
-        ride condition, compared with opening equity. Full finance credit
-        requires a gain of 1,500 credits.
+        {run.version === VERSION
+          ? "Profit counts your cash and construction investment, compared with your starting budget. Selling returns half the construction credits."
+          : "Profit measures cash plus resale value, adjusted for ride condition, compared with opening equity."}{" "}
+        Full finance credit requires a gain of 1,500 credits.
       </p>
     </div>
   );
@@ -711,7 +677,7 @@ export function Results({
           </>
         ) : state.mode === "near" ? (
           <>
-            <Zap size={16} /> Confirming your result on NEAR…
+            <ShieldCheck size={16} /> Confirming your result on NEAR…
           </>
         ) : (
           <>LOCAL PRACTICE · not a ranked score</>

@@ -6,7 +6,7 @@ Moonpark uses Neon managed Auth and a free Neon Postgres database through Vercel
 
 The Vercel project is `nearmoonpark`. Its production origin is `https://nearmoonpark.vercel.app`, which is registered in Neon Auth's trusted domains. Localhost callbacks are allowed by Neon for development.
 
-Set `NEON_AUTH_BASE_URL` and a random `NEON_AUTH_COOKIE_SECRET` of at least 32 characters as private runtime variables. Marketplace supplies the database connection variables. Pull them into ignored `.env.local` for local development, then run `npm run db:migrate` to create Moonpark's private profile and sponsorship tables. Neon manages its own identity tables.
+Set `NEON_AUTH_BASE_URL` and a random `NEON_AUTH_COOKIE_SECRET` of at least 32 characters as private runtime variables. Marketplace supplies the database connection variables. Pull them into ignored `.env.local` for local development, then run `npm run db:migrate` to create Moonpark's private profile, sponsorship and encrypted recovery tables. Neon manages its own identity tables.
 
 Never commit credentials or paste them into chat. Rotating the cookie secret invalidates cached sessions.
 
@@ -21,3 +21,9 @@ Only basic identity scopes are requested, including email and profile. The publi
 Verify a fresh sign-in, refresh, sign-out and return visit. Check that anonymous requests cannot obtain ranked sponsorship and that the same verified identity retains its public player ID.
 
 Once gameplay is approved and the final rules and build are frozen, the contract sponsor can explicitly call `open_challenge`. This is a one-time operation. The current playtest deployment has not opened it. Preserve an opened prize contract and deploy a new ruleset for later changes.
+
+## Cross-device recovery
+
+Set a stable `MOON_CLOUD_SAVE_KEY` containing 32 random bytes encoded as 64 hexadecimal characters in local and Vercel server secrets. `db/migrations/0002-cloud-save.sql` creates the compact recovery table. Verified sessions access their own row through `/api/moon/save`. Writes enforce same origin and check the confirmed run operator. A sponsored operator rotation updates recovery credentials for the same run. Generated owner keys are retained for ownership and earnings. NEAR public-key checks validate recovery access, and the park authority revision prevents stale operators from replacing newer credentials. Separate rows preserve guest parks when a player later starts a ranked park. The primary game restores this record before resuming or creating a park. Local pending commands are retained and reconciled against the canonical NEAR state. Other devices retrieve the latest confirmed state, while browser-local practice has local saves.
+
+The recovery record contains generated testnet keys encrypted with AES-256-GCM. Keep the encryption key stable across deployments. A private park backup and an external owning wallet provide additional recovery paths.

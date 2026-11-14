@@ -149,8 +149,18 @@ export function massDriver(
             [0.16, 2.8, -0.035],
             [-0.12, 1.25, 0.22],
           ];
+  const authored = !!b.design.track_w;
   const curve = new T.CatmullRomCurve3(
-    coordinates.map(([x, y, z]) => new T.Vector3(x * w, y, z * h)),
+    authored
+      ? b.design.track!.map(
+          (p) =>
+            new T.Vector3(
+              (p.x / 10) * 1.25 - w / 2,
+              p.y / 10,
+              (p.z / 10) * 1.25 - h / 2,
+            ),
+        )
+      : coordinates.map(([x, y, z]) => new T.Vector3(x * w, y, z * h)),
     true,
     b.design.track?.length ? "centripetal" : "catmullrom",
     0.36,
@@ -159,7 +169,11 @@ export function massDriver(
     const evaluate = curve.getPoint.bind(curve);
     curve.getPoint = (t, target) => {
       const p = evaluate(t, target);
-      p.y = Math.max(1.05, p.y);
+      p.y = Math.max(1.2, Math.min(60, p.y));
+      if (authored) {
+        p.x = T.MathUtils.clamp(p.x, -w / 2 + 0.4, w / 2 - 0.4);
+        p.z = T.MathUtils.clamp(p.z, -h / 2 + 0.4, h / 2 - 0.4);
+      }
       return p;
     };
   }
@@ -286,6 +300,13 @@ export function massDriver(
   towerBrand.position.set(0, 7.4, 0.57);
   tower.add(towerBrand);
   nearMark(tower, "#8dd5ce", 0.57).position.set(0, 8.7, 0.57);
+  if (authored) {
+    const peak = curve
+      .getPoints(240)
+      .reduce((highest, p) => (p.y > highest.y ? p : highest));
+    tower.position.set(peak.x, 0, peak.z);
+    tower.scale.y = Math.max(0.5, peak.y / 10.7);
+  }
   g.add(tower);
   for (let i = 0; i < 104; i++) {
     const u = i / 104,
@@ -412,10 +433,11 @@ export function massDriver(
     batch(collar);
     g.add(collar);
   }
+  const stationWidth = authored ? 7.5 : w;
   const station = new T.Group();
   station.position.set(-0.03 * w, 0, h * 0.34);
-  shapedBox(station, c.dark, 0, 0.6, 0, w * 0.77, 0.2, 1.47, 0.15);
-  for (const x of [-w * 0.32, w * 0.32]) {
+  shapedBox(station, c.dark, 0, 0.6, 0, stationWidth * 0.77, 0.2, 1.47, 0.15);
+  for (const x of [-stationWidth * 0.32, stationWidth * 0.32]) {
     box(station, c.light, x, 1.42, 0, 0.12, 1.75, 1.3);
     box(station, c.primary, x, 1.4, 0.68, 0.13, 1.43, 0.035);
   }
@@ -424,12 +446,12 @@ export function massDriver(
       new T.SphereGeometry(1, 36, 16, 0, Math.PI * 2, 0, Math.PI / 2),
       glass,
     );
-    canopy.scale.set(w * 0.42, 0.85, 1.06);
+    canopy.scale.set(stationWidth * 0.42, 0.85, 1.06);
     canopy.position.y = 2.15;
     station.add(canopy);
     for (const z of [-0.83, 0, 0.83]) {
-      const hoop = arch(station, c.accent, w * 0.42, 2.15, z, 0.04);
-      hoop.scale.y = 0.85 / (w * 0.42);
+      const hoop = arch(station, c.accent, stationWidth * 0.42, 2.15, z, 0.04);
+      hoop.scale.y = 0.85 / (stationWidth * 0.42);
       hoop.position.y = 2.15 * (1 - hoop.scale.y);
     }
   } else {
@@ -438,12 +460,12 @@ export function massDriver(
       style === 2 ? c.primary : c.light,
       1.9,
       0.4,
-      w * 0.84,
+      stationWidth * 0.84,
       2.16,
     );
     roof.rotation.y = Math.PI / 2;
     for (let i = 0; i < 9; i++) {
-      const x = (i - 4) * w * 0.077;
+      const x = (i - 4) * stationWidth * 0.077;
       box(station, c.accent, x, 2.21, 0.9, 0.028, 0.12, 0.06).material = metal(
         c.accent,
       );
@@ -453,7 +475,7 @@ export function massDriver(
     station,
     b.design.name || "MASS DRIVER",
     c.light,
-    Math.min(w * 0.65, 4.5),
+    Math.min(stationWidth * 0.65, 4.5),
     2.24,
     0.97,
   );
@@ -467,18 +489,18 @@ export function massDriver(
   protocol.position.set(0.16, 1.13, 1.04);
   station.add(protocol);
   nearMark(station, c.primary, 0.29).position.set(-1.09, 1.13, 1.05);
-  const stationRail = safetyRail(station, w * 0.61);
+  const stationRail = safetyRail(station, stationWidth * 0.61);
   stationRail.position.set(0, 0.71, -0.72);
   for (const side of [-1, 1]) {
     const unit = equipmentPanel(station, 0.66, 0.55);
-    unit.position.set(side * w * 0.29, 1.25, -0.74);
+    unit.position.set(side * stationWidth * 0.29, 1.25, -0.74);
     unit.rotation.y = Math.PI;
   }
   for (let i = 0; i < 8; i++)
     box(
       station,
       "#a9bac1",
-      (i - 3.5) * w * 0.084,
+      (i - 3.5) * stationWidth * 0.084,
       2.19,
       -0.09,
       0.035,

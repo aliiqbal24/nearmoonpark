@@ -138,7 +138,7 @@ export class MoonAudio {
     voice.playbackRate.value =
       kind === "cash" || kind === "build" ? 0.97 + Math.random() * 0.06 : 1;
     const gain = context.createGain();
-    gain.gain.value = kind === "rocket" ? 0.48 : kind === "cash" ? 0.5 : 0.75;
+    gain.gain.value = kind === "rocket" ? 0.48 : kind === "cash" ? 0.18 : 0.75;
     voice.connect(gain);
     gain.connect(this.effectsGain);
     this.voices.add(voice);

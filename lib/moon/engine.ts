@@ -11,6 +11,7 @@ export async function engine(version = VERSION) {
   if (
     version !== VERSION &&
     version !== "moonpark-v6" &&
+    version !== "moonpark-v7" &&
     version !== "moonpark-v4" &&
     version !== "moonpark-v5"
   )

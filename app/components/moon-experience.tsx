@@ -53,13 +53,14 @@ export function MoneyFeedback({
   const [bursts, setBursts] = useState<Burst[]>([]),
     seen = useRef({ identity: "", count: 0 }),
     serial = useRef(0),
-    lastSound = useRef(0);
+    lastSound = useRef(0),
+    lastIncome = useRef(0);
   useEffect(() => {
     if (!state) return;
     const r = state.run,
       identity = state.record
         ? `${state.record.owner}:${state.record.run_id}`
-        : String(state.deadline);
+        : (state.localId ?? String(state.deadline));
     if (seen.current.identity !== identity) {
       seen.current = { identity, count: r.trade_count };
       return;
@@ -84,7 +85,9 @@ export function MoneyFeedback({
           ? "Your revenue share"
           : t.good === "resale"
             ? "Ride sold"
-            : "Tickets sold";
+            : t.good === "solar export"
+              ? "Solar export"
+              : "Tickets sold";
       const old = groups.get(key);
       if (old) old.amount += t.amount;
       else groups.set(key, { amount: t.amount, building, label });
@@ -129,12 +132,12 @@ export function MoneyFeedback({
       }
       return next.slice(-8);
     });
-    if (performance.now() - lastSound.current > 650) {
-      audio.current?.effect(
-        additions.some((burst) => burst.big) ? "reward" : "cash",
-      );
-      lastSound.current = performance.now();
+    const now = performance.now();
+    if (now - lastIncome.current > 8000 || now - lastSound.current > 45000) {
+      audio.current?.effect("cash");
+      lastSound.current = now;
     }
+    lastIncome.current = now;
   }, [state, worldRef, audio]);
   useEffect(() => {
     if (!bursts.length) return;
@@ -178,15 +181,17 @@ export function ShuttleStatus({ run }: { run: Run }) {
     flight = Math.floor(run.tick / 40),
     waiting = run.guests.filter((g) => g.status === "boarding").length;
   const text =
-    run.finished && !isPersistent(run)
-      ? "Evening shuttles · opening day complete"
-      : phase < 10
-        ? `Shuttle inbound · docking in ${10 - phase}s`
-        : phase < 30
-          ? `${flight < 12 || (isPersistent(run) && run.finished) ? `${run.bookings?.[flight] ?? 8} new explorers` : "Return shuttle"} · ${waiting} homebound`
-          : phase < 38
-            ? `Shuttle departing · ${run.departures[isPersistent(run) ? flight % 64 : flight] ?? 0} aboard`
-            : `Next shuttle in ${40 - phase}s`;
+    (run.opening_stage ?? 3) < 2
+      ? "First rocket on standby · build your opening"
+      : run.finished && !isPersistent(run)
+        ? "Evening shuttles · opening day complete"
+        : phase < 10
+          ? `Shuttle inbound · docking in ${10 - phase}s`
+          : phase < 30
+            ? `${flight < 12 || (isPersistent(run) && run.finished) ? `${run.bookings?.[flight] ?? 8} new explorers` : "Return shuttle"} · ${waiting} homebound`
+            : phase < 38
+              ? `Shuttle departing · ${run.departures[isPersistent(run) ? flight % 64 : flight] ?? 0} aboard`
+              : `Next shuttle in ${40 - phase}s`;
   return (
     <span
       className={`mp-shuttle-status phase-${phase < 10 ? "inbound" : phase < 30 ? "docked" : "outbound"}`}

@@ -204,6 +204,7 @@ export function batch(g: T.Object3D) {
   for (const child of g.children) {
     if (
       !(child instanceof T.Mesh) ||
+      child instanceof T.InstancedMesh ||
       Array.isArray(child.material) ||
       child.children.length
     )

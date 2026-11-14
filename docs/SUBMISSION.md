@@ -16,8 +16,8 @@ NPC treasuries are contract-managed virtual balances. No independent NPC wallet 
 2. Place the mass-driver blueprint and connect its entrance. Guests walk over and queue.
 3. Show the front-seat camera, then adjust launch speed and ticket price to demonstrate throughput, wear and affordability.
 4. Add a drink concession. Follow a real stock purchase, delivery rover, customer sale and revenue-share transfer in the ledger.
-5. Increase time to 4×. Show condition/power pressure and a useful response: maintenance or solar capacity.
-6. Customize the mass driver’s palette, lighting, height and name. At closing, publish the park and ride. Visit its public page and take the front seat.
+5. Show the first restaurant purchase and the confirmed Omar/park wallet transfers. Add a solar canopy for automatic export income.
+6. Drag a coaster turn, raise a hill, customize its look and place the design. Publish the park and its guest-tested ride, copy the share link and take the front seat on the public page.
 7. In a second park, license the ride and place its attributed design. Show the actual NEAR license receipt and creator income. Demonstrate signed wallet claiming of persistent park ownership.
 8. Show the contract-calculated result, signed-in competition, separate funded testnet escrow and precise conditional USD pledge. Explain that its allocation follows frozen standings, with human confirmation of the external award condition.
 

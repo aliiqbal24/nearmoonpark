@@ -1,6 +1,7 @@
 import {
   AccessKeyNotEnoughAllowanceActionError,
   InvalidNonceError,
+  NotEnoughBalanceError,
 } from "near-api-js/rpc-errors";
 import type { FailoverRpcProvider } from "near-api-js";
 
@@ -24,7 +25,8 @@ export function failoverRpc(
         const recoverable = (error as { errors?: unknown[] })?.errors?.find(
           (e) =>
             e instanceof InvalidNonceError ||
-            e instanceof AccessKeyNotEnoughAllowanceActionError,
+            e instanceof AccessKeyNotEnoughAllowanceActionError ||
+            e instanceof NotEnoughBalanceError,
         );
         if (recoverable) throw recoverable;
         throw error;

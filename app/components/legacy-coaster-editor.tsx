@@ -22,7 +22,7 @@ export const STARTER_TRACK: TrackPoint[] = [
 const constructionCost = (d: Design) =>
   Math.max(0, d.height - 1) * 20000 +
   (d.track ?? []).reduce((n, p) => n + Math.max(0, p.y - 35) * 100, 0);
-export function CoasterEditor({
+export function LegacyCoasterEditor({
   building,
   cash,
   onPreview,

@@ -38,6 +38,7 @@ import {
   parkOriginZ,
   parkGate,
   parkClosed,
+  previewBuilding,
   coasterDuration,
   type Design,
   footprint,
@@ -62,6 +63,8 @@ export class MoonWorld {
   private width = WIDTH;
   private height = HEIGHT;
   private originZ = 36;
+  private parkPeak = 0;
+  private previewPeak = 0;
   private designPreview: { id: number; design: Design } | null = null;
   setDesignPreview(preview: { id: number; design: Design } | null) {
     this.designPreview = preview;
@@ -187,7 +190,7 @@ export class MoonWorld {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.09;
     this.controls.minDistance = 10;
-    this.controls.maxDistance = 90;
+    this.controls.maxDistance = 320;
     this.controls.minPolarAngle = Math.PI * 0.12;
     this.controls.maxPolarAngle = Math.PI * 0.46;
     this.controls.mouseButtons = {
@@ -258,7 +261,7 @@ export class MoonWorld {
       console.error("Lunar scenery could not finish loading", error),
     );
     this.paths = new T.InstancedMesh(
-      new T.BoxGeometry(1.2, 0.065, 1.2),
+      new T.BoxGeometry(1.245, 0.1, 1.245),
       walkwayMaterial(),
       this.width * this.height,
     );
@@ -443,6 +446,12 @@ export class MoonWorld {
     }
     if (this.run !== run) {
       this.run = run;
+      this.parkPeak = Math.max(
+        0,
+        ...run.buildings
+          .filter((b) => !b.sold && b.kind === "coaster" && b.design?.track_w)
+          .flatMap((b) => b.design?.track?.map((p) => p.y / 10) ?? []),
+      );
       if (this.lastTick !== run.tick) {
         if (run.tick < this.lastTick) this.visualTick = run.tick;
         this.updateTime = performance.now();
@@ -464,9 +473,14 @@ export class MoonWorld {
     }
     if (JSON.stringify(placement) !== JSON.stringify(this.placement)) {
       this.placement = placement;
+      this.previewPeak = placement?.design?.track_w
+        ? Math.max(0, ...(placement.design.track ?? []).map((p) => p.y / 10))
+        : 0;
       this.grid.visible = !!placement;
-      while (this.ghost.children.length)
-        this.ghost.remove(this.ghost.children[0]);
+      for (const child of [...this.ghost.children]) {
+        child.removeFromParent();
+        disposeObject(child);
+      }
       if (placement) {
         const b = {
           ...placement,
@@ -490,6 +504,18 @@ export class MoonWorld {
         );
         this.ghost.add(m);
         if (placement.kind !== "path" && placement.kind !== "erase") {
+          const preview = createBuilding(
+            {
+              ...previewBuilding(placement.kind, placement.design),
+              rotation: placement.rotation,
+              variant: placement.variant,
+            },
+            run.palette ?? 0,
+          );
+          preview.root.position.y = 0.05;
+          this.ghost.add(preview.root);
+        }
+        if (placement.kind !== "path" && placement.kind !== "erase") {
           const e = entrance({
             ...placement,
             kind: placement.kind,
@@ -512,6 +538,8 @@ export class MoonWorld {
           this.ghost.add(entry);
         }
         this.moveGhost();
+        if (placement.kind === "coaster" && placement.design?.track_w)
+          this.home();
       }
     }
   }
@@ -727,7 +755,12 @@ export class MoonWorld {
   };
   private contextMenu = (e: Event) => e.preventDefault();
   private keyDown = (e: KeyboardEvent) => {
-    if ((e.target as HTMLElement)?.matches("input,textarea,select")) return;
+    if (
+      e.defaultPrevented ||
+      document.querySelector('[role="dialog"]') ||
+      (e.target as HTMLElement)?.matches("input,textarea,select")
+    )
+      return;
     const step = 1.5;
     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
       e.preventDefault();
@@ -760,9 +793,14 @@ export class MoonWorld {
       Math.min((this.height * SCALE) / 2 + 8, reach + 5),
     );
     this.camera.position.x += x - target.x;
-    this.camera.position.y -= target.y;
+    const y = T.MathUtils.clamp(
+      target.y,
+      0,
+      Math.max(this.parkPeak, this.previewPeak) * 0.65,
+    );
+    this.camera.position.y += y - target.y;
     this.camera.position.z += z - target.z;
-    target.set(x, 0, z);
+    target.set(x, y, z);
   }
   home() {
     this.camera.up.set(0, 1, 0);
@@ -771,12 +809,23 @@ export class MoonWorld {
     if (this.isometric) {
       this.camera.position.set(35, 35, 37);
       this.controls.target.set(0, 0, 2);
+    } else if (Math.max(this.parkPeak, this.previewPeak) > 18) {
+      const height = Math.max(this.parkPeak, this.previewPeak);
+      const distance =
+        Math.max(105, height * 2.7) *
+        Math.max(1, 0.9 / (this.host.clientWidth / this.host.clientHeight));
+      this.controls.target.set(0, height * 0.25, -2);
+      this.camera.position
+        .copy(this.controls.target)
+        .add(
+          new T.Vector3(0.45, 0.55, 0.9).normalize().multiplyScalar(distance),
+        );
     } else if (this.host.clientWidth < 720) {
       this.camera.position.set(26, 30, 50);
       this.controls.target.set(0, 0, 8);
     } else {
-      this.camera.position.set(24, 24, 38);
-      this.controls.target.set(0, 0, 4);
+      this.camera.position.set(31, 38, 57);
+      this.controls.target.set(0, 0, -5);
     }
     this.controls.update();
   }

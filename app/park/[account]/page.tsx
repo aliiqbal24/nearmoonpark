@@ -11,7 +11,8 @@ export default async function ParkPage({
     query.version === "v4" ||
     query.version === "v5" ||
     query.version === "v6" ||
-    query.version === "v7"
+    query.version === "v7" ||
+    query.version === "v8"
       ? query.version
       : undefined;
   return <PublicPark accountId={account} version={version} />;

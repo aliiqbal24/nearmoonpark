@@ -1,4 +1,18 @@
-# Moonpark v7 verification
+# Moonpark v8 verification
+
+The immutable contract is `game.moonpark-mwgh000n.testnet`, with code hash `8iTkztBYZvA3CecctfCPgZuEgteyaiF9eP5EcXY9EBgk`. The public build manifest records the exact browser-engine and contract SHA-256 values. The deployed account has zero access keys. All funding uses free testnet assets.
+
+All 25 simulation tests and 37 contract tests pass. Five full strategies produce 367 exact native/browser-WASM state matches. The balanced and Gold fixtures score 8,941. Sandbox verification checks 39 batches and reaches a maximum of 69.42 TGas. The public testnet proof checks 75 canonical checkpoints, five wallet holdings, signed ownership, a paid ride license and its creator payout. Its maximum batch uses 63.12 TGas. [Public replay](moon-v8-testnet-smoke.json)
+
+Twenty-three browser checks cover the new guided opening, fixed fares, automatic opening, exact half-price resale, cursor-drawn and draggable tracks, a 30×30 footprint, a 60-metre hill, pre-build appearance choices, catalogue scrolling and tooltips, unfinished draft recovery, saved parks, two independent recovery contexts, stale-edit reconciliation, earlier engines, cinema playback and fallback, audio decoding, the 8K sky and phone layouts. TypeScript, targeted ESLint and the production Next.js build pass. Static image optimization warnings are retained for the existing game artwork.
+
+The Neon recovery schema and AES-256-GCM encryption have database round-trip, authenticated-data isolation and tamper checks. Recovery rows are scoped to the verified user, contract and run. Separate rows retain guest and ranked parks. Current operator and generated owner keys are validated against NEAR. Authority revisions reject stale operator updates. The browser resumes the canonical park and reconciles compatible pending commands. Practice saves and unfinished designs stay in browser storage.
+
+V6 and v7 saves retain their archived engines and original economic rules. Their separate sponsors support operator renewal, with an explicit earlier-rules banner and a new-workshop entry. The v7 eligible prize board had zero entries before v8 opened.
+
+---
+
+# Earlier v7 verification record
 
 The current contract is `game.moonpark-mwgdp7qs.testnet`. New parks receive 3,200 lunar credits. The shared Rust engine initializes their score baseline from that allocation, so the starting grant creates no score. A regression test constructs two coasters and a wheel from the initial budget and checks exact conservation.
 

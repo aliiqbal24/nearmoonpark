@@ -109,7 +109,7 @@ export function createBuilding(
       break;
     }
   }
-  if (b.kind === "coaster") model.scale.y = [0.72, 1, 1.22][b.design.height];
+  if (b.kind === "coaster" && !b.design.track_w) model.scale.y = [0.72, 1, 1.22][b.design.height];
   if (b.design.lights > 0) {
     const lampColor = b.design.lights === 1 ? "#ffd18b" : colors.primary;
     for (const x of [-1, 1])

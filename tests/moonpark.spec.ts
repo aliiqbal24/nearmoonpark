@@ -1,208 +1,423 @@
 import { test, expect, type Page } from "@playwright/test";
 import { PerspectiveCamera, Vector3 } from "three";
-import { KeyPair, JsonRpcProvider, Account, KeyPairSigner } from "near-api-js";
-import { readFile, writeFile } from "node:fs/promises";
-import type { RecordState } from "../lib/moon/model";
-function project(page: Page, x: number, z: number, y = 0.1) {
-  const size = page.viewportSize()!;
-  const camera = new PerspectiveCamera(50, size.width / size.height, 0.1, 250);
-  camera.position.set(24, 24, 38);
-  camera.lookAt(0, 0, 4);
+import { KeyPair } from "near-api-js";
+import { readFile } from "node:fs/promises";
+import type { Run } from "../lib/moon/model";
+
+function project(page: Page, x: number, z: number, peak = 36) {
+  const { width, height } = page.viewportSize()!;
+  const camera = new PerspectiveCamera(50, width / height, 0.1, 2200);
+  if (peak > 18) {
+    const distance =
+      Math.max(105, peak * 2.7) * Math.max(1, 0.9 / (width / height));
+    const target = new Vector3(0, peak * 0.25, -2);
+    camera.position
+      .copy(target)
+      .add(new Vector3(0.45, 0.55, 0.9).normalize().multiplyScalar(distance));
+    camera.lookAt(target);
+  } else {
+    camera.position.set(31, 38, 57);
+    camera.lookAt(0, 0, -5);
+  }
   camera.updateMatrixWorld();
-  const p = new Vector3((x - 16) * 1.25, y, (z - 12) * 1.25).project(camera);
-  return { x: ((p.x + 1) / 2) * size.width, y: ((1 - p.y) / 2) * size.height };
+  const p = new Vector3((x - 24) * 1.25, 0.1, (z - 36) * 1.25).project(camera);
+  return { x: ((p.x + 1) * width) / 2, y: ((1 - p.y) * height) / 2 };
 }
 async function open(page: Page) {
   await page.goto("/");
   await page
     .getByRole("button", { name: "Practice offline", exact: true })
     .click();
-  await expect(page.getByRole("button", { name: "Skip intro" })).toBeVisible();
-  await page.getByRole("button", { name: "Skip intro" }).click();
+  await page.getByRole("button", { name: "Skip intro", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+    page.getByRole("button", {
+      name: "Build Mass-Driver Coaster",
+      exact: true,
+    }),
   ).toBeVisible();
 }
-test("opening day: build, connect, tune, economy, ride camera and closing", async ({
-  page,
-}) => {
-  test.setTimeout(120000);
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  page.on("console", (message) => {
-    if (
-      message.text().includes("BufferGeometryUtils") ||
-      message.text().includes("Texture marked for update but no image data")
-    )
-      errors.push(message.text());
-  });
+async function savedRun(page: Page): Promise<Run> {
+  return page.evaluate(
+    () => JSON.parse(localStorage.getItem("moonpark-current")!).state.run,
+  );
+}
+async function opening(page: Page) {
   await open(page);
-  await expect(page.locator("main.moonpark")).toHaveAttribute(
-    "data-cash",
-    "320000",
-  );
-  await expect(page.locator(".mp-blueprint-art img")).toHaveCount(8);
-  await expect
-    .poll(() =>
-      page
-        .locator(".mp-blueprint-art img")
-        .evaluateAll((images) =>
-          images.every(
-            (image) =>
-              (image as HTMLImageElement).complete &&
-              (image as HTMLImageElement).naturalWidth > 0,
-          ),
-        ),
-    )
-    .toBe(true);
-  const canvas = page.locator('[data-testid="moon-world"] canvas');
-  await expect(canvas).toBeVisible();
-  await canvas.evaluate((e) =>
-    e.setAttribute("data-session-canvas", "original"),
-  );
-  await page.getByRole("button", { name: "Build Mass-Driver Coaster" }).click();
-  const p = project(page, 3.2, 8.2);
-  await page.mouse.move(p.x, p.y);
-  await page.mouse.click(p.x, p.y);
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Place coaster", exact: true })
+    .click();
+  let point = project(page, 2.2, 16.2);
+  await page.mouse.click(point.x, point.y);
   await expect(page.getByTestId("building-inspector")).toContainText(
     "Mass-Driver Coaster",
   );
+  await expect.poll(async () => (await savedRun(page)).buildings[0].x).toBe(2);
+  await page
+    .getByRole("button", { name: "Close inspector", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Build Moon Pie Kitchen", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Place attraction", exact: true })
+    .click();
+  point = project(page, 26.2, 41.2);
+  await page.mouse.click(point.x, point.y);
+  await expect.poll(async () => (await savedRun(page)).opening_stage).toBe(2);
+  await page
+    .getByRole("button", { name: "Close inspector", exact: true })
+    .click();
+}
+async function planPoint(page: Page, x: number, z: number) {
+  const rect = await page
+    .getByRole("group", { name: "Coaster track schematic" })
+    .boundingBox();
+  const scale = Math.min(rect!.width, rect!.height) / 320;
+  return {
+    x: rect!.x + (rect!.width - 320 * scale) / 2 + (x + 10) * scale,
+    y: rect!.y + (rect!.height - 320 * scale) / 2 + (z + 10) * scale,
+  };
+}
+
+test("opening starts with a designed coaster and restaurant, then unlocks the park", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await open(page);
+  await expect(page.locator(".mp-blueprint")).toHaveCount(1);
+  await page.waitForTimeout(1400);
+  expect((await savedRun(page)).tick).toBe(0);
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("16 × 21 tiles");
+  await page
+    .getByLabel("Attraction name", { exact: true })
+    .fill("Earthskimmer");
+  await page
+    .getByRole("button", { name: "Stardust colors", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Place coaster", exact: true })
+    .click();
+  let point = project(page, 2.2, 16.2);
+  await page.mouse.click(point.x, point.y);
+  await expect(page.getByTestId("building-inspector")).toContainText(
+    "Earthskimmer",
+  );
+  let run = await savedRun(page);
+  expect(run.cash).toBe(200000);
+  expect(run.opening_stage).toBe(1);
+  expect(run.tick).toBe(0);
+  expect(run.buildings[0].connected).toBe(true);
+  expect(run.buildings[0].design?.palette).toBe(3);
+  await page
+    .getByRole("button", { name: "Close inspector", exact: true })
+    .click();
+  await expect(page.locator(".mp-blueprint")).toHaveCount(1);
+  await page
+    .getByRole("button", { name: "Build Moon Pie Kitchen", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Orbital", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Place attraction", exact: true })
+    .click();
+  point = project(page, 26.2, 41.2);
+  await page.mouse.click(point.x, point.y);
+  await expect.poll(async () => (await savedRun(page)).opening_stage).toBe(2);
+  run = await savedRun(page);
+  expect(run.cash).toBe(185000);
+  expect(run.buildings[1].connected).toBe(true);
+  expect(run.buildings[1].design?.style).toBe(1);
+  await page
+    .getByRole("button", { name: "Close inspector", exact: true })
+    .click();
+  await expect(page.locator(".mp-blueprint")).toHaveCount(9);
   await expect(
-    page.getByRole("button", { name: /Connect entrance/ }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: /Connect entrance/ }).click();
-  await expect(
-    page.getByRole("button", { name: /Connect entrance/ }),
+    page.getByRole("button", { name: "4×", exact: true }),
   ).toHaveCount(0);
-  await page.getByLabel("Ticket price").fill("900");
-  await expect(page.getByLabel("Ticket price")).toHaveValue("900");
+  await expect(
+    page.getByRole("button", { name: "2×", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator(".mp-subhud")).not.toContainText("power");
   await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          JSON.parse(
-            localStorage.getItem("moonpark-current")!,
-          ).state.run.buildings.find(
-            (b: { kind: string }) => b.kind === "coaster",
-          ).price,
-      ),
-    )
-    .toBe(900);
-  await page.getByRole("button", { name: "Gentle", exact: true }).click();
-  await page.getByRole("button", { name: "Ride the mass driver" }).click();
-  await expect(page.getByText("FRONT SEAT / MASS DRIVER")).toBeVisible();
-  await page.screenshot({ path: "outputs/moon-ride-camera.png" });
-  await page.getByRole("button", { name: "Back to your park" }).click();
-  await page.getByRole("button", { name: "4×", exact: true }).click();
-  await expect
-    .poll(
-      async () =>
-        Number(await page.locator("main.moonpark").getAttribute("data-tick")),
-      { timeout: 20000 },
-    )
-    .toBeGreaterThan(40);
-  await page.getByRole("button", { name: "Economy ledger" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Follow the lunar credits" }),
-  ).toBeVisible();
-  await expect(page.locator(".mp-ledger>div")).not.toHaveCount(0);
-  await page.getByRole("button", { name: "Close panel" }).click();
-  await page.screenshot({ path: "outputs/moon-gameplay.png" });
-  await page.clock.install();
-  await page.clock.fastForward(550000);
-  // The replay catches up through bounded async batches after this clock jump.
-  await expect(
-    page
-      .locator(".mp-results")
-      .getByText("OPENING SCORE SEALED", { exact: false }),
-  ).toBeVisible({ timeout: 60000 });
-  await expect(
-    page.locator("canvas[data-session-canvas=original]"),
-  ).toHaveCount(1);
-  await page.screenshot({ path: "outputs/moon-results.png" });
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Opening day results" }).click();
-  await expect(
-    page
-      .getByText("GOLD OPENING DAY", { exact: true })
-      .or(page.getByText("SILVER OPENING DAY", { exact: true }))
-      .or(page.getByText("BRONZE OPENING DAY", { exact: true })),
-  ).toBeVisible();
+    .poll(async () => (await savedRun(page)).tick, { timeout: 18000 })
+    .toBeGreaterThanOrEqual(11);
+  expect(
+    (await savedRun(page)).guests.some((g) => g.status !== "upcoming"),
+  ).toBe(true);
+  await page.screenshot({ path: "outputs/moon-v8-opening-gameplay.png" });
   expect(errors).toEqual([]);
 });
-test("mobile park and conditional top-five board remain usable", async ({
+
+test("cursor-drawn loops snap closed and support a 30×30 footprint and 60m hill", async ({
+  page,
+}) => {
+  await open(page);
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Draw your own", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Place coaster", exact: true }),
+  ).toBeDisabled();
+  for (const [x, z] of [
+    [295, 5],
+    [5, 5],
+    [35, 220],
+  ]) {
+    const p = await planPoint(page, x, z);
+    await page.mouse.click(p.x, p.y);
+  }
+  await page.getByLabel("Selected turn height", { exact: true }).fill("600");
+  await page
+    .getByRole("button", { name: "Join back to station", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("30 × 30 tiles");
+  await expect(page.getByRole("dialog")).toContainText("60 m peak");
+  await expect(
+    page.getByRole("button", { name: "Place coaster", exact: true }),
+  ).toBeEnabled();
+  await page.screenshot({ path: "outputs/moon-v8-custom-track.png" });
+  await page
+    .getByRole("button", { name: "Place coaster", exact: true })
+    .click();
+  const p = project(page, 3.2, 6.2, 60);
+  await page.mouse.click(p.x, p.y);
+  await expect
+    .poll(async () => (await savedRun(page)).buildings.length)
+    .toBe(1);
+  const run = await savedRun(page);
+  expect(run.buildings[0].design?.track_w).toBe(30);
+  expect(run.buildings[0].design?.track_h).toBe(30);
+  expect(run.buildings[0].design?.track?.some((p) => p.y === 600)).toBe(true);
+});
+
+test("track handles drag, keyboard editing and undo retain a valid design", async ({
+  page,
+}) => {
+  await open(page);
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  const handle = page.getByRole("button", {
+    name: "Track point 4, 30.0 metres",
+    exact: true,
+  });
+  const box = await handle.boundingBox();
+  const dest = await planPoint(page, 250, 120);
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(dest.x, dest.y, { steps: 12 });
+  await page.mouse.up();
+  const moved = page.getByRole("button", {
+    name: "Track point 4, 30.0 metres",
+    exact: true,
+  });
+  await expect(moved).toHaveAttribute("cx", "250");
+  await expect(moved).toHaveAttribute("cy", "120");
+  await moved.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(moved).toHaveAttribute("cx", "245");
+  await page
+    .getByRole("button", { name: "Undo track edit", exact: true })
+    .click();
+  await expect(moved).toHaveAttribute("cx", "250");
+  await page
+    .getByRole("button", { name: "Place coaster", exact: true })
+    .click();
+  const p = project(page, 2.2, 16.2);
+  await page.mouse.click(p.x, p.y);
+  await expect
+    .poll(async () => (await savedRun(page)).buildings.length)
+    .toBe(1);
+  await page
+    .getByRole("button", { name: "Design your coaster", exact: true })
+    .click();
+  const cash = (await savedRun(page)).cash;
+  await page.getByLabel("Selected turn height").fill("450");
+  await page.waitForTimeout(1500);
+  expect((await savedRun(page)).tick).toBe(0);
+  await page.getByRole("button", { name: "Apply design", exact: true }).click();
+  expect((await savedRun(page)).cash).toBe(cash);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Build Moon Pie Kitchen", exact: true }),
+  ).toBeVisible();
+  expect(
+    (await savedRun(page)).buildings[0].design?.track?.some((p) => p.y === 450),
+  ).toBe(true);
+});
+
+test("catalogue scrolls by wheel and exposes compact building descriptions", async ({
+  page,
+}) => {
+  await opening(page);
+  const dock = page.getByLabel("Building catalogue", { exact: true });
+  const before = await dock.evaluate((el) => el.scrollLeft);
+  await dock.hover();
+  await page.mouse.wheel(0, 550);
+  await expect
+    .poll(() => dock.evaluate((el) => el.scrollLeft))
+    .toBeGreaterThan(before);
+  await page
+    .getByRole("button", { name: "Build Solar Canopy", exact: true })
+    .hover();
+  await expect(page.getByRole("tooltip")).toContainText(
+    "5 credits every 20 seconds",
+  );
+  expect(
+    (await page.getByRole("tooltip").boundingBox())!.width,
+  ).toBeLessThanOrEqual(210);
+  await page
+    .getByRole("button", { name: "Build Solar Canopy", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Design your Solar Canopy",
+  );
+  await page.getByRole("button", { name: "Back to park", exact: true }).click();
+});
+
+test("ride fares are fixed and selling returns half without an open-close control", async ({
+  page,
+}) => {
+  await opening(page);
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  const p = project(page, 8, 25);
+  await page.mouse.click(p.x, p.y);
+  await expect(page.getByTestId("building-inspector")).toBeVisible();
+  await expect(page.getByLabel("Ticket price", { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Close", exact: true }),
+  ).toHaveCount(0);
+  const before = (await savedRun(page)).cash;
+  await page.getByRole("button", { name: "Sell · 600", exact: true }).click();
+  await expect
+    .poll(async () => (await savedRun(page)).cash)
+    .toBe(before + 60000);
+  expect((await savedRun(page)).buildings[0].sold).toBe(true);
+});
+
+test("new park progress and designs survive refresh during onboarding", async ({
+  page,
+}) => {
+  await open(page);
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  await page.getByLabel("Attraction name").fill("Permanent Moon");
+  await page
+    .getByRole("button", { name: "Place coaster", exact: true })
+    .click();
+  const p = project(page, 2.2, 16.2);
+  await page.mouse.click(p.x, p.y);
+  await expect
+    .poll(async () => (await savedRun(page)).buildings.length)
+    .toBe(1);
+  const before = await savedRun(page);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Build Moon Pie Kitchen", exact: true }),
+  ).toBeVisible();
+  const after = await savedRun(page);
+  expect(after.hash).toBe(before.hash);
+  expect(after.buildings[0].design?.name).toBe("Permanent Moon");
+  await expect(
+    page.getByRole("button", { name: "Skip intro", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("mobile workshop and scrollable catalogue remain usable", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await open(page);
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
-  await page.getByRole("button", { name: "Leaderboard", exact: true }).click();
-  await expect(page.locator(".mp-leader")).toHaveCount(5);
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
   await expect(
-    page.getByText("If we win, you win.", { exact: true }),
+    page.getByRole("group", { name: "Coaster track schematic" }),
   ).toBeVisible();
-  await page.locator(".mp-prize").scrollIntoViewIfNeeded();
-  await expect(page.getByText("$400", { exact: true })).toBeVisible();
-  await page.screenshot({ path: "outputs/moon-mobile-leaderboard.png" });
-  await page.getByRole("button", { name: "Close panel" }).click();
-  await page.screenshot({ path: "outputs/moon-mobile.png" });
-});
-test("overlap is rejected without spending and construction survives reload", async ({
-  page,
-}) => {
-  await open(page);
-  const before = await page.locator("main.moonpark").getAttribute("data-cash");
-  await page.getByRole("button", { name: "Build Lunar Bounce" }).click();
-  const p = project(page, 11.2, 16.2);
-  await page.mouse.click(p.x, p.y);
-  await expect(page.getByRole("status")).toContainText("occupied");
-  expect(await page.locator("main.moonpark").getAttribute("data-cash")).toBe(
-    before,
+  await page
+    .getByRole("button", { name: "Place coaster", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "outputs/moon-v8-workshop-mobile.png" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    390,
   );
-  await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Build path", exact: true }).click();
-  const tile = project(page, 20.2, 19.2);
-  expect(
-    await page.evaluate(() =>
-      JSON.parse(
-        localStorage.getItem("moonpark-current")!,
-      ).state.run.paths.includes(43 * 48 + 28),
-    ),
-  ).toBe(false);
-  await page.mouse.click(tile.x, tile.y);
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        JSON.parse(
-          localStorage.getItem("moonpark-current")!,
-        ).state.run.paths.includes(43 * 48 + 28),
-      ),
-    )
-    .toBe(true);
-  await page.getByRole("button", { name: "Erase paths", exact: true }).click();
-  await page.mouse.click(tile.x, tile.y);
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        JSON.parse(
-          localStorage.getItem("moonpark-current")!,
-        ).state.run.paths.includes(43 * 48 + 28),
-      ),
-    )
-    .toBe(false);
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible();
+  const dialog = page.getByRole("dialog");
+  const bounds = await dialog.boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
 });
 
+test("cloud recovery endpoints require verified sign-in and enforce same-origin writes", async ({
+  request,
+  baseURL,
+}) => {
+  expect((await request.get("/api/moon/save")).status()).toBe(401);
+  expect(
+    (
+      await request.put("/api/moon/save", {
+        headers: { origin: new URL(baseURL!).origin },
+        data: {},
+      })
+    ).status(),
+  ).toBe(401);
+  expect(
+    (
+      await request.put("/api/moon/save", {
+        headers: { origin: "https://other.example" },
+        data: {},
+      })
+    ).status(),
+  ).toBe(403);
+});
+
+test("v6 and v7 engines and earlier ownership desks remain available", async ({
+  page,
+}) => {
+  for (const version of ["v6", "v7"]) {
+    await page.goto(`/archive/${version}`);
+    await expect(
+      page.getByRole("heading", { name: "Your earlier parks" }),
+    ).toBeVisible();
+    const run = await page.evaluate(async (version) => {
+      const e = new WebAssembly.Instance(
+        await WebAssembly.compile(
+          await (await fetch(`/engine/moon-${version}.wasm`)).arrayBuffer(),
+        ),
+        {},
+      ).exports as unknown as {
+        memory: WebAssembly.Memory;
+        sim_alloc(n: number): number;
+        sim_free(p: number, n: number): void;
+        sim_call(p: number, n: number): bigint;
+      };
+      const bytes = new TextEncoder().encode('{"op":"new"}'),
+        p = e.sim_alloc(bytes.length);
+      new Uint8Array(e.memory.buffer, p, bytes.length).set(bytes);
+      const out = e.sim_call(p, bytes.length);
+      e.sim_free(p, bytes.length);
+      const ptr = Number(out >> 32n),
+        length = Number(out & 0xffffffffn);
+      const result = JSON.parse(
+        new TextDecoder().decode(new Uint8Array(e.memory.buffer, ptr, length)),
+      );
+      e.sim_free(ptr, length);
+      return result.run;
+    }, version);
+    expect(run.version).toBe(`moonpark-${version}`);
+    expect(run.buildings.length).toBe(2);
+    expect(run.cash).toBe(version === "v7" ? 320000 : 160000);
+  }
+});
 test("ranked provisioning and player profiles require sign-in", async ({
   request,
   baseURL,
@@ -234,268 +449,6 @@ test("ranked provisioning and player profiles require sign-in", async ({
     data: { display_name: "Unauthorized" },
   });
   expect(renamed.status()).toBe(401);
-});
-
-test("sponsored NEAR park publishes an authored coaster and park revision", async ({
-  page,
-}) => {
-  test.skip(
-    process.env.MOON_CHAIN_UI !== "1",
-    "Opt-in public testnet sponsorship.",
-  );
-  test.setTimeout(600000);
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Open your park", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Skip intro" }).click();
-  await expect(
-    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible({ timeout: 90000 });
-  await page.getByRole("button", { name: "Build Mass-Driver Coaster" }).click();
-  const p = project(page, 3.2, 8.2);
-  await page.mouse.click(p.x, p.y);
-  await page.getByRole("button", { name: /Connect entrance/ }).click();
-  await page.getByRole("button", { name: "Design your coaster" }).click();
-  await page.getByLabel("Hill 2").fill("75");
-  await page.getByRole("button", { name: "Apply track design" }).click();
-  await page.getByRole("button", { name: "Open", exact: true }).click();
-  await page.getByText("Customize your attraction").click();
-  await page.getByLabel("Attraction name").fill("Earthskimmer");
-  await page.getByLabel("Attraction name").press("Enter");
-  await page
-    .getByRole("button", { name: "Stardust colors", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Orbital", exact: true }).click();
-  await page.getByRole("button", { name: "Close inspector" }).click();
-  await page
-    .getByRole("button", { name: "Economy ledger", exact: true })
-    .click();
-  await page.getByText("View testnet wallets", { exact: true }).click();
-  await expect(page.locator(".mp-wallet-list > div")).toHaveCount(5, {
-    timeout: 30000,
-  });
-  await expect(
-    page.getByRole("link", { name: /Omar · Moon Pie Kitchen/ }),
-  ).toHaveAttribute("href", /omar\..*\.testnet$/);
-  await expect(
-    page.getByRole("link", { name: /Mina · Crater Coolers/ }),
-  ).toHaveAttribute("href", /mina\..*\.testnet$/);
-  await page.getByRole("button", { name: "Close panel" }).click();
-  await page.getByRole("button", { name: "4×", exact: true }).click();
-  let recordedSyncError = false;
-  await expect
-    .poll(
-      async () => {
-        const status = await page.evaluate(() => {
-          const s = JSON.parse(
-            localStorage.getItem("moonpark-current") || "null",
-          );
-          return {
-            complete: s?.state.record?.run.buildings.some(
-              (b: { kind: string; served: number }) =>
-                b.kind === "coaster" && b.served > 0,
-            ),
-            error: s?.state.error,
-            tick: s?.state.run.tick,
-            confirmed: s?.state.record?.run.tick,
-            owner: s?.state.record?.owner,
-          };
-        });
-        if (status.error && !recordedSyncError) {
-          recordedSyncError = true;
-          console.log(
-            "NEAR synchronization diagnostic",
-            JSON.stringify(status),
-          );
-          const saved = await page.evaluate(() =>
-            localStorage.getItem("moonpark-current")!,
-          );
-          await writeFile(".near-local/moon-sync-debug.json", saved, {
-            mode: 0o600,
-          });
-        }
-        return status.complete;
-      },
-      { timeout: 420000, intervals: [2000] },
-    )
-    .toBe(true);
-  await page.getByRole("button", { name: "My park and ride exchange" }).click();
-  await expect(page.getByRole("tab", { name: "My park" })).toBeVisible({
-    timeout: 30000,
-  });
-  await page.getByLabel("Park name").fill("Earthrise Gardens");
-  await page
-    .getByRole("button", { name: "Publish this park revision" })
-    .click();
-  await expect(
-    page.getByText("Your park is published.", { exact: false }),
-  ).toBeVisible({ timeout: 45000 });
-  await page.getByRole("tab", { name: "Ride exchange" }).click();
-  const card = page.locator("article").filter({ hasText: "Earthskimmer" });
-  await card.getByRole("button", { name: "Publish design" }).click();
-  await expect(
-    card.getByRole("button", { name: "Published", exact: true }),
-  ).toBeVisible({ timeout: 45000 });
-  const saved = await page.evaluate(
-    () => JSON.parse(localStorage.getItem("moonpark-current")!).state,
-  );
-  expect(saved.run).toEqual(saved.record.run);
-  expect(saved.run.partnerships).toEqual([]);
-  expect(
-    saved.run.buildings.find((b: { kind: string }) => b.kind === "coaster")
-      .design.name,
-  ).toBe("Earthskimmer");
-  await writeFile(
-    "outputs/moon-v7-browser-proof.json",
-    JSON.stringify(
-      {
-        owner: saved.record.owner,
-        parkId: saved.record.park_id,
-        runId: saved.record.run_id,
-        score: saved.run.score,
-        txs: saved.txs,
-        hash: saved.run.hash,
-      },
-      null,
-      2,
-    ),
-  );
-  expect(errors).toEqual([]);
-});
-
-test("opening clock waits for the first landing", async ({ page }) => {
-  await open(page);
-  await expect(page.getByTestId("opening-day-clock")).toHaveText(
-    "First landing",
-  );
-  await expect(page.getByText("FIRST LANDING", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "4×", exact: true }).click();
-  await expect
-    .poll(
-      async () =>
-        Number(await page.locator("main.moonpark").getAttribute("data-tick")),
-      { timeout: 10000 },
-    )
-    .toBeGreaterThan(10);
-  await expect(page.getByTestId("opening-day-clock")).not.toHaveText(
-    "First landing",
-  );
-});
-
-test("NEAR ownership explanation is clear and fits mobile", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  await page.getByRole("button", { name: "How NEAR drives your park" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Your economy. Secured by NEAR." }),
-  ).toBeVisible();
-  await expect(page.getByRole("tab", { name: "My park" })).toBeVisible();
-  await expect(page.getByLabel("Park name")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Rankings & prize escrow" }),
-  ).toBeVisible({ timeout: 30000 });
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
-  await page.screenshot({ path: "outputs/moon-near-mobile-explanation.png" });
-});
-
-test("attraction customization previews immediately and persists through reload", async ({
-  page,
-}) => {
-  await open(page);
-  await page.getByRole("button", { name: "Build Mass-Driver Coaster" }).click();
-  const p = project(page, 3.2, 8.2);
-  await page.mouse.click(p.x, p.y);
-  await page.getByText("Customize your attraction").click();
-  await page.getByLabel("Attraction name").fill("Starlight Express");
-  await page.getByLabel("Attraction name").press("Enter");
-  await page
-    .getByRole("button", { name: "Stardust colors", exact: true })
-    .click();
-  const families = page.getByRole("group", { name: "Architectural design" });
-  await expect(families.getByRole("button")).toHaveCount(3);
-  await expect
-    .poll(() =>
-      families
-        .locator("img")
-        .evaluateAll((images) =>
-          images.every((image) => (image as HTMLImageElement).naturalWidth > 0),
-        ),
-    )
-    .toBe(true);
-  await families
-    .getByRole("button", { name: "Expedition", exact: true })
-    .click();
-  await expect(page.locator(".mp-building-icon img")).toHaveAttribute(
-    "src",
-    "/art/coaster-s2-v3.webp",
-  );
-  await families
-    .getByRole("button", { name: "Retro Resort", exact: true })
-    .click();
-  await expect(page.locator(".mp-building-icon img")).toHaveAttribute(
-    "src",
-    "/art/coaster-s0-v3.webp",
-  );
-  await page.getByRole("button", { name: "Orbital", exact: true }).click();
-  await page.getByRole("button", { name: "Neon", exact: true }).click();
-  await page.getByRole("button", { name: "Skyline +200", exact: true }).click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          JSON.parse(localStorage.getItem("moonpark-current")!).state.run
-            .buildings[2].design,
-      ),
-    )
-    .toEqual({
-      track: [],
-      name: "Starlight Express",
-      palette: 3,
-      style: 1,
-      lights: 2,
-      height: 2,
-    });
-  await page.screenshot({ path: "outputs/moon-customized-ride.png" });
-  await page.reload();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          JSON.parse(localStorage.getItem("moonpark-current")!).state.run
-            .buildings[2].design.name,
-      ),
-    )
-    .toBe("Starlight Express");
-  await expect(
-    page.getByRole("button", { name: "Merchant partnerships" }),
-  ).toHaveCount(0);
-  await page.getByRole("button", { name: "My park and ride exchange" }).click();
-  await page
-    .getByRole("button", { name: "Earthrise colors", exact: true })
-    .click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          JSON.parse(localStorage.getItem("moonpark-current")!).state.run
-            .palette,
-      ),
-    )
-    .toBe(1);
-  await page.getByLabel("Park name").fill("Moonbeam Gardens");
-  await page.getByRole("button", { name: "Save park identity" }).click();
-  await expect(
-    page.getByText("Park identity saved in this browser.", { exact: false }),
-  ).toBeVisible();
 });
 
 test("opening film decodes, advances smoothly and hands over to the park", async ({
@@ -623,550 +576,6 @@ test("park renders when floating-point color targets are unavailable", async ({
   expect(errors).toEqual([]);
 });
 
-test("published park visits show the verified layout and allow coaster rides", async ({
-  page,
-}) => {
-  test.skip(
-    process.env.MOON_PUBLIC_UI !== "1",
-    "Read-only public testnet fixture. Use MOON_PUBLIC_UI=1.",
-  );
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/park/p-1?version=v5");
-  await expect(
-    page.getByRole("heading", { name: /Earthrise Gardens/ }),
-  ).toBeVisible({ timeout: 30000 });
-  await expect(page.getByText("7,161 points", { exact: true })).toBeVisible();
-  const current = JSON.parse(
-    await readFile("public/moon-v5-config.json", "utf8"),
-  );
-  await expect(
-    page.getByRole("link", { name: /Park ownership & day/ }),
-  ).toHaveAttribute(
-    "href",
-    `https://testnet.nearblocks.io/address/${current.contractId}`,
-  );
-
-  await expect(page.locator('[data-testid="moon-world"] canvas')).toBeVisible();
-  await page.screenshot({ path: "outputs/moon-public-park-desktop.png" });
-  await page
-    .getByRole("button", { name: "Ride the mass driver", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Back to the park", exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Back to the park", exact: true })
-    .click();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(
-    page.getByRole("heading", { name: /Earthrise Gardens/ }),
-  ).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
-  await page.screenshot({ path: "outputs/moon-public-park-mobile.png" });
-  expect(errors).toEqual([]);
-});
-
-for (const version of ["v6", "v7"])
-  test(`persistent public parks ${version} show an authored snapshot without changing a local save`, async ({
-    page,
-  }) => {
-    test.skip(
-      process.env.MOON_PUBLIC_UI !== "1",
-      "Read-only v6 testnet fixture.",
-    );
-    const proof = JSON.parse(
-      await readFile(`docs/moon-${version}-browser-smoke.json`, "utf8"),
-    );
-    const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(error.message));
-    await page.addInitScript(() =>
-      localStorage.setItem("moonpark-current", "preserve-my-park"),
-    );
-    await page.goto(`/park/p-${proof.parkId}?version=${version}`);
-    await expect(
-      page.getByRole("heading", { name: /Earthrise Gardens/ }),
-    ).toBeVisible({ timeout: 30000 });
-    await expect(
-      page.getByText("PUBLISHED PARK REVISION", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByText(`${proof.score.total.toLocaleString()} points`, {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await page
-      .getByRole("button", { name: "Ride the mass driver", exact: true })
-      .click();
-    await expect(
-      page.getByRole("button", { name: "Back to the park", exact: true }),
-    ).toBeVisible();
-    await page
-      .getByRole("button", { name: "Back to the park", exact: true })
-      .click();
-    await page.screenshot({ path: "outputs/moon-v7-public-authored-park.png" });
-    expect(
-      await page.evaluate(() => localStorage.getItem("moonpark-current")),
-    ).toBe("preserve-my-park");
-    expect(errors).toEqual([]);
-  });
-
-test("ride exchange licenses a design, credits its creator and builds its verified configuration", async ({
-  page,
-}) => {
-  test.skip(
-    process.env.MOON_CHAIN_UI !== "1",
-    "Opt-in testnet licensing proof.",
-  );
-  test.setTimeout(120000);
-  const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
-  const provider = new JsonRpcProvider({ url: cfg.rpcUrl });
-  const sponsorKey = JSON.parse(
-    await readFile(".near-local/moon-v7-deployer.json", "utf8"),
-  );
-  const sponsor = new Account(
-    sponsorKey.accountId,
-    provider,
-    KeyPairSigner.fromSecretKey(sponsorKey.secretKey),
-  );
-  const pair = KeyPair.fromRandom("ed25519");
-  const saved = {
-    accountId: `license-${Date.now().toString(36)}.${sponsorKey.accountId}`,
-    secretKey: pair.toString(),
-  };
-  await writeFile(
-    `.near-local/${saved.accountId}.json`,
-    JSON.stringify(saved),
-    { mode: 0o600 },
-  );
-  await sponsor.createAccount({
-    newAccountId: saved.accountId,
-    publicKey: pair.getPublicKey(),
-    nearToTransfer: 500000000000000000000000n,
-  });
-  await sponsor.callFunction({
-    contractId: cfg.contractId,
-    methodName: "register_player",
-    args: {
-      account_id: saved.accountId,
-      player_id: `guest:${saved.accountId}`,
-      display_name: "Browser license proof",
-    },
-    gas: 50000000000000n,
-    waitUntil: "FINAL",
-  });
-  const account = new Account(
-    saved.accountId,
-    provider,
-    KeyPairSigner.fromSecretKey(saved.secretKey),
-  );
-  const record = await account.callFunction<RecordState>({
-    contractId: cfg.contractId,
-    methodName: "create_run",
-    args: { challenge_id: "moonpark-v7", request_id: crypto.randomUUID() },
-    gas: 180000000000000n,
-    waitUntil: "FINAL",
-  });
-  const mine = await provider.callFunction<{ id: string }>({
-    contractId: cfg.contractId,
-    method: "get_park_by_operator",
-    args: { account_id: saved.accountId },
-  });
-  const designs = await provider.callFunction<
-    {
-      id: string;
-      park_id: string;
-      creator: string;
-      name: string;
-      design: { palette: number; track?: unknown[] };
-    }[]
-  >({
-    contractId: cfg.contractId,
-    method: "list_blueprints",
-    args: { limit: 24 },
-  });
-  if (!mine || !designs?.length)
-    throw Error("The testnet park and blueprint fixtures must exist.");
-  designs.sort(
-    (a, b) => (b.design.track?.length ?? 0) - (a.design.track?.length ?? 0),
-  );
-  const chosen = designs.find((design) => design.park_id !== mine.id)!;
-  const creator = await provider.callFunction<{ owner: string }>({
-    contractId: cfg.contractId,
-    method: "get_park",
-    args: { park_id: chosen.park_id },
-  });
-  if (!creator) throw Error("Creator park is missing.");
-  const before = await provider.callFunction<{ available: string }>({
-    contractId: cfg.contractId,
-    method: "get_creator_earnings",
-    args: { account_id: creator.owner },
-  });
-  if (!before) throw Error("Creator earnings could not be read.");
-  const credentials = {
-    accountId: saved.accountId,
-    secretKey: saved.secretKey,
-    recoveryKey: saved.secretKey,
-    identity: "license-proof",
-    contractId: cfg.contractId,
-  };
-  await page.goto("/");
-  await page.evaluate(
-    ({ credentials, cfg, record }) => {
-      localStorage.setItem(
-        `moonpark-keys:${credentials.identity}:${cfg.contractId}`,
-        JSON.stringify(credentials),
-      );
-      localStorage.setItem(
-        `moonpark-active:${cfg.contractId}`,
-        credentials.accountId,
-      );
-      localStorage.setItem(
-        "moonpark-current",
-        JSON.stringify({
-          state: {
-            run: record.run,
-            mode: "near",
-            record,
-            pending: 0,
-            error: null,
-            txs: [],
-            deadline: Number(BigInt(record.deadline) / 1000000n),
-          },
-          ops: [],
-          credentials,
-          config: cfg,
-        }),
-      );
-    },
-    { credentials, cfg, record: record as { run: unknown; deadline: string } },
-  );
-  await page.reload();
-  await page.getByRole("button", { name: "My park and ride exchange" }).click();
-  await page.getByRole("tab", { name: "Ride exchange" }).click();
-  const card = page.locator("article").filter({ hasText: chosen.creator });
-  if (chosen.design.track?.length)
-    await expect(
-      card.getByRole("img", { name: /authored track/ }),
-    ).toBeVisible();
-  await card.getByRole("button", { name: /License & build/ }).click();
-  await expect(page.getByRole("button", { name: "Close panel" })).toHaveCount(
-    0,
-    { timeout: 45000 },
-  );
-  const p = project(page, 3.2, 8.2);
-  await page.mouse.click(p.x, p.y);
-  await expect
-    .poll(
-      () =>
-        page.evaluate(() => {
-          const s = JSON.parse(localStorage.getItem("moonpark-current")!).state;
-          return s.record.run.buildings.at(-1)?.blueprint_id ?? null;
-        }),
-      { timeout: 45000 },
-    )
-    .toBe(chosen.id);
-  const after = await provider.callFunction<{ available: string }>({
-    contractId: cfg.contractId,
-    method: "get_creator_earnings",
-    args: { account_id: creator.owner },
-  });
-  if (!after)
-    throw Error("Creator earnings could not be read after licensing.");
-  expect(BigInt(after.available) - BigInt(before.available)).toBe(
-    4500000000000000000000n,
-  );
-  const confirmed = await provider.callFunction<{
-    run: {
-      buildings: { blueprint_id?: string; design: { track?: unknown[] } }[];
-    };
-  }>({
-    contractId: cfg.contractId,
-    method: "get_run",
-    args: { run_id: record.run_id },
-  });
-  expect(confirmed?.run.buildings.at(-1)?.design.track).toEqual(
-    chosen.design.track,
-  );
-  await page.screenshot({ path: "outputs/moon-licensed-ride.png" });
-  await writeFile(
-    "outputs/moon-v7-license-ui-proof.json",
-    JSON.stringify(
-      {
-        parkId: mine.id,
-        blueprintId: chosen.id,
-        creator: creator.owner,
-        creditedYocto: (
-          BigInt(after.available) - BigInt(before.available)
-        ).toString(),
-        licensePreviouslyOwned: false,
-        verifiedConstruction: true,
-        trackPoints: chosen.design.track?.length ?? 0,
-      },
-      null,
-      2,
-    ),
-  );
-});
-
-test("private park backups validate account control, restore ownership and export account history", async ({
-  page,
-}) => {
-  test.skip(
-    process.env.MOON_CHAIN_UI !== "1",
-    "Opt-in testnet recovery fixture.",
-  );
-  test.setTimeout(90000);
-  const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
-  const proof = JSON.parse(
-    await readFile("docs/moon-v7-testnet-smoke.json", "utf8"),
-  );
-  const saved = JSON.parse(
-    await readFile(`.near-local/${proof.ownershipProof.buyer}.json`, "utf8"),
-  );
-  const credentials = {
-    accountId: saved.accountId,
-    secretKey: saved.secretKey,
-    recoveryKey: saved.secretKey,
-    identity: "backup-proof",
-    contractId: cfg.contractId,
-  };
-  const backup = {
-    format: "moonpark-account-backup-v1",
-    credentials,
-    accounts: [credentials],
-  };
-  await page.goto("/?parkdesk=1");
-  await page
-    .getByText("Use an existing park on this browser", { exact: true })
-    .click();
-  const file = page.locator('input[type="file"]');
-  await expect(file).toBeEnabled();
-  await file.setInputFiles({
-    name: "invalid-backup.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(
-      JSON.stringify({
-        ...backup,
-        credentials: {
-          ...credentials,
-          secretKey: KeyPair.fromRandom("ed25519").toString(),
-        },
-        accounts: [],
-      }),
-    ),
-  });
-  await expect(page.locator(".mp-inline-error")).toBeVisible({
-    timeout: 30000,
-  });
-  expect(
-    await page.evaluate(() =>
-      Object.keys(localStorage).some((k) => k.startsWith("moonpark-keys:")),
-    ),
-  ).toBe(false);
-  await file.setInputFiles({
-    name: "park-backup.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(backup)),
-  });
-  await expect(
-    page.getByText("Account restored.", { exact: false }),
-  ).toBeVisible({ timeout: 30000 });
-  await page.getByRole("button", { name: "Close panel" }).click();
-  await page.getByRole("button", { name: "How NEAR drives your park" }).click();
-  await expect(page.locator(".mp-ownership-card code")).toHaveText(
-    saved.accountId,
-    { timeout: 30000 },
-  );
-  const pending = page.waitForEvent("download");
-  await page
-    .getByRole("button", { name: "Export private park backup" })
-    .click();
-  const download = await pending;
-  const stream = await download.createReadStream();
-  const chunks = [];
-  for await (const chunk of stream!) chunks.push(chunk);
-  const exported = JSON.parse(Buffer.concat(chunks).toString());
-  expect(exported.format).toBe("moonpark-account-backup-v1");
-  expect(
-    exported.accounts.map((c: { accountId: string }) => c.accountId),
-  ).toContain(saved.accountId);
-});
-
-test("a queued cosmetic edit survives resuming a sealed NEAR opening", async ({
-  page,
-}) => {
-  test.skip(
-    process.env.MOON_CHAIN_UI !== "1",
-    "Opt-in closed-day journal recovery proof.",
-  );
-  test.setTimeout(90000);
-  const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
-  const proof = JSON.parse(
-    await readFile("docs/moon-v7-testnet-smoke.json", "utf8"),
-  );
-  const saved = JSON.parse(
-    await readFile(`.near-local/${proof.owner}.json`, "utf8"),
-  );
-  const provider = new JsonRpcProvider({ url: cfg.rpcUrl });
-  const record = await provider.callFunction<{
-    run: unknown;
-    deadline: string;
-    run_id: string;
-  }>({
-    contractId: cfg.contractId,
-    method: "get_run",
-    args: { run_id: proof.runId },
-  });
-  if (!record) throw Error("Completed chain fixture is missing.");
-  const id = crypto.randomUUID();
-  const credentials = {
-    accountId: saved.accountId,
-    secretKey: saved.secretKey,
-    recoveryKey: saved.secretKey,
-    identity: "closed-day-proof",
-    contractId: cfg.contractId,
-  };
-  await page.goto("/");
-  await page.evaluate(
-    ({ cfg, credentials, record, id }) => {
-      localStorage.setItem(
-        `moonpark-keys:${credentials.identity}:${cfg.contractId}`,
-        JSON.stringify(credentials),
-      );
-      localStorage.setItem(
-        `moonpark-active:${cfg.contractId}`,
-        credentials.accountId,
-      );
-      localStorage.setItem(
-        "moonpark-current",
-        JSON.stringify({
-          state: {
-            run: record.run,
-            mode: "near",
-            record,
-            pending: 1,
-            error: null,
-            txs: [],
-            deadline: Number(BigInt(record.deadline) / 1000000n),
-          },
-          credentials,
-          config: cfg,
-          ops: [{ commands: [{ kind: "theme", value: 1 }], ticks: 0, id }],
-        }),
-      );
-    },
-    { cfg, credentials, record, id },
-  );
-  await page.reload();
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
-  await expect
-    .poll(
-      () =>
-        page.evaluate(() => {
-          const s = JSON.parse(localStorage.getItem("moonpark-current")!).state;
-          return s.record.run.palette === 1 && s.pending === 0;
-        }),
-      { timeout: 45000 },
-    )
-    .toBe(true);
-  const state = await page.evaluate(
-    () => JSON.parse(localStorage.getItem("moonpark-current")!).state,
-  );
-  expect(state.run.palette).toBe(1);
-  expect(state.run.score).toEqual(proof.score);
-  expect(state.run.finished).toBe(true);
-  await page
-    .getByRole("button", { name: "Economy ledger", exact: true })
-    .click();
-  await page.getByText("View testnet wallets", { exact: true }).click();
-  await expect(page.locator(".mp-wallet-list > div")).toHaveCount(5, {
-    timeout: 30000,
-  });
-  await page.screenshot({ path: "outputs/moon-v7-vendor-wallets.png" });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByRole("button", { name: "Close panel" })).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
-  await page.screenshot({ path: "outputs/moon-v7-vendor-wallets-mobile.png" });
-});
-
-test("sponsorship failure can open practice immediately without replaying the intro", async ({
-  page,
-}) => {
-  let attempts = 0;
-  await page.route("**/api/moon/provision", (route) => {
-    attempts++;
-    return route.fulfill({
-      status: 503,
-      contentType: "application/json",
-      body: JSON.stringify({
-        error:
-          "The testnet sponsorship reserve needs replenishing. Practice is available.",
-      }),
-    });
-  });
-  await page.goto("/");
-  await page
-    .getByRole("button", { name: "Open your park", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Skip intro", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Play practice instead", exact: true }),
-  ).toBeVisible();
-  // The recovery controls must outlive the transient error toast.
-  await page.waitForTimeout(6500);
-  await page.getByRole("button", { name: "Retry NEAR", exact: true }).click();
-  await expect.poll(() => attempts).toBe(2);
-  await expect(
-    page.getByRole("button", { name: "Play practice instead", exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Play practice instead", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => JSON.parse(localStorage.getItem("moonpark-current")!).state.mode,
-    ),
-  ).toBe("practice");
-  await expect(page.locator(".mp-intro")).toHaveCount(0);
-});
-
-test("practice refresh resumes automatically even after its old wall-clock deadline", async ({
-  page,
-}) => {
-  await open(page);
-  const savedTick = await page.evaluate(() => {
-    const saved = JSON.parse(localStorage.getItem("moonpark-current")!);
-    saved.state.deadline = Date.now() - 3600000;
-    localStorage.setItem("moonpark-current", JSON.stringify(saved));
-    return saved.state.run.tick;
-  });
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: /Return to your park/ }),
-  ).toHaveCount(0);
-  const restored = await page.evaluate(
-    () => JSON.parse(localStorage.getItem("moonpark-current")!).state,
-  );
-  expect(restored.run.tick).toBeGreaterThanOrEqual(savedTick);
-  expect(restored.run.finished).toBe(false);
-  expect(restored.deadline).toBeGreaterThan(Date.now());
-});
-
 test("landing presents NEAR ownership and keeps entry controls clear on compact screens", async ({
   page,
 }) => {
@@ -1269,92 +678,6 @@ test("sound package decodes in stereo and the sound control stays consistent int
   ).toBeVisible();
 });
 
-test("eight building types keep the two merchant businesses automatic", async ({
-  page,
-}) => {
-  await open(page);
-  await expect(page.locator(".mp-blueprint-art img")).toHaveCount(8);
-  const kitchen = project(page, 19, 18, 1);
-  await page.mouse.click(kitchen.x, kitchen.y);
-  await expect(
-    page.getByRole("heading", { name: "Moon Pie Kitchen", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText("10% of sales", { exact: true })).toBeVisible();
-  await expect(page.getByRole("slider", { name: "Revenue share" })).toHaveCount(
-    0,
-  );
-  await expect(
-    page.getByRole("button", { name: /Invest|Support Omar/ }),
-  ).toHaveCount(0);
-});
-
-for (const version of ["v4", "v5", "v6"])
-  test(`${version} practice saves resume with the archived engine`, async ({
-    page,
-  }) => {
-    const wasm = await WebAssembly.compile(
-      new Uint8Array(await readFile(`public/engine/moon-${version}.wasm`)),
-    );
-    const exports = new WebAssembly.Instance(wasm, {}).exports as {
-      memory: WebAssembly.Memory;
-      sim_alloc: (n: number) => number;
-      sim_call: (p: number, n: number) => bigint;
-      sim_free: (p: number, n: number) => void;
-    };
-    const bytes = new TextEncoder().encode(JSON.stringify({ op: "new" }));
-    const ptr = exports.sim_alloc(bytes.length);
-    new Uint8Array(exports.memory.buffer, ptr, bytes.length).set(bytes);
-    const output = exports.sim_call(ptr, bytes.length);
-    exports.sim_free(ptr, bytes.length);
-    const address = Number(output >> 32n),
-      length = Number(output & 0xffffffffn);
-    const run = JSON.parse(
-      new TextDecoder().decode(
-        new Uint8Array(exports.memory.buffer, address, length),
-      ),
-    ).run;
-    exports.sim_free(address, length);
-    expect(run.version).toBe(`moonpark-${version}`);
-    await page.goto("/");
-    await page.evaluate(
-      (run) =>
-        localStorage.setItem(
-          "moonpark-current",
-          JSON.stringify({
-            state: {
-              run,
-              mode: "practice",
-              record: null,
-              pending: 0,
-              error: null,
-              txs: [],
-              deadline: Date.now() + 565000,
-            },
-            ops: [],
-            credentials: null,
-            config: null,
-          }),
-        ),
-      run,
-    );
-    await page.reload();
-    await expect(
-      page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-    ).toBeVisible();
-    await expect
-      .poll(
-        async () =>
-          Number(await page.locator(".moonpark").getAttribute("data-tick")),
-        { timeout: 20000 },
-      )
-      .toBeGreaterThanOrEqual(2);
-    const state = await page.evaluate(
-      () => JSON.parse(localStorage.getItem("moonpark-current")!).state,
-    );
-    expect(state.run.version).toBe(`moonpark-${version}`);
-    expect(state.error).toBeNull();
-  });
-
 test("earlier park ownership and public visits stay accessible", async ({
   page,
 }) => {
@@ -1385,52 +708,354 @@ test("earlier park ownership and public visits stay accessible", async ({
   expect(errors).toEqual([]);
 });
 
-test("custom coaster editing previews, saves a closed loop and survives refresh", async ({
+async function wasmRun(input: {
+  op: string;
+  run?: Run;
+  commands?: unknown[];
+  ticks?: number;
+}): Promise<Run> {
+  const e = new WebAssembly.Instance(
+    await WebAssembly.compile(
+      new Uint8Array(await readFile("public/engine/moon.wasm")),
+    ),
+    {},
+  ).exports as unknown as {
+    memory: WebAssembly.Memory;
+    sim_alloc(n: number): number;
+    sim_free(p: number, n: number): void;
+    sim_call(p: number, n: number): bigint;
+  };
+  const bytes = new TextEncoder().encode(JSON.stringify(input)),
+    p = e.sim_alloc(bytes.length);
+  new Uint8Array(e.memory.buffer, p, bytes.length).set(bytes);
+  const out = e.sim_call(p, bytes.length);
+  e.sim_free(p, bytes.length);
+  const ptr = Number(out >> 32n),
+    length = Number(out & 0xffffffffn),
+    result = JSON.parse(
+      new TextDecoder().decode(new Uint8Array(e.memory.buffer, ptr, length)),
+    );
+  e.sim_free(ptr, length);
+  if (result.error) throw Error(result.error);
+  return result.run;
+}
+async function mockAccount(page: Page, record: unknown, recovery: unknown) {
+  await page.route("**/api/moon/profile", (route) =>
+    route.fulfill({
+      json: {
+        configured: true,
+        player: { player_id: "cloud-qa", display_name: "Cloud Explorer" },
+      },
+    }),
+  );
+  await page.route("**/api/moon/save**", (route) =>
+    route.fulfill({
+      json: route.request().method() === "PUT" ? { saved: true } : { recovery },
+    }),
+  );
+  await page.route(
+    /^https:\/\/(test\.rpc\.fastnear\.com|rpc\.testnet\.near\.org)\/?$/,
+    (route) => {
+      const request = route.request().postDataJSON();
+      const value =
+        request.params?.method_name === "get_run"
+          ? record
+          : { entries: [], open: true };
+      return route.fulfill({
+        json: {
+          jsonrpc: "2.0",
+          id: request.id,
+          result: {
+            result: [...new TextEncoder().encode(JSON.stringify(value))],
+            logs: [],
+            block_height: 1,
+            block_hash: "11111111111111111111111111111111",
+          },
+        },
+      });
+    },
+  );
+}
+test("signed-in recovery restores the same park in two independent browser contexts", async ({
+  browser,
+}) => {
+  const { starterCoaster } = await import("../lib/moon/coaster");
+  let run = await wasmRun({ op: "new" });
+  run = await wasmRun({
+    op: "step",
+    run,
+    commands: [
+      {
+        kind: "build",
+        item: "coaster",
+        x: 2,
+        z: 16,
+        design: { ...starterCoaster(), name: "Cloud Skimmer" },
+      },
+      { kind: "build", item: "food", x: 26, z: 41 },
+    ],
+    ticks: 0,
+  });
+  const config = JSON.parse(await readFile("public/moon-config.json", "utf8"));
+  const credentials = {
+    accountId: "cloud-qa.testnet",
+    secretKey: KeyPair.fromRandom("ed25519").toString(),
+    recoveryKey: KeyPair.fromRandom("ed25519").toString(),
+    contractId: config.contractId,
+    identity: "cloud-qa",
+  };
+  const record = {
+    run,
+    run_id: "42",
+    park_id: "42",
+    owner: credentials.accountId,
+    player_id: "cloud-qa",
+    display_name: "Cloud Explorer",
+    ranked: false,
+    started_at: "1",
+    deadline: "0",
+    last_request: "opening",
+  };
+  const ownerCredentials = {
+    ...credentials,
+    accountId: "owner-cloud-qa.testnet",
+    identity: "cloud-owner",
+    secretKey: KeyPair.fromRandom("ed25519").toString(),
+    recoveryKey: KeyPair.fromRandom("ed25519").toString(),
+  };
+  const recovery = {
+    credentials,
+    accounts: [ownerCredentials],
+    config,
+    runId: "42",
+    identity: { name: "Cloud Gardens", emblem: 1 },
+  };
+  for (let device = 0; device < 2; device++) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await mockAccount(page, record, recovery);
+    await page.goto("/");
+    await expect(
+      page.getByRole("button", { name: "Build Lunar Bounce", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    expect((await savedRun(page)).buildings[0].design?.name).toBe(
+      "Cloud Skimmer",
+    );
+    expect(
+      await page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem("moonpark-current")!).credentials
+            .accountId,
+      ),
+    ).toBe(credentials.accountId);
+    expect(
+      await page.evaluate(
+        (account) => !!localStorage.getItem(`moonpark-retired-keys:${account}`),
+        ownerCredentials.accountId,
+      ),
+    ).toBe(true);
+    await expect(
+      page.getByRole("button", { name: "Saved to your account", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Skip intro", exact: true }),
+    ).toHaveCount(0);
+    await context.close();
+  }
+});
+test("resuming reconciles a conflicting edit from another device and keeps compatible changes", async ({
+  page,
+}) => {
+  const { starterCoaster } = await import("../lib/moon/coaster");
+  let base = await wasmRun({ op: "new" });
+  base = await wasmRun({
+    op: "step",
+    run: base,
+    commands: [
+      { kind: "build", item: "coaster", x: 2, z: 16, design: starterCoaster() },
+      { kind: "build", item: "food", x: 26, z: 41 },
+    ],
+    ticks: 0,
+  });
+  const build = { kind: "build", item: "wheel", x: 30, z: 29 };
+  const canonical = await wasmRun({
+    op: "step",
+    run: base,
+    commands: [build],
+    ticks: 20,
+  });
+  let predicted = await wasmRun({
+    op: "step",
+    run: base,
+    commands: [build],
+    ticks: 0,
+  });
+  predicted = await wasmRun({
+    op: "step",
+    run: predicted,
+    commands: [{ kind: "theme", value: 4 }],
+    ticks: 10,
+  });
+  const config = JSON.parse(await readFile("public/moon-config.json", "utf8"));
+  const record = {
+    run: base,
+    run_id: "43",
+    park_id: "43",
+    owner: "cloud-qa.testnet",
+    player_id: "cloud-qa",
+    display_name: "Cloud Explorer",
+    ranked: false,
+    started_at: "1",
+    deadline: "0",
+    last_request: "opening",
+  };
+  const save = {
+    config,
+    credentials: null,
+    state: {
+      run: predicted,
+      record,
+      mode: "near",
+      pending: 3,
+      error: null,
+      txs: [],
+      deadline: Number.MAX_SAFE_INTEGER,
+    },
+    ops: [
+      { commands: [build], ticks: 0, id: "local-wheel" },
+      { commands: [{ kind: "theme", value: 4 }], ticks: 0, id: "local-theme" },
+      { commands: [], ticks: 10, id: "local-ticks" },
+    ],
+  };
+  await page.addInitScript(
+    (save) => localStorage.setItem("moonpark-current", JSON.stringify(save)),
+    save,
+  );
+  await mockAccount(
+    page,
+    { ...record, run: canonical, last_request: "another-device" },
+    null,
+  );
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Build Lunar Bounce", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  const restored = await savedRun(page);
+  expect(restored.buildings).toHaveLength(3);
+  expect(restored.palette).toBe(4);
+  expect(restored.tick).toBeGreaterThanOrEqual(20);
+  expect(restored.tick).toBeLessThan(25);
+  await expect(
+    page.getByText(
+      "Your park was updated elsewhere. Loaded its confirmed state and kept compatible pending changes.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("moonpark-current")!)
+        .ops.filter((op: { commands: unknown[] }) => op.commands.length)
+        .map((op: { id: string }) => op.id),
+    ),
+  ).toEqual(["local-theme"]);
+});
+
+test("an unfinished coaster draft survives refresh and can be completed", async ({
   page,
 }) => {
   await open(page);
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
-  await page.getByRole("button", { name: "Build Mass-Driver Coaster" }).click();
-  const spot = project(page, 3.2, 8.2);
-  await page.mouse.click(spot.x, spot.y);
-  await page.getByRole("button", { name: /Connect entrance/ }).click();
-  const canvas = page.locator('[data-testid="moon-world"] canvas');
-  await canvas.evaluate((element) =>
-    element.setAttribute("data-coaster-canvas", "original"),
-  );
-  await page.getByRole("button", { name: "Design your coaster" }).click();
-  await expect(
-    page.getByRole("complementary", { name: "Coaster designer" }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: /Track handle/ })).toHaveCount(
-    6,
-  );
-  await page.getByLabel("Hill 2").fill("60");
   await page
-    .getByRole("button", { name: "Track handle 5", exact: true })
-    .focus();
-  await page.keyboard.press("ArrowLeft");
-  await page.getByRole("button", { name: "Apply track design" }).click();
-  await expect(
-    page.getByRole("complementary", { name: "Coaster designer" }),
-  ).toHaveCount(0);
-  await expect(canvas).toHaveAttribute("data-coaster-canvas", "original");
-  const design = await page.evaluate(
-    () =>
-      JSON.parse(localStorage.getItem("moonpark-current")!).state.run
-        .buildings[2].design,
-  );
-  expect(design.track).toHaveLength(8);
-  expect(design.track[3].y).toBe(60);
-  expect(design.track[6].x).toBe(-19);
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  await page.getByLabel("Attraction name").fill("Work in Orbit");
+  await page
+    .getByRole("button", { name: "Draw your own", exact: true })
+    .click();
+  for (const [x, z] of [
+    [240, 200],
+    [220, 60],
+    [60, 90],
+  ]) {
+    const point = await planPoint(page, x, z);
+    await page.mouse.click(point.x, point.y);
+  }
+  await page.getByLabel("Selected turn height").fill("550");
   await page.reload();
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  await expect(page.getByLabel("Attraction name")).toHaveValue("Work in Orbit");
+  await expect(page.getByLabel("Selected turn height")).toHaveValue("550");
   await expect(
-    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible();
-  const restored = await page.evaluate(
-    () =>
-      JSON.parse(localStorage.getItem("moonpark-current")!).state.run
-        .buildings[2].design,
+    page.getByRole("button", { name: "Place coaster", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Join back to station", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Place coaster", exact: true }),
+  ).toBeEnabled();
+});
+
+test("earlier saved parks retain usable construction and opening controls", async ({
+  page,
+}) => {
+  const bytes = new Uint8Array(await readFile("public/engine/moon-v6.wasm"));
+  const e = new WebAssembly.Instance(await WebAssembly.compile(bytes), {})
+    .exports as unknown as {
+    memory: WebAssembly.Memory;
+    sim_alloc(n: number): number;
+    sim_free(p: number, n: number): void;
+    sim_call(p: number, n: number): bigint;
+  };
+  const input = new TextEncoder().encode('{"op":"new"}'),
+    ptr = e.sim_alloc(input.length);
+  new Uint8Array(e.memory.buffer, ptr, input.length).set(input);
+  const out = e.sim_call(ptr, input.length);
+  e.sim_free(ptr, input.length);
+  const rp = Number(out >> 32n),
+    len = Number(out & 0xffffffffn),
+    run = JSON.parse(
+      new TextDecoder().decode(new Uint8Array(e.memory.buffer, rp, len)),
+    ).run;
+  e.sim_free(rp, len);
+  await page.addInitScript(
+    (run) =>
+      localStorage.setItem(
+        "moonpark-current",
+        JSON.stringify({
+          state: {
+            run,
+            mode: "practice",
+            record: null,
+            pending: 0,
+            error: null,
+            txs: [],
+            deadline: Number.MAX_SAFE_INTEGER,
+          },
+          config: null,
+          credentials: null,
+          ops: [],
+        }),
+      ),
+    run,
   );
-  expect(restored).toEqual(design);
+  await page.goto("/?resumeVersion=moonpark-v6");
+  await expect(
+    page.getByRole("button", { name: "Start the new workshop", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".mp-subhud")).toContainText(
+    "power · earlier rules",
+  );
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  await expect(
+    page.getByRole("group", { name: "Coaster route handles", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Cancel coaster editing", exact: true })
+    .click();
 });

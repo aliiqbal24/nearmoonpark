@@ -11,7 +11,7 @@ export async function verifyEconomy(provider, contractId, record) {
   assert.equal(economy.tick, run.tick);
   assert.equal(
     economy.locked,
-    ["moonpark-v6", "moonpark-v7"].includes(run.version) || !run.finished,
+    ["moonpark-v6", "moonpark-v7", "moonpark-v8"].includes(run.version) || !run.finished,
   );
   const expected = {
     park: [run.cash, 0, 0, 0],

@@ -42,29 +42,32 @@ export function walkwayMaterial() {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 256;
   const p = canvas.getContext("2d")!;
-  p.fillStyle = "#e5d5b7";
+  p.fillStyle = "#d9dfd3";
   p.fillRect(0, 0, 256, 256);
-  p.fillStyle = "#d7c3a3";
-  p.fillRect(5, 5, 246, 246);
-  p.strokeStyle = "#f7ead0";
-  p.lineWidth = 3;
-  p.strokeRect(11, 11, 234, 234);
-  p.strokeStyle = "#b89564";
+  const plate = p.createLinearGradient(0, 0, 256, 256);
+  plate.addColorStop(0, "#e6e8da");
+  plate.addColorStop(1, "#c2ceca");
+  p.fillStyle = plate;
+  p.fillRect(3, 3, 250, 250);
+  p.strokeStyle = "#506b71";
   p.lineWidth = 2;
-  p.strokeRect(5, 5, 246, 246);
-  p.strokeStyle = "#cbb28d";
-  p.lineWidth = 1;
-  p.beginPath();
-  p.moveTo(15, 128);
-  p.lineTo(241, 128);
-  p.stroke();
-  for (let i = 0; i < 460; i++) {
-    p.fillStyle = i % 3 ? "#c8b08a22" : "#fff6dc44";
-    p.fillRect((i * 71.37) % 256, (i * 43.57) % 256, 1, 1);
+  p.strokeRect(1, 1, 254, 254);
+  p.strokeStyle = "#f4f3df";
+  p.lineWidth = 2;
+  p.strokeRect(7, 7, 242, 242);
+  for (const y of [85, 170]) {
+    p.strokeStyle = "#8fa29e";
+    p.lineWidth = 1;
+    p.beginPath();
+    p.moveTo(6, y);
+    p.lineTo(250, y);
+    p.stroke();
+    p.fillStyle = "#f0f1df";
+    p.fillRect(6, y + 1, 244, 1);
   }
-  for (const x of [18, 238])
-    for (const y of [18, 238]) {
-      p.fillStyle = "#ab8c60";
+  for (const x of [13, 243])
+    for (const y of [13, 243]) {
+      p.fillStyle = "#597378";
       p.beginPath();
       p.arc(x, y, 2, 0, Math.PI * 2);
       p.fill();
@@ -74,8 +77,8 @@ export function walkwayMaterial() {
   texture.anisotropy = 8;
   return new T.MeshStandardMaterial({
     map: texture,
-    roughness: 0.8,
-    metalness: 0.02,
+    roughness: 0.66,
+    metalness: 0.18,
   });
 }
 
@@ -466,6 +469,61 @@ export function pathAmenities(run: Run) {
         z = Math.floor(cell / WIDTH);
       return !b.sold && x >= b.x && x < b.x + f.w && z >= b.z && z < b.z + f.h;
     });
+  const edges: { x: number; z: number; horizontal: boolean; light: boolean }[] =
+    [];
+  for (const cell of paths) {
+    const x = cell % WIDTH,
+      z = Math.floor(cell / WIDTH);
+    for (const [dx, dz] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ]) {
+      if (paths.has((z + dz) * WIDTH + x + dx) && x + dx >= 0 && x + dx < WIDTH)
+        continue;
+      edges.push({
+        x: (x + 0.5 + dx * 0.47 - WIDTH / 2) * SCALE,
+        z: (z + 0.5 + dz * 0.47 - originZ) * SCALE,
+        horizontal: dz !== 0,
+        light: (x + z) % 4 === 0,
+      });
+    }
+  }
+  for (const horizontal of [false, true]) {
+    const selected = edges.filter((e) => e.horizontal === horizontal);
+    const mesh = new T.InstancedMesh(
+      new T.BoxGeometry(
+        horizontal ? 1.22 : 0.065,
+        0.075,
+        horizontal ? 0.065 : 1.22,
+      ),
+      metal("#879b91"),
+      selected.length,
+    );
+    const matrix = new T.Matrix4();
+    selected.forEach((e, i) => {
+      matrix.makeTranslation(e.x, 0.255, e.z);
+      mesh.setMatrixAt(i, matrix);
+    });
+    mesh.receiveShadow = true;
+    g.add(mesh);
+    const lights = selected.filter((e) => e.light);
+    const guide = new T.InstancedMesh(
+      new T.BoxGeometry(
+        horizontal ? 0.36 : 0.025,
+        0.018,
+        horizontal ? 0.025 : 0.36,
+      ),
+      glow("#d7e5b5"),
+      lights.length,
+    );
+    lights.forEach((e, i) => {
+      matrix.makeTranslation(e.x, 0.3, e.z);
+      guide.setMatrixAt(i, matrix);
+    });
+    g.add(guide);
+  }
   const used = new Set<number>();
   for (let i = 0; i < run.paths.length && used.size < 22; i += 6) {
     const cell = run.paths[i],

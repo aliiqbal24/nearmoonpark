@@ -1,8 +1,8 @@
 {
-  "version": "moonpark-v7",
-  "contractSha256": "8a966af9011e986612d6baa80fecac4156a05a92e265ff1a74e6e294c00198b3",
-  "engineSha256": "a28d67d3b320552ad9caaae8fda60c3f6a211dbdb7f20fda2ad100ea1492a545",
-  "codeHash": "AKzHyLsDGaXeqnEHSFW6xwZGpVj9ELpADhv3qrAtuK5L",
+  "version": "moonpark-v8",
+  "contractSha256": "72a0e0b005f7764d93a2a73d0e9267fc791b183b8a7af8565adacd734684e751",
+  "engineSha256": "d28df010c8221b0f1dacdc242816b35d0c69b2ef66672aa41a8eacda4758326b",
+  "codeHash": "8iTkztBYZvA3CecctfCPgZuEgteyaiF9eP5EcXY9EBgk",
   "prizeChallengeOpen": true,
   "immutable": true,
   "contractAccessKeys": 0

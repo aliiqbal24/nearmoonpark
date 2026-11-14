@@ -1,3 +1,5 @@
+import { preserveLocalPark } from "./cloud";
+import { credentialsFor, type Park } from "./parks";
 import { simulate } from "./engine";
 import {
   create,
@@ -17,6 +19,7 @@ import {
 } from "./model";
 type Op = { commands: Command[]; ticks: number; id: string };
 export type Snapshot = {
+  localId?: string;
   run: Run;
   mode: "practice" | "near";
   record: RecordState | null;
@@ -44,6 +47,7 @@ export class ParkSession {
     deadline?: number,
   ) {
     this.state = {
+      localId: crypto.randomUUID(),
       run,
       mode: record ? "near" : "practice",
       record,
@@ -62,15 +66,12 @@ export class ParkSession {
     credentials?: Credentials,
     cfg?: Config,
   ) {
+    preserveLocalPark();
     const saved = localStorage.getItem("moonpark-current");
     if (saved) {
       try {
         const old = JSON.parse(saved);
-        if (
-          old.state?.run?.version !== VERSION &&
-          old.config?.contractId &&
-          old.state?.record?.run_id
-        )
+        if (old.config?.contractId && old.state?.record?.run_id)
           localStorage.setItem(
             `moonpark-history:${old.config.contractId}:${old.state.record.run_id}`,
             saved,
@@ -85,6 +86,27 @@ export class ParkSession {
       localStorage.setItem(requestKey, requestId);
       const record = await create(credentials, cfg, requestId);
       localStorage.removeItem(requestKey);
+      let local;
+      try {
+        local = JSON.parse(localStorage.getItem("moonpark-current") || "null");
+      } catch {
+        local = null;
+      }
+      if (
+        local?.config?.contractId === cfg.contractId &&
+        local.state?.record?.run_id === record.run_id
+      ) {
+        local.credentials = credentials;
+        local.config = cfg;
+        localStorage.setItem("moonpark-current", JSON.stringify(local));
+        const resumed = await ParkSession.resume(
+          onChange,
+          () => true,
+          undefined,
+          record,
+        );
+        if (resumed) return resumed;
+      }
       const session = new ParkSession(
         record.run,
         onChange,
@@ -103,7 +125,25 @@ export class ParkSession {
   static async resume(
     onChange: (s: Snapshot) => void,
     isCurrent: () => boolean = () => true,
+    version?: string,
+    confirmedRecord?: RecordState,
   ) {
+    if (version) {
+      let current;
+      try {
+        current = JSON.parse(
+          localStorage.getItem("moonpark-current") || "null",
+        );
+      } catch {
+        current = null;
+      }
+      if (current?.state?.run?.version !== version) {
+        const raw = localStorage.getItem(`moonpark-save:${version}`);
+        if (!raw) return null;
+        preserveLocalPark();
+        localStorage.setItem("moonpark-current", raw);
+      }
+    }
     const saved = JSON.parse(
       localStorage.getItem("moonpark-current") || "null",
     ) as {
@@ -114,18 +154,24 @@ export class ParkSession {
     } | null;
     if (!saved) return null;
     if (
-      ![VERSION, "moonpark-v6", "moonpark-v5", "moonpark-v4"].includes(
-        saved.state.run.version,
-      )
+      ![
+        VERSION,
+        "moonpark-v7",
+        "moonpark-v6",
+        "moonpark-v5",
+        "moonpark-v4",
+      ].includes(saved.state.run.version)
     )
       throw Error(
         "This saved park uses the previous rules. Start a new opening day for the automatic vendor wallets. Earlier parks remain available in the archive.",
       );
     let record = saved.state.record;
     if (record && saved.config)
-      record = await view<RecordState>(saved.config, "get_run", {
-        run_id: record.run_id,
-      });
+      record =
+        confirmedRecord ??
+        (await view<RecordState>(saved.config, "get_run", {
+          run_id: record.run_id,
+        }));
     if (!isCurrent()) return null;
     const s = new ParkSession(
       record?.run ?? saved.state.run,
@@ -137,6 +183,7 @@ export class ParkSession {
         ? Number(BigInt(record.deadline) / 1000000n)
         : Date.now() + (END - saved.state.run.tick + 15) * 1000,
     );
+    s.state.localId = saved.state.localId ?? s.state.localId;
     s.state.txs = saved.state.txs;
     let ops = saved.ops;
     if (record && parkClosed(record.run))
@@ -150,7 +197,7 @@ export class ParkSession {
       if (i >= 0) ops = ops.slice(i + 1);
     }
     s.ops = ops;
-    await s.rebase();
+    await s.rebase(true, saved.state.run.tick);
     if (!isCurrent()) {
       s.dispose();
       return null;
@@ -202,10 +249,15 @@ export class ParkSession {
     });
   }
   async update(dt: number, speed: number) {
-    if (this.disposed || parkClosed(this.state.run)) return;
+    if (
+      this.disposed ||
+      parkClosed(this.state.run) ||
+      (this.state.run.opening_stage ?? 3) < 2
+    )
+      return;
     this.desired = Math.min(
       isPersistent(this.state.run) ? 4_000_000_000 : END,
-      this.desired + dt * speed,
+      this.desired + dt * Math.min(1, speed),
     );
     const closing =
       !isPersistent(this.state.run) && Date.now() >= this.state.deadline;
@@ -237,17 +289,40 @@ export class ParkSession {
       void this.flush();
     });
   }
-  private async rebase() {
+  private async rebase(
+    discardConflicts = false,
+    targetTick = this.state.run.tick,
+  ) {
     if (!this.state.record) return;
     let run = this.state.record.run;
-    for (const op of this.ops)
-      run = await simulate({
-        op: "step",
-        run,
-        commands: op.commands,
-        ticks: op.ticks,
-      });
+    const retained: Op[] = [];
+    let conflict = false;
+    for (const original of this.ops) {
+      const op = discardConflicts
+        ? {
+            ...original,
+            ticks: Math.min(original.ticks, Math.max(0, targetTick - run.tick)),
+          }
+        : original;
+      if (!op.commands.length && !op.ticks) continue;
+      try {
+        run = await simulate({
+          op: "step",
+          run,
+          commands: op.commands,
+          ticks: op.ticks,
+        });
+        retained.push(op);
+      } catch (error) {
+        if (!discardConflicts) throw error;
+        conflict = true;
+      }
+    }
+    this.ops = retained;
     this.state.run = run;
+    if (conflict)
+      this.state.notice =
+        "Your park was updated elsewhere. Loaded its confirmed state and kept compatible pending changes.";
   }
   private batchTicks() {
     const buildings = this.state.run.buildings.filter((b) => !b.sold).length;
@@ -293,6 +368,19 @@ export class ParkSession {
         if (read.last_request === this.active.id)
           result = { record: read, tx: "" };
         else {
+          if (read.run.revision > this.state.record.run.revision) {
+            const targetTick = this.state.run.tick;
+            await this.enqueue(async () => {
+              this.state.record = read;
+              if (this.active) this.ops.unshift(this.active);
+              this.active = null;
+              await this.rebase(true, targetTick);
+              this.desired = Math.max(this.desired, this.state.run.tick);
+              this.state.error = null;
+              this.emit();
+            });
+            return;
+          }
           this.state.record = read;
           result = await settle(
             this.credentials,
@@ -317,7 +405,7 @@ export class ParkSession {
       let error = e instanceof Error ? e.message : "Reconnecting to NEAR.";
       if (
         isPersistent(this.state.run) &&
-        /allowance|NotEnoughBalance|insufficient.*gas/i.test(error) &&
+        /allowance|not\s*enough\s*balance|insufficient.*gas/i.test(error) &&
         this.config &&
         this.credentials
       ) {
@@ -402,6 +490,20 @@ export class ParkSession {
         }),
       );
     } catch {}
+  }
+  async cloudRecovery(identity: { name: string; emblem: number }) {
+    if (!this.credentials || !this.config || !this.state.record) return null;
+    const park = await view<Park>(this.config, "get_park", {
+      park_id: this.state.record.park_id,
+    });
+    const owner = credentialsFor(this.config, park.owner);
+    return {
+      credentials: this.credentials,
+      accounts: owner ? [owner] : [],
+      config: this.config,
+      runId: this.state.record.run_id,
+      identity,
+    };
   }
   export() {
     return JSON.stringify(

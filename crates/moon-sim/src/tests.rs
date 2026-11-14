@@ -10,428 +10,27 @@ fn build(kind: &str, x: u8, z: u8) -> Command {
     Command {
         kind: "build".into(),
         item: kind.into(),
-        x: x + 8,
-        z: z + 24,
+        x,
+        z,
+        design: Some(if kind == "coaster" {
+            Design::starter()
+        } else {
+            Design::default()
+        }),
         ..Default::default()
     }
 }
-#[test]
-fn starting_budget_funds_two_coasters_and_a_wheel_without_creating_score() {
-    let mut r = Run::new();
-    assert_eq!(r.cash, 320000);
-    assert_eq!(r.score.total, 0);
-    r.apply(
-        &[
-            build("coaster", 3, 8),
-            build("coaster", 11, 5),
-            build("wheel", 22, 5),
-        ],
-        0,
-    )
-    .unwrap();
-    assert_eq!(r.cash, 20000);
-    assert_eq!(r.total_money(), r.money_supply);
-    assert_eq!(r.score.total, 0);
-}
-#[test]
-fn money_is_conserved_for_a_complete_park() {
-    let mut r = Run::new();
-    r.apply(&[build("coaster", 3, 8), cmd("connect", 3)], 0)
+fn opened() -> Run {
+    let mut run = Run::new();
+    run.apply(&[build("coaster", 2, 16), build("food", 26, 41)], 0)
         .unwrap();
-    while !r.finished {
-        r.apply(&[], 10).unwrap();
-        assert_eq!(r.total_money(), r.money_supply);
-        assert!(r.cash >= 0);
-        assert!(r.guests.iter().all(|g| g.cash >= 0));
-        assert!(r.buildings.iter().all(|b| b.cash >= 0));
-        for good in 0..3 {
-            let kind = ["food", "drink", "depot"][good];
-            let stock = r
-                .buildings
-                .iter()
-                .filter(|b| b.kind == kind)
-                .map(|b| b.stock as u32 + b.delivery_qty as u32)
-                .sum::<u32>();
-            assert_eq!(
-                r.supplies[good] as u32 + stock + r.consumed[good] as u32,
-                2048
-            );
-        }
-    }
-    assert!(r.trade_count > 200);
-    assert!(r.score.total > 2000);
-    assert_eq!(r.guests.len(), 96);
-    println!(
-        "Score {} / trades {} / cash {} / happy {}",
-        r.score.total, r.trade_count, r.cash, r.score.happy
-    );
+    run
 }
-#[test]
-fn invalid_batch_is_atomic() {
-    let mut r = Run::new();
-    let before = serde_json::to_string(&r).unwrap();
-    assert!(r
-        .apply(&[build("wheel", 22, 14), build("coaster", 11, 16)], 0)
-        .is_err());
-    assert_eq!(before, serde_json::to_string(&r).unwrap());
-}
-#[test]
-fn placement_and_connectivity() {
-    let mut r = Run::new();
-    r.apply(&[build("wheel", 22, 14)], 0).unwrap();
-    assert!(!r.buildings[2].connected);
-    r.apply(&[cmd("connect", 3)], 0).unwrap();
-    assert!(r.buildings[2].connected);
-    assert!(r.apply(&[build("wheel", 22, 14)], 0).is_err());
-}
-#[test]
-fn score_is_not_created_by_resale() {
-    let mut r = Run::new();
-    let equity = r.equity();
-    r.apply(&[cmd("sell", 1)], 0).unwrap();
-    assert_eq!(r.equity(), equity);
-    assert_eq!(r.score.finance, 0);
+fn assert_conservation(r: &Run) {
     assert_eq!(r.total_money(), r.money_supply);
-}
-#[test]
-fn batching_and_speed_do_not_change_economics() {
-    let mut a = Run::new();
-    let mut b = a.clone();
-    for _ in 0..10 {
-        a.apply(&[], 1).unwrap();
-    }
-    b.apply(&[], 10).unwrap();
-    a.revision = 0;
-    b.revision = 0;
-    a.rehash();
-    b.rehash();
-    assert_eq!(a.hash, b.hash);
-}
-#[test]
-fn merchant_pricing_is_transparent() {
-    assert!(catalog::merchant_price("food", 2, 8) > catalog::merchant_price("food", 16, 0));
-}
-#[test]
-fn park_keeps_building_and_earning_after_its_opening_score_is_sealed() {
-    let mut r = Run::new();
-    while !r.finished {
-        r.apply(&[], 10).unwrap();
-    }
-    let score = r.score.clone();
-    let tick = r.tick;
-    r.apply(&[build("solar", 3, 2)], 0).unwrap();
-    for _ in 0..100 {
-        r.apply(&[], 20).unwrap();
-    }
-    assert!(r.tick > tick + 1000);
-    assert_eq!(r.score, score);
-    assert!(r.guests.len() > 96 && r.guests.len() <= 144);
-    assert_eq!(r.total_money(), r.money_supply);
-    assert!(r.money_supply > Run::new().money_supply);
-}
-#[test]
-fn an_idle_vendor_remains_viable_without_bailouts() {
-    let mut r = Run::new();
-    r.apply(&[cmd("toggle", 2)], 0).unwrap();
-    let cash = r.buildings[1].cash;
-    for _ in 0..46 {
-        r.apply(&[], 10).unwrap();
-    }
-    assert!(!r.buildings[1].insolvent);
-    assert_eq!(r.buildings[1].cash, cash);
-    r.apply(&[cmd("toggle", 2)], 0).unwrap();
-    assert!(r.buildings[1].powered);
-    assert_eq!(r.total_money(), r.money_supply);
-    for kind in ["rent", "invest"] {
-        let before = r.hash.clone();
-        assert!(r
-            .apply(
-                &[Command {
-                    kind: kind.into(),
-                    building: 2,
-                    value: 10000,
-                    ..Default::default()
-                }],
-                0
-            )
-            .is_err());
-        assert_eq!(r.hash, before);
-    }
-}
-#[test]
-fn paths_can_be_removed_and_reconnected() {
-    let mut r = Run::new();
-    let cash = r.cash;
-    r.apply(
-        &[Command {
-            kind: "erase_path".into(),
-            x: 20,
-            z: 43,
-            ..Default::default()
-        }],
-        0,
-    )
-    .unwrap();
-    assert!(!r.buildings[0].connected);
-    assert_eq!(r.cash, cash);
-    r.apply(&[cmd("connect", 1)], 0).unwrap();
-    assert!(r.buildings[0].connected);
-    assert_eq!(r.cash, cash - 200);
-}
-#[test]
-fn launch_settings_have_a_real_throughput_tradeoff() {
-    let mut b = make_building(1, "coaster", 3, 8, 0, 0, 0);
-    b.launch = 1;
-    let gentle = b.duration();
-    let low = b.power();
-    b.launch = 3;
-    assert!(b.duration() < gentle);
-    assert!(b.power() > low);
-}
-
-#[test]
-fn shuttles_deliver_small_groups_and_take_boarded_guests_home() {
-    let mut r = Run::new();
-    r.apply(&[], 10).unwrap();
-    assert_eq!(
-        r.guests.iter().filter(|g| g.status != "upcoming").count(),
-        0
-    );
-    r.apply(&[], 1).unwrap();
-    assert_eq!(
-        r.guests.iter().filter(|g| g.status != "upcoming").count(),
-        8
-    );
-    r.guests[0].status = "boarding".into();
-    r.apply(&[], 19).unwrap();
-    assert_eq!(r.guests[0].status, "gone");
-    assert_eq!(r.departures[0], 1);
-    assert_eq!(r.total_money(), r.money_supply);
-}
-
-#[test]
-fn first_landing_has_a_full_opening_day_remaining() {
-    let mut r = Run::new();
-    r.apply(&[], LANDING as u16).unwrap();
-    assert_eq!(END - r.tick, 540);
-    assert!(r.guests.iter().all(|g| g.status == "upcoming"));
-    r.apply(&[], 1).unwrap();
-    assert_eq!(
-        r.guests.iter().filter(|g| g.status == "arriving").count(),
-        8
-    );
-}
-
-#[test]
-fn park_design_is_free_and_height_construction_is_charged_once() {
-    let mut r = Run::new();
-    r.apply(&[build("coaster", 3, 8)], 0).unwrap();
-    let cash = r.cash;
-    let design = Design {
-        track: vec![],
-        name: "Earthskimmer".into(),
-        palette: 3,
-        style: 1,
-        lights: 2,
-        height: 2,
-    };
-    r.apply(
-        &[Command {
-            kind: "design".into(),
-            building: 3,
-            design: Some(design.clone()),
-            ..Default::default()
-        }],
-        0,
-    )
-    .unwrap();
-    assert_eq!(r.cash, cash - 20000);
-    assert_eq!(r.buildings[2].power(), 4);
-    let mut low = design.clone();
-    low.height = 0;
-    r.apply(
-        &[Command {
-            kind: "design".into(),
-            building: 3,
-            design: Some(low),
-            ..Default::default()
-        }],
-        0,
-    )
-    .unwrap();
-    r.apply(
-        &[Command {
-            kind: "design".into(),
-            building: 3,
-            design: Some(design),
-            ..Default::default()
-        }],
-        0,
-    )
-    .unwrap();
-    assert_eq!(r.cash, cash - 20000);
-    assert_eq!(r.total_money(), r.money_supply);
-}
-#[test]
-fn colors_remain_editable_after_closing_without_changing_score() {
-    let mut r = Run::new();
-    while !r.finished {
-        r.apply(&[], 10).unwrap();
-    }
-    let score = r.score.clone();
-    let cash = r.cash;
-    r.apply(
-        &[
-            Command {
-                kind: "theme".into(),
-                value: 3,
-                ..Default::default()
-            },
-            Command {
-                kind: "design".into(),
-                building: 1,
-                design: Some(Design {
-                    name: "Moonbeam".into(),
-                    ..Default::default()
-                }),
-                ..Default::default()
-            },
-        ],
-        0,
-    )
-    .unwrap();
-    assert_eq!(r.score, score);
-    assert_eq!(r.cash, cash);
-    assert!(r.opening_ended_at.is_some());
-    r.apply(&[build("wheel", 22, 12)], 0).unwrap();
-    assert_eq!(r.score, score);
-}
-#[test]
-fn invalid_design_batch_is_atomic_and_old_saves_have_defaults() {
-    let mut r = Run::new();
-    let before = r.hash.clone();
-    assert!(r
-        .apply(
-            &[
-                Command {
-                    kind: "theme".into(),
-                    value: 3,
-                    ..Default::default()
-                },
-                Command {
-                    kind: "design".into(),
-                    building: 1,
-                    design: Some(Design {
-                        palette: 254,
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                }
-            ],
-            0
-        )
-        .is_err());
-    assert_eq!(r.hash, before);
-    assert_eq!(r.palette, 0);
-    let mut old = serde_json::to_value(&r).unwrap();
-    old["buildings"][0]
-        .as_object_mut()
-        .unwrap()
-        .remove("design");
-    let restored: Run = serde_json::from_value(old).unwrap();
-    assert_eq!(restored.buildings[0].design, Design::default());
-    assert!(r.partnerships.is_empty());
-    assert!(r.apply(&[cmd("partner", 2)], 0).is_err());
-}
-#[test]
-fn opening_cohort_is_fixed_and_conserves_guest_budgets() {
-    let mut good = Run::new();
-    let mut poor = Run::new();
-    for r in [&mut good, &mut poor] {
-        r.tick = 119;
-        r.guests[0].status = "gone".into();
-        r.guests[0].visits = 1;
-    }
-    good.guests[0].satisfaction = 100;
-    poor.guests[0].satisfaction = 20;
-    good.apply(&[], 1).unwrap();
-    poor.apply(&[], 1).unwrap();
-    assert_eq!(good.bookings[3], 8);
-    assert_eq!(poor.bookings[3], 8);
-    assert_eq!(
-        poor.guests
-            .iter()
-            .filter(|g| g.status == "cancelled")
-            .count(),
-        0
-    );
-    assert_eq!(poor.total_money(), poor.money_supply);
-}
-
-#[test]
-fn eight_building_types_include_only_two_merchants_and_automatic_maintenance() {
-    assert_eq!(catalog::CATALOG.len(), 8);
-    assert_eq!(
-        catalog::CATALOG.iter().filter(|a| tenant(a.kind)).count(),
-        2
-    );
-    let mut r = Run::new();
-    r.apply(&[build("depot", 27, 17), cmd("connect", 3)], 0)
-        .unwrap();
-    r.buildings[0].condition = 40;
-    let before = r.cash;
-    r.apply(&[], 15).unwrap();
-    assert_eq!(r.buildings[2].served, 1);
-    assert_eq!(r.buildings[2].cash, 0);
-    assert_eq!(r.buildings[2].stock, 0);
-    assert_eq!(r.cash, before - catalog::REPAIR_FEE);
-    assert_eq!(r.consumed[2], 1);
-    assert_eq!(r.supplies[2], 2047);
-    assert_eq!(r.total_money(), r.money_supply);
-}
-
-#[test]
-fn custom_track_is_validated_priced_and_saved_atomically() {
-    let mut r = Run::new();
-    r.apply(&[build("coaster", 3, 8)], 0).unwrap();
-    let track: Vec<TrackPoint> = serde_json::from_str(r#"[{"x":-32,"y":12,"z":34},{"x":30,"y":12,"z":34},{"x":39,"y":36,"z":0},{"x":28,"y":95,"z":-32},{"x":-12,"y":105,"z":-34},{"x":-39,"y":35,"z":-16},{"x":-18,"y":48,"z":9},{"x":12,"y":24,"z":15}]"#).unwrap();
-    let design = Design {
-        track,
-        ..Default::default()
-    };
-    let cash = r.cash;
-    let c = Command {
-        kind: "design".into(),
-        building: 3,
-        design: Some(design.clone()),
-        ..Default::default()
-    };
-    r.apply(&[c.clone()], 0).unwrap();
-    assert_eq!(r.cash, cash - design.construction_cost());
-    let paid = r.cash;
-    r.apply(&[c.clone()], 0).unwrap();
-    assert_eq!(r.cash, paid);
-    let mut invalid = c;
-    invalid.design.as_mut().unwrap().track[3].x = 41;
-    let hash = r.hash.clone();
-    assert!(r.apply(&[invalid], 0).is_err());
-    assert_eq!(r.hash, hash);
-    let roundtrip: Run = serde_json::from_str(&serde_json::to_string(&r).unwrap()).unwrap();
-    assert_eq!(roundtrip.buildings[2].design, design);
-}
-#[test]
-fn long_running_park_crosses_the_old_tick_limit_and_replenishes_goods() {
-    let mut r = Run::new();
-    while !r.finished {
-        r.apply(&[], 20).unwrap();
-    }
-    let score = r.score.clone();
-    while r.tick < 66000 {
-        r.apply(&[], 20).unwrap();
-    }
-    assert_eq!(r.score, score);
-    assert_eq!(r.total_money(), r.money_supply);
-    assert!(r.guests.len() <= 144);
+    assert!(r.cash >= 0 && r.supplier_cash >= 0);
+    assert!(r.guests.iter().all(|g| g.cash >= 0));
+    assert!(r.buildings.iter().all(|b| b.cash >= 0));
     for good in 0..3 {
         let stock: u32 = r
             .buildings
@@ -444,4 +43,366 @@ fn long_running_park_crosses_the_old_tick_limit_and_replenishes_goods() {
             r.issued_goods[good]
         );
     }
+}
+#[test]
+fn opening_waits_for_designed_coaster_and_kitchen() {
+    let mut r = Run::new();
+    assert_eq!(r.cash, 320000);
+    assert!(r.buildings.is_empty());
+    r.apply(&[], 20).unwrap();
+    assert_eq!(r.tick, 0);
+    assert!(r.apply(&[build("wheel", 30, 29)], 0).is_err());
+    r.apply(&[build("coaster", 2, 16)], 20).unwrap();
+    assert_eq!(r.opening_stage, 1);
+    assert_eq!(r.tick, 0);
+    assert!(r.buildings[0].connected);
+    assert!(r.apply(&[build("drink", 31, 41)], 0).is_err());
+    r.apply(&[build("food", 26, 41)], 0).unwrap();
+    assert_eq!(r.opening_stage, 2);
+    assert!(r.buildings[1].connected);
+    r.apply(&[], 11).unwrap();
+    assert_eq!(r.tick, 11);
+    assert_eq!(
+        r.guests.iter().filter(|g| g.status == "arriving").count(),
+        8
+    );
+    assert_conservation(&r);
+}
+#[test]
+fn first_meal_advances_the_near_economy_lesson() {
+    let mut r = opened();
+    for _ in 0..30 {
+        r.apply(&[], 10).unwrap();
+        if r.opening_stage == 3 {
+            break;
+        }
+    }
+    assert_eq!(r.opening_stage, 3);
+    assert!(r.buildings[1].served > 0);
+    assert!(r.trade_count > 0);
+    assert_conservation(&r);
+}
+#[test]
+fn starter_design_matches_browser_geometry() {
+    let d = Design::starter();
+    d.validate().unwrap();
+    assert_eq!(d.construction_cost(), 0);
+    assert_eq!((d.track_w, d.track_h), (16, 21));
+}
+#[test]
+fn thirty_by_thirty_tracks_can_reach_sixty_metres() {
+    let mut d = Design::starter();
+    d.track_w = 30;
+    d.track_h = 30;
+    d.track[0] = TrackPoint {
+        x: 120,
+        y: 12,
+        z: 285,
+    };
+    d.track[1] = TrackPoint {
+        x: 180,
+        y: 12,
+        z: 285,
+    };
+    d.track[3].y = 600;
+    d.validate().unwrap();
+    d.track[3].y = 601;
+    assert!(d.validate().is_err());
+    d.track[3].y = 600;
+    d.track_w = 31;
+    assert!(d.validate().is_err());
+}
+#[test]
+fn track_validation_rejects_bad_stations_and_tiny_segments() {
+    let mut d = Design::starter();
+    d.track[0].x += 1;
+    assert!(d.validate().is_err());
+    let mut d = Design::starter();
+    d.track[3] = d.track[2].clone();
+    assert!(d.validate().is_err());
+    d = Design::starter();
+    d.track[3].x = -1;
+    assert!(d.validate().is_err());
+}
+#[test]
+fn track_control_point_count_is_bounded() {
+    let mut d = Design::starter();
+    d.track.truncate(3);
+    assert!(d.validate().is_err());
+    d = Design::starter();
+    while d.track.len() < 33 {
+        d.track.push(d.track[3].clone());
+    }
+    assert!(d.validate().is_err());
+}
+#[test]
+fn construction_requires_a_designed_loop() {
+    let mut r = Run::new();
+    let mut c = build("coaster", 2, 16);
+    c.design = None;
+    assert!(r.apply(&[c], 0).is_err());
+    assert!(r.buildings.is_empty());
+}
+#[test]
+fn full_footprint_is_reserved_and_rotates() {
+    let mut r = opened();
+    assert_eq!(r.buildings[0].footprint(), (16, 21));
+    assert!(r.apply(&[build("wheel", 10, 20)], 0).is_err());
+    let mut b = r.buildings[0].clone();
+    b.rotation = 1;
+    assert_eq!(b.footprint(), (21, 16));
+}
+#[test]
+fn invalid_batch_is_atomic() {
+    let mut r = Run::new();
+    let before = serde_json::to_string(&r).unwrap();
+    assert!(r
+        .apply(&[build("coaster", 2, 16), build("wheel", 30, 29)], 0)
+        .is_err());
+    assert_eq!(before, serde_json::to_string(&r).unwrap());
+}
+#[test]
+fn placement_and_connectivity() {
+    let mut r = opened();
+    r.apply(&[build("wheel", 30, 29)], 0).unwrap();
+    assert!(!r.buildings[2].connected);
+    r.apply(&[cmd("connect", 3)], 0).unwrap();
+    assert!(r.buildings[2].connected);
+    assert!(r.apply(&[build("wheel", 30, 29)], 0).is_err());
+}
+#[test]
+fn tickets_and_opening_are_automatic() {
+    let mut r = opened();
+    for kind in ["price", "toggle", "rent", "invest"] {
+        let before = r.hash.clone();
+        let mut c = cmd(kind, 1);
+        c.value = 2000;
+        assert!(r.apply(&[c], 0).is_err());
+        assert_eq!(r.hash, before);
+    }
+}
+#[test]
+fn sale_always_returns_half_investment_despite_wear() {
+    let mut r = opened();
+    r.buildings[0].condition = 1;
+    let before = r.cash;
+    let invested = r.buildings[0].invested;
+    r.apply(&[cmd("sell", 1)], 0).unwrap();
+    assert_eq!(r.cash, before + invested / 2);
+    assert!(r.buildings[0].sold);
+    assert_conservation(&r);
+}
+#[test]
+fn occupied_rides_sell_after_their_passengers_finish() {
+    let mut r = opened();
+    r.guests[0].status = "riding".into();
+    r.guests[0].target = Some(1);
+    r.buildings[0].riders = vec![0];
+    r.buildings[0].cycle_left = 2;
+    let before = r.cash;
+    r.apply(&[cmd("sell", 1)], 0).unwrap();
+    assert!(r.buildings[0].pending_sale);
+    assert!(!r.buildings[0].sold);
+    assert_eq!(r.cash, before);
+    r.apply(&[], 2).unwrap();
+    assert!(r.buildings[0].sold);
+    assert_eq!(r.cash, before + 60000);
+    assert_eq!(r.guests[0].status, "walking");
+    assert_conservation(&r);
+}
+#[test]
+fn redesign_is_free_and_preserves_passengers() {
+    let mut r = opened();
+    r.buildings[0].riders = vec![0];
+    r.buildings[0].cycle_left = 10;
+    let mut d = r.buildings[0].design.clone();
+    d.track[3].y = 600;
+    d.name = "Skyline".into();
+    let cash = r.cash;
+    r.apply(
+        &[Command {
+            design: Some(d.clone()),
+            ..cmd("design", 1)
+        }],
+        0,
+    )
+    .unwrap();
+    assert_eq!(r.cash, cash);
+    assert_eq!(r.buildings[0].riders, vec![0]);
+    assert!(r.buildings[0].cycle_left > 0);
+    assert_eq!(r.buildings[0].design, d);
+    assert_conservation(&r);
+}
+#[test]
+fn expansions_cannot_cover_other_rides_or_paths() {
+    let mut r = opened();
+    r.apply(&[build("wheel", 30, 29)], 0).unwrap();
+    let mut d = r.buildings[0].design.clone();
+    d.track_w = 30;
+    d.track_h = 30;
+    d.track[0] = TrackPoint {
+        x: 120,
+        y: 12,
+        z: 285,
+    };
+    d.track[1] = TrackPoint {
+        x: 180,
+        y: 12,
+        z: 285,
+    };
+    assert!(r
+        .apply(
+            &[Command {
+                design: Some(d),
+                ..cmd("design", 1)
+            }],
+            0
+        )
+        .is_err());
+}
+#[test]
+fn solar_exports_pay_from_logistics_without_minting() {
+    let mut r = opened();
+    r.apply(&[build("solar", 24, 34), cmd("connect", 3)], 0)
+        .unwrap();
+    r.buildings[2].ready_at = 0;
+    let before = r.cash;
+    let supplier = r.supplier_cash;
+    r.apply(&[], 20).unwrap();
+    assert_eq!(r.cash, before + 500);
+    assert_eq!(r.supplier_cash, supplier - 500);
+    assert_eq!(r.buildings[2].revenue, 500);
+    assert_conservation(&r);
+}
+#[test]
+fn every_connected_ready_ride_operates_without_a_power_budget() {
+    let mut r = opened();
+    r.cash += 500000;
+    r.supplier_cash -= 500000;
+    for (id, x) in [(3, 30), (4, 35), (5, 40)] {
+        r.apply(&[build("wheel", x, 29), cmd("connect", id)], 0)
+            .unwrap();
+    }
+    r.apply(&[], 20).unwrap();
+    assert!(r.buildings.iter().all(|b| b.powered));
+}
+#[test]
+fn money_and_goods_are_conserved_through_opening_and_returning_visits() {
+    let mut r = opened();
+    for _ in 0..120 {
+        r.apply(&[], 10).unwrap();
+        assert_conservation(&r);
+    }
+    assert!(r.finished);
+    let score = r.score.clone();
+    for _ in 0..100 {
+        r.apply(&[], 20).unwrap();
+        assert_conservation(&r);
+    }
+    assert_eq!(r.score, score);
+    assert!(r.guests.len() > 96 && r.guests.len() <= 144);
+}
+#[test]
+fn score_is_not_created_by_resale() {
+    let mut r = opened();
+    let equity = r.equity();
+    r.apply(&[cmd("sell", 1)], 0).unwrap();
+    assert!(r.equity() <= equity);
+    assert_eq!(r.score.finance, 0);
+    assert_conservation(&r);
+}
+#[test]
+fn batching_does_not_change_economics() {
+    let mut a = opened();
+    let mut b = a.clone();
+    for _ in 0..10 {
+        a.apply(&[], 1).unwrap();
+    }
+    b.apply(&[], 10).unwrap();
+    a.revision = 0;
+    b.revision = 0;
+    a.rehash();
+    b.rehash();
+    assert_eq!(a.hash, b.hash);
+}
+#[test]
+fn paths_can_be_removed_without_changing_money_supply() {
+    let mut r = opened();
+    let cell = r.buildings[1].entry();
+    let cash = r.cash;
+    r.apply(
+        &[Command {
+            kind: "erase_path".into(),
+            x: (cell % WIDTH) as u8,
+            z: (cell / WIDTH) as u8,
+            ..Default::default()
+        }],
+        0,
+    )
+    .unwrap();
+    assert!(!r.buildings[1].connected);
+    assert_eq!(r.cash, cash);
+    r.apply(&[cmd("connect", 2)], 0).unwrap();
+    assert!(r.buildings[1].connected);
+    assert_conservation(&r);
+}
+#[test]
+fn eight_types_have_two_automatic_vendor_businesses() {
+    assert_eq!(catalog::CATALOG.len(), 8);
+    assert_eq!(
+        catalog::CATALOG.iter().filter(|a| tenant(a.kind)).count(),
+        2
+    );
+    assert!(catalog::merchant_price("food", 2, 8) > catalog::merchant_price("food", 16, 0));
+}
+#[test]
+fn maintenance_uses_parts_and_preserves_money() {
+    let mut r = opened();
+    r.apply(&[build("depot", 35, 41), cmd("connect", 3)], 0)
+        .unwrap();
+    r.buildings[0].condition = 40;
+    r.apply(&[], 15).unwrap();
+    assert_eq!(r.buildings[2].served, 1);
+    assert_eq!(r.consumed[2], 1);
+    assert_conservation(&r);
+}
+#[test]
+fn invalid_design_does_not_change_park_or_theme() {
+    let mut r = opened();
+    let before = r.hash.clone();
+    assert!(r
+        .apply(
+            &[
+                Command {
+                    kind: "theme".into(),
+                    value: 3,
+                    ..Default::default()
+                },
+                Command {
+                    design: Some(Design {
+                        palette: 254,
+                        ..Default::default()
+                    }),
+                    ..cmd("design", 1)
+                }
+            ],
+            0
+        )
+        .is_err());
+    assert_eq!(r.hash, before);
+    assert!(r.partnerships.is_empty());
+}
+#[test]
+fn long_running_park_crosses_old_tick_limit_without_corruption() {
+    let mut r = opened();
+    while !r.finished {
+        r.apply(&[], 20).unwrap();
+    }
+    let score = r.score.clone();
+    while r.tick < 66000 {
+        r.apply(&[], 20).unwrap();
+    }
+    assert_eq!(r.score, score);
+    assert_conservation(&r);
+    assert!(r.guests.len() <= 144);
 }

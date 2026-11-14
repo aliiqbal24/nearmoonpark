@@ -9,6 +9,7 @@ import {
 } from "near-api-js";
 import { identity } from "@/lib/moon/auth";
 import { failoverRpc } from "@/lib/moon/rpc";
+import archivedV7 from "@/public/moon-v7-config.json";
 import archivedV6 from "@/public/moon-v6-config.json";
 export const dynamic = "force-dynamic";
 let queue: Promise<unknown> = Promise.resolve();
@@ -55,16 +56,20 @@ export async function POST(request: Request) {
       ? archivedV6.contractId
       : e.MOON_CONTRACT_ID);
   if (contractId !== e.MOON_CONTRACT_ID) {
-    if (contractId !== archivedV6.contractId)
+    const prefix =
+      contractId === archivedV6.contractId
+        ? "MOON_V6"
+        : contractId === archivedV7.contractId
+          ? "MOON_V7"
+          : null;
+    if (!prefix)
       return Response.json(
         { error: "Unsupported park contract." },
         { status: 400 },
       );
-    if (
-      !e.MOON_V6_SPONSOR_ID ||
-      !e.MOON_V6_SPONSOR_KEY ||
-      e.MOON_V6_CONTRACT_ID !== contractId
-    )
+    const sponsorId = e[`${prefix}_SPONSOR_ID`],
+      sponsorKey = e[`${prefix}_SPONSOR_KEY`];
+    if (!sponsorId || !sponsorKey || e[`${prefix}_CONTRACT_ID`] !== contractId)
       return Response.json(
         {
           error: "Earlier park sponsorship is unavailable. Your park is saved.",
@@ -73,11 +78,12 @@ export async function POST(request: Request) {
       );
     e = {
       ...e,
-      MOON_SPONSOR_ID: e.MOON_V6_SPONSOR_ID,
-      MOON_SPONSOR_KEY: e.MOON_V6_SPONSOR_KEY,
-      MOON_CONTRACT_ID: e.MOON_V6_CONTRACT_ID,
+      MOON_SPONSOR_ID: sponsorId,
+      MOON_SPONSOR_KEY: sponsorKey,
+      MOON_CONTRACT_ID: contractId,
     };
   }
+
   let playerId: string,
     displayName = "Moon Explorer";
   if (body.ranked) {

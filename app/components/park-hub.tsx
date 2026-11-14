@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ExternalLink,
+  Share2,
   Globe,
   Palette,
   Rocket,
@@ -81,7 +82,7 @@ export function ParkHub({
   const accountId = credentials?.accountId;
   const credentialIdentity = credentials?.identity;
   const ownerCredentials = cfg && park ? credentialsFor(cfg, park.owner) : null;
-  const versionQuery = `?version=${cfg?.archivedVersion ?? "v7"}`;
+  const versionQuery = `?version=${cfg?.archivedVersion ?? "v8"}`;
   const loadKey = `${cfg?.contractId ?? "local"}:${accountId ?? "guest"}`;
   const loading = loadedFor !== loadKey;
   const refresh = useCallback(async () => {
@@ -362,6 +363,25 @@ export function ParkHub({
                   Park #{park.id} · Authorized game account {park.operator}
                 </small>
               </div>
+              {park.run_id && (
+                <button
+                  className="mp-primary full"
+                  onClick={() =>
+                    void perform("share", async () => {
+                      const link = new URL(
+                        `/park/${park.owner}${versionQuery}`,
+                        location.origin,
+                      ).href;
+                      await navigator.clipboard.writeText(link);
+                      setMessage(
+                        "Park link copied. Friends can explore your published layout without signing in.",
+                      );
+                    })
+                  }
+                >
+                  <Share2 size={15} /> Copy park link
+                </button>
+              )}
               <a
                 className="mp-secondary full"
                 href={`/park/${park.owner}${versionQuery}`}

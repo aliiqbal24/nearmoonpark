@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Palette } from "lucide-react";
 import {
+  VERSION,
   defaultDesign,
   type Building,
   type Command,
@@ -55,10 +56,12 @@ export function AttractionDesign({
   finished,
   cash,
   action,
+  version = VERSION,
 }: {
   building: Building;
   finished: boolean;
   cash: number;
+  version?: string;
   action: (c: Command) => void;
 }) {
   const design = building.design ?? defaultDesign();
@@ -138,7 +141,7 @@ export function AttractionDesign({
             </button>
           ))}
         </div>
-        {building.kind === "coaster" && (
+        {building.kind === "coaster" && version !== VERSION && (
           <>
             <label>Coaster height</label>
             <div className="mp-segments">

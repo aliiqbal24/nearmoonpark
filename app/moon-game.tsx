@@ -1,8 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Zap,
-  Route,
   Coins,
   Users,
   Star,
@@ -18,6 +16,9 @@ import {
   Play,
   Eye,
   Palette,
+  LogIn,
+  Share2,
+  Zap,
 } from "lucide-react";
 import {
   CashNumber,
@@ -35,6 +36,7 @@ import {
   Results,
   Ledger,
 } from "./components/moon-panels";
+import { restoreCloudPark, saveCloudRecovery } from "@/lib/moon/cloud";
 import { dreamPark } from "@/lib/moon/dream";
 import { simulate } from "@/lib/moon/engine";
 import { ParkSession, type Snapshot } from "@/lib/moon/session";
@@ -48,15 +50,16 @@ import {
 } from "@/lib/moon/near";
 import { MoonAudio } from "@/lib/moon/audio";
 import {
-  CATALOG,
   VERSION,
   isPersistent,
   parkClosed,
   type Building,
+  type Kind,
+  type Design,
+  previewBuilding,
   END,
   LANDING,
   blueprint,
-  isRide,
   money,
   clock,
   guestName,
@@ -68,9 +71,12 @@ import {
   type PrizeStatus,
 } from "@/lib/moon/model";
 import type { MoonWorld as World } from "@/lib/moon/world";
-import { CoasterEditor } from "./components/coaster-editor";
+import { LegacyCoasterEditor } from "./components/legacy-coaster-editor";
+import { BuildDesigner } from "./components/build-designer";
+import { BuildCatalogue } from "./components/build-catalogue";
 import openingStory from "@/public/video/moonpark-opening-v7-story.json";
 import archivedV5 from "@/public/moon-v5-config.json";
+import archivedV7 from "@/public/moon-v7-config.json";
 import archivedV6 from "@/public/moon-v6-config.json";
 import archivedV4 from "@/public/moon-v4-config.json";
 import "./moonpark.css";
@@ -93,6 +99,10 @@ export default function Game() {
   const [initial, setInitial] = useState<Run | null>(null),
     [snapshot, setSnapshot] = useState<Snapshot | null>(null),
     [screen, setScreen] = useState<Screen>("title"),
+    [cloudStatus, setCloudStatus] = useState<
+      "local" | "saving" | "ready" | "error"
+    >("local"),
+    [cloudRetry, setCloudRetry] = useState(0),
     [speed, setSpeed] = useState(1),
     [placement, setPlacement] = useState<Placement | null>(null),
     [selection, setSelection] = useState<Detail | null>(null),
@@ -107,6 +117,9 @@ export default function Game() {
     [openingError, setOpeningError] = useState(false),
     [resumeAvailable, setResumeAvailable] = useState(false),
     [editingCoaster, setEditingCoaster] = useState<Building | null>(null),
+    [designingKind, setDesigningKind] = useState<Kind | null>(null),
+    [draftDesign, setDraftDesign] = useState<Design | undefined>(),
+    [economyUnderstood, setEconomyUnderstood] = useState(false),
     [worldReady, setWorldReady] = useState(false),
     [rideId, setRideId] = useState<number | null>(null),
     [showResults, setShowResults] = useState(true),
@@ -142,12 +155,17 @@ export default function Game() {
     finishedRef = useRef(false),
     generation = useRef(0),
     lastWave = useRef(0),
+    lastNotice = useRef(""),
     finishIntroRef = useRef<() => void>(() => {});
   const dream = useMemo(() => (initial ? dreamPark(initial) : null), [initial]);
   const run = snapshot?.run ?? initial;
   const worldRun = screen === "title" || screen === "intro" ? dream : run;
   const receive = useCallback((s: Snapshot) => {
     setSnapshot(s);
+    if (s.notice && s.notice !== lastNotice.current) {
+      lastNotice.current = s.notice;
+      setToast(s.notice);
+    }
     if (s.run.finished && !finishedRef.current) {
       setScreen(isPersistent(s.run) ? "playing" : "results");
       setShowResults(true);
@@ -167,6 +185,20 @@ export default function Game() {
     void simulate({ op: "new" })
       .then(async (run) => {
         if (!active) return;
+        try {
+          await restoreCloudPark(
+            new URLSearchParams(location.search).get("resumeVersion") ??
+              undefined,
+          );
+        } catch (e) {
+          if (active)
+            setToast(
+              e instanceof Error
+                ? e.message
+                : "Could not load your saved park.",
+            );
+        }
+        if (!active) return;
         setInitial(run);
         try {
           const identity = JSON.parse(
@@ -181,29 +213,42 @@ export default function Game() {
             localStorage.getItem("moonpark-current") || "null",
           );
           setResumeAvailable(
-            [VERSION, "moonpark-v6", "moonpark-v5", "moonpark-v4"].includes(
-              saved?.state?.run?.version,
-            ),
+            [
+              VERSION,
+              "moonpark-v7",
+              "moonpark-v6",
+              "moonpark-v5",
+              "moonpark-v4",
+            ].includes(saved?.state?.run?.version),
           );
           if (
-            [VERSION, "moonpark-v6", "moonpark-v5", "moonpark-v4"].includes(
-              saved?.state?.run?.version,
-            ) &&
+            (saved?.state?.run?.version === VERSION ||
+              new URLSearchParams(location.search).has("resumeVersion")) &&
             !parkClosed(saved.state.run)
           ) {
             const bootGeneration = generation.current;
             const restored = await ParkSession.resume(
               receive,
               () => active && generation.current === bootGeneration,
+              new URLSearchParams(location.search).get("resumeVersion") ??
+                undefined,
             );
             if (restored && active) {
               session.current = restored;
               setShowResults(false);
+              setEconomyUnderstood(
+                localStorage.getItem(
+                  `moonpark-tutorial:${restored.state.localId}`,
+                ) === "done",
+              );
               setScreen(parkClosed(restored.state.run) ? "results" : "playing");
               setWallLeft(
                 Math.max(0, (restored.state.deadline - Date.now()) / 1000),
               );
-              setToast("Welcome back. Your park has been restored.");
+              setToast(
+                restored.state.notice ||
+                  "Welcome back. Your park has been restored.",
+              );
             }
           }
         } catch (error) {
@@ -255,6 +300,45 @@ export default function Game() {
       audio.current?.dispose();
     };
   }, [receive]);
+  const cloudPersistent = snapshot ? isPersistent(snapshot.run) : false;
+  const cloudName = parkIdentity.name,
+    cloudEmblem = parkIdentity.emblem;
+  useEffect(() => {
+    if (!player || snapshot?.mode !== "near") return;
+    if (!cloudPersistent) return;
+    const current = session.current;
+    if (!current) return;
+    let active = true;
+    setCloudStatus("saving");
+    void current
+      .cloudRecovery({ name: cloudName, emblem: cloudEmblem })
+      .then((recovery) => (recovery ? saveCloudRecovery(recovery) : undefined))
+      .then(() => {
+        if (active) setCloudStatus("ready");
+      })
+      .catch((error) => {
+        if (active) {
+          setCloudStatus("error");
+          setToast(
+            error instanceof Error
+              ? error.message
+              : "Your account recovery could not be saved. Retry the account save.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    player,
+    snapshot?.mode,
+    snapshot?.record?.owner,
+    snapshot?.record?.run_id,
+    cloudName,
+    cloudEmblem,
+    cloudPersistent,
+    cloudRetry,
+  ]);
   useEffect(() => {
     audio.current?.setCinematic(screen === "intro" && !videoFailed);
   }, [screen, videoFailed]);
@@ -266,6 +350,10 @@ export default function Game() {
   useEffect(() => {
     if (screen !== "playing" || introLeaving) return;
     let last = Date.now();
+    const resetClock = () => {
+      last = Date.now();
+    };
+    document.addEventListener("visibilitychange", resetClock);
     const timer = setInterval(() => {
       const now = Date.now(),
         dt = (now - last) / 1000;
@@ -274,11 +362,23 @@ export default function Game() {
       if (s) {
         if (!isPersistent(s.state.run))
           setWallLeft(Math.max(0, (s.state.deadline - now) / 1000));
-        void s.update(dt, speed).catch((e) => setToast(String(e)));
+        void s
+          .update(
+            dt,
+            designingKind ||
+              editingCoaster ||
+              (s.state.run.opening_stage ?? 3) < 2
+              ? 0
+              : speed,
+          )
+          .catch((e) => setToast(String(e)));
       }
     }, 200);
-    return () => clearInterval(timer);
-  }, [screen, speed, introLeaving]);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", resetClock);
+    };
+  }, [screen, speed, introLeaving, designingKind, editingCoaster]);
   useEffect(() => {
     if (screen !== "intro" || !videoFailed) return;
     const start = performance.now(),
@@ -318,11 +418,16 @@ export default function Game() {
   }, [screen, videoFailed]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.matches("input,textarea")) return;
+      if (
+        document.querySelector('[role="dialog"]') ||
+        (e.target as HTMLElement)?.matches("input,textarea")
+      )
+        return;
       if (e.key === "Escape") {
         setPlacement(null);
         setRideId(null);
         setEditingCoaster(null);
+        setDesigningKind(null);
         worldRef.current?.setDesignPreview(null);
         worldRef.current?.home();
       }
@@ -384,6 +489,7 @@ export default function Game() {
     session.current = null;
     generation.current++;
     setSnapshot(null);
+    setEconomyUnderstood(false);
     setPlacement(null);
     setSelection(null);
     setRideId(null);
@@ -507,8 +613,21 @@ export default function Game() {
       return;
     try {
       await session.current.action(command);
+      if (command.kind === "sell") {
+        setSelection(null);
+        const sold = session.current.state.run.buildings.find(
+          (b) => b.id === command.building,
+        );
+        if (sold?.pending_sale)
+          setToast(
+            "The current passengers will finish their ride, then half your construction credits return automatically.",
+          );
+      }
       if (command.kind === "build") audio.current?.effect("build");
       if (command.kind === "build") {
+        localStorage.removeItem(
+          `moonpark-draft:${session.current.state.localId}:${command.item}`,
+        );
         const b = session.current.state.run.buildings.at(-1)!;
         setSelection({ kind: "building", id: b.id, x: 0, y: 0 });
         setPlacement(null);
@@ -553,7 +672,7 @@ export default function Game() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           provider: "google",
-          callbackURL: location.origin + "/?ranked=1",
+          callbackURL: location.origin + "/?account=1",
         }),
       });
       const data = (await r.json()) as { url?: string; error?: string };
@@ -581,8 +700,8 @@ export default function Game() {
     run?.guests.filter(
       (g) => !["upcoming", "gone", "cancelled"].includes(g.status),
     ).length ?? 0;
-  const power = useMemo(() => {
-    if (!run) return { used: 0, cap: 8 };
+  const legacyPower = useMemo(() => {
+    if (!run || run.version === VERSION) return null;
     return {
       used: run.buildings
         .filter((b) => b.powered)
@@ -607,21 +726,19 @@ export default function Game() {
           4,
     };
   }, [run]);
-  const hint = run
-    ? !run.buildings.some((b) => b.kind === "coaster" && !b.sold)
-      ? "Build a mass-driver coaster. Your first visitors deserve a story to take home."
-      : run.buildings.some((b) => !b.sold && !b.connected)
-        ? "Select the new building and connect its entrance. Guests follow paths, not dreams."
-        : !run.buildings.some((b) => b.kind === "drink" && !b.sold)
-          ? "A coaster is thirsty work. Give Mina a spot for Crater Coolers."
-          : power.used >= power.cap
-            ? "Your power grid is getting busy. A solar canopy adds four units."
-            : run.buildings.filter((b) => isRide(b.kind) && !b.sold).length < 3
-              ? "Different visitors love different rides. An Earthrise Wheel gives families a beautiful second stop."
-              : !run.buildings.some((b) => b.kind === "depot" && !b.sold)
-                ? "A Lunar Care Depot keeps your rides healthy while you grow."
-                : "Watch the queues. New attractions, good value and fresh stock make happy visitors."
-    : "";
+  const openingStage = run?.opening_stage ?? 3;
+  const hint =
+    openingStage === 0
+      ? "Your first attraction starts on the drawing board. Design a mass-driver loop, then choose its spot."
+      : openingStage === 1
+        ? "Every great day needs lunch. Design Moon Pie Kitchen and Omar will take care of his business."
+        : openingStage === 2
+          ? "The first rocket is arriving. Watch a guest buy a meal. Omar pays your park a share and buys fresh stock through NEAR."
+          : run?.buildings.some((b) => !b.sold && !b.connected)
+            ? "Connect each new entrance to a boardwalk so visitors can find it."
+            : !run?.buildings.some((b) => b.kind === "drink" && !b.sold)
+              ? "Guests are getting thirsty. Give Mina a place for Crater Coolers."
+              : "Keep an eye on your visitors. Add variety, design another wild ride or visit a friend’s park.";
   const spokenLine = openingStory.segments.find(
     (line) => introTime >= line.start && introTime < line.end + 0.3,
   );
@@ -642,7 +759,9 @@ export default function Game() {
         ? (archivedV5 as Config)
         : snapshot?.run.version === "moonpark-v6"
           ? (archivedV6 as Config)
-          : cfg;
+          : snapshot?.run.version === "moonpark-v7"
+            ? (archivedV7 as Config)
+            : cfg;
   return (
     <main
       className="moonpark"
@@ -654,7 +773,13 @@ export default function Game() {
         onReady={() => setWorldReady(true)}
         run={worldRun}
         identity={parkIdentity}
-        speed={screen === "playing" ? speed : 0.4}
+        speed={
+          screen === "playing"
+            ? designingKind || editingCoaster || openingStage < 2
+              ? 0
+              : speed
+            : 0.4
+        }
         placement={screen === "playing" ? placement : null}
         selected={selectedBuilding?.id ?? null}
         cinematic={screen === "intro" && videoFailed ? introTime : null}
@@ -714,6 +839,24 @@ export default function Game() {
               <span>PROTOCOL</span>
             </button>
             <nav aria-label="Welcome menu">
+              {authConfigured && (
+                <button
+                  disabled={launching}
+                  aria-label={
+                    player
+                      ? `Continue saved park as ${player.display_name}`
+                      : "Sign in to save your park across devices"
+                  }
+                  onClick={() => (player ? void resume() : void signIn())}
+                >
+                  <LogIn size={16} />
+                  <span>
+                    {player
+                      ? player.display_name
+                      : "Sign in · your park on any device"}
+                  </span>
+                </button>
+              )}
               <button disabled={!initial} onClick={() => setPanel("help")}>
                 <BookOpen size={16} /> <span>How to play</span>
               </button>
@@ -769,7 +912,9 @@ export default function Game() {
                   disabled={!initial || !cfg || launching}
                   onClick={() => start("near", !!player && challengeOpen)}
                 >
-                  <span>{initial ? "Open your park" : "Preparing…"}</span>
+                  <span>
+                    {initial ? "Open your park" : "Loading your park…"}
+                  </span>
                   <span className="mp-title-play-icon" aria-hidden="true">
                     <ArrowUpRight size={22} />
                   </span>
@@ -787,7 +932,7 @@ export default function Game() {
                     disabled={launching}
                     onClick={() => void resume()}
                   >
-                    Return to your park <ArrowUpRight size={14} />
+                    Continue saved park <ArrowUpRight size={14} />
                   </button>
                 )}
               </div>
@@ -944,11 +1089,13 @@ export default function Game() {
               </span>
               <strong data-testid="opening-day-clock">
                 {isPersistent(run)
-                  ? run.tick < LANDING
-                    ? "First landing"
-                    : run.finished
-                      ? "Score sealed"
-                      : `${run.guests.slice(0, 96).filter((g) => ["gone", "cancelled"].includes(g.status)).length} / 96 completed`
+                  ? openingStage < 2
+                    ? "Rocket on standby"
+                    : run.tick < LANDING
+                      ? "First landing"
+                      : run.finished
+                        ? "Score sealed"
+                        : `${run.guests.slice(0, 96).filter((g) => ["gone", "cancelled"].includes(g.status)).length} / 96 completed`
                   : clock(
                       run.tick < LANDING
                         ? 540
@@ -956,25 +1103,56 @@ export default function Game() {
                     )}
               </strong>
               <div className="mp-speeds">
-                {[0, 1, 2, 4].map((n) => (
+                {[0, 1].map((n) => (
                   <button
                     key={n}
                     disabled={parkClosed(run)}
-                    aria-label={n === 0 ? "Pause" : `${n}×`}
+                    aria-label={n === 0 ? "Pause" : "Resume"}
                     aria-pressed={speed === n}
                     onClick={() => setSpeed(n)}
                   >
-                    {n === 0 ? "Ⅱ" : `${n}×`}
+                    {n === 0 ? "Ⅱ" : "▶"}
                   </button>
                 ))}
               </div>
             </div>
           </header>
           <div className="mp-subhud">
-            <span className={power.used >= power.cap ? "mp-power-tight" : ""}>
-              <Zap size={14} />
-              {power.used}/{power.cap} power
-            </span>
+            {legacyPower && (
+              <span>
+                <Zap size={14} />
+                {legacyPower.used}/{legacyPower.cap} power · earlier rules
+              </span>
+            )}
+            {snapshot?.mode === "practice" ? (
+              <span className="mp-cloud-save">
+                Practice · saved on this device
+              </span>
+            ) : (
+              authConfigured && (
+                <button
+                  className="mp-cloud-save"
+                  onClick={() =>
+                    player
+                      ? cloudStatus === "error"
+                        ? setCloudRetry((n) => n + 1)
+                        : setPanel("near")
+                      : void signIn()
+                  }
+                >
+                  <LogIn size={14} />
+                  {player
+                    ? cloudStatus === "ready"
+                      ? "Saved to your account"
+                      : cloudStatus === "saving"
+                        ? "Linking park…"
+                        : cloudStatus === "error"
+                          ? "Retry account save"
+                          : "Account connected"
+                    : "Sign in to save across devices"}
+                </button>
+              )
+            )}
             <ShuttleStatus run={run} />
             <span
               className="mp-reputation"
@@ -1000,22 +1178,93 @@ export default function Game() {
                 : "LOCAL PRACTICE"}
             </button>
           </div>
+          {run.version !== VERSION &&
+            !panel &&
+            !designingKind &&
+            !editingCoaster && (
+              <div className="mp-archive-notice">
+                Earlier park · {run.version.replace("moonpark-", "")} rules{" "}
+                <button
+                  onClick={() =>
+                    start(
+                      snapshot?.mode ?? "practice",
+                      !!player && challengeOpen,
+                    )
+                  }
+                >
+                  Start the new workshop
+                </button>
+              </div>
+            )}
           {screen === "playing" &&
             !selection &&
             !placement &&
             !rideId &&
-            !panel && (
+            !panel &&
+            !designingKind &&
+            !editingCoaster && (
               <div className="mp-advisor">
                 <span className="mp-advisor-avatar">
                   <img src="/art/advisor-v3.webp" alt="" />
                 </span>
                 <div>
-                  <strong>MAKE IT A DAY TO REMEMBER</strong>
+                  <strong>
+                    {openingStage === 0
+                      ? "FIRST, YOUR SIGNATURE COASTER"
+                      : openingStage === 1
+                        ? "NEXT, YOUR FIRST RESTAURANT"
+                        : openingStage === 2
+                          ? "YOUR FIRST NEAR ECONOMY"
+                          : "MAKE IT A DAY TO REMEMBER"}
+                  </strong>
                   <p>{hint}</p>
                 </div>
               </div>
             )}
+          {openingStage === 3 &&
+            !economyUnderstood &&
+            !panel &&
+            !designingKind &&
+            !editingCoaster &&
+            !rideId && (
+              <div className="mp-economy-lesson" role="status">
+                <strong>
+                  <NearMark /> YOUR FIRST MEAL, REAL VENDOR WALLETS
+                </strong>
+                <p>
+                  A guest paid Omar for a meal. He keeps the business cash, buys
+                  fresh ingredients and sends 10% of each sale to your park.
+                </p>
+                <p>
+                  {snapshot?.mode === "near"
+                    ? snapshot.pending
+                      ? "NEAR is confirming these wallet transfers."
+                      : "These wallet transfers are confirmed on NEAR testnet."
+                    : "Practice simulates the same economy. NEAR play settles its vendor wallets on testnet."}
+                </p>
+                <button onClick={() => setPanel("ledger")}>
+                  See the receipt
+                </button>
+                <button
+                  onClick={() => {
+                    setEconomyUnderstood(true);
+                    localStorage.setItem(
+                      `moonpark-tutorial:${snapshot?.localId}`,
+                      "done",
+                    );
+                  }}
+                >
+                  Got it · let’s build
+                </button>
+              </div>
+            )}
           <nav className="mp-map-tools" aria-label="Park tools">
+            <button
+              aria-label="Share your park"
+              onClick={() => setPanel("near")}
+            >
+              <Share2 size={20} />
+            </button>
             <button
               aria-label="My park and ride exchange"
               onClick={() => setPanel("near")}
@@ -1051,8 +1300,81 @@ export default function Game() {
               <Home size={19} />
             </button>
           </nav>
-          {editingCoaster && (
-            <CoasterEditor
+          {run.version !== VERSION && designingKind === "coaster" && (
+            <LegacyCoasterEditor
+              building={previewBuilding("coaster", draftDesign)}
+              cash={run.cash}
+              onPreview={() => {}}
+              onCancel={() => setDesigningKind(null)}
+              onApply={async (design) => {
+                setPlacement({
+                  kind: "coaster",
+                  design,
+                  rotation: 0,
+                  variant: 0,
+                });
+                setDesigningKind(null);
+              }}
+            />
+          )}
+          {designingKind &&
+            (run.version === VERSION || designingKind !== "coaster") && (
+              <BuildDesigner
+                key={designingKind}
+                kind={designingKind}
+                cash={run.cash}
+                palette={run.palette ?? 0}
+                version={run.version}
+                draftKey={`moonpark-draft:${snapshot?.localId}:${designingKind}`}
+                initialDesign={draftDesign}
+                onCancel={() => setDesigningKind(null)}
+                onApply={(design) => {
+                  setPlacement({
+                    kind: designingKind,
+                    rotation: 0,
+                    variant: 0,
+                    design,
+                  });
+                  setDesigningKind(null);
+                  worldRef.current?.home();
+                  setToast(
+                    "Move your design over the plot. Click a clear spot to build. The golden tile marks its entrance.",
+                  );
+                }}
+              />
+            )}
+          {editingCoaster && run.version === VERSION && (
+            <BuildDesigner
+              kind="coaster"
+              draftKey={`moonpark-draft:${snapshot?.localId}:building:${editingCoaster.id}`}
+              building={editingCoaster}
+              cash={run.cash}
+              palette={run.palette ?? 0}
+              onCancel={() => {
+                worldRef.current?.setDesignPreview(null);
+                setEditingCoaster(null);
+              }}
+              onPreview={(design) =>
+                worldRef.current?.setDesignPreview(
+                  design ? { id: editingCoaster.id, design } : null,
+                )
+              }
+              onApply={async (design) => {
+                await session.current?.action({
+                  kind: "design",
+                  building: editingCoaster.id,
+                  design,
+                });
+                worldRef.current?.setDesignPreview(null);
+                setEditingCoaster(null);
+                setToast(
+                  "Your new track is ready. Take the front seat to try it.",
+                );
+              }}
+            />
+          )}
+          {editingCoaster && run.version !== VERSION && (
+            <LegacyCoasterEditor
               building={editingCoaster}
               cash={run.cash}
               onPreview={(design) =>
@@ -1078,7 +1400,7 @@ export default function Game() {
               }}
             />
           )}
-          {selection && !rideId && !editingCoaster && (
+          {selection && !rideId && !editingCoaster && !designingKind && (
             <Inspector
               key={`${selection?.kind}:${selection?.id}`}
               run={run}
@@ -1090,6 +1412,10 @@ export default function Game() {
               onEditCoaster={
                 isPersistent(run)
                   ? async (b) => {
+                      if (run.version === VERSION) {
+                        setEditingCoaster(b);
+                        return;
+                      }
                       if (b.riders.length) {
                         if (b.enabled)
                           await action({ kind: "toggle", building: b.id });
@@ -1112,120 +1438,90 @@ export default function Game() {
               }}
             />
           )}
-          {screen === "playing" && worldReady && !rideId && !editingCoaster && (
-            <div className={`mp-build-area ${selection ? "inspecting" : ""}`}>
-              <div className="mp-build-heading">
-                <span>
-                  <span className="mp-eyebrow">
-                    BUILD SOMETHING EXTRAORDINARY
+          {screen === "playing" &&
+            worldReady &&
+            !rideId &&
+            !editingCoaster &&
+            !designingKind && (
+              <div className={`mp-build-area ${selection ? "inspecting" : ""}`}>
+                <div className="mp-build-heading">
+                  <span>
+                    <span className="mp-eyebrow">
+                      BUILD SOMETHING EXTRAORDINARY
+                    </span>
+                    <small>
+                      {openingStage < 2
+                        ? "Design it first. Place it next. Paths are included for your first two buildings."
+                        : "Design an attraction, then choose its spot. Scroll for more."}
+                    </small>
                   </span>
-                  <small>Pick a blueprint. Click your plot.</small>
-                </span>
-                {placement && (
-                  <div className="mp-placement-tools">
-                    <button
-                      onClick={() =>
-                        setPlacement((p) =>
-                          p ? { ...p, rotation: (p.rotation + 1) % 4 } : p,
-                        )
-                      }
-                    >
-                      <RotateCw size={15} /> Rotate [R]
-                    </button>
-                    {(placement.kind === "path" ||
-                      placement.kind === "erase") && (
+                  {placement && (
+                    <div className="mp-placement-tools">
                       <button
                         onClick={() =>
                           setPlacement((p) =>
-                            p
-                              ? {
-                                  ...p,
-                                  kind: p.kind === "path" ? "erase" : "path",
-                                }
-                              : p,
+                            p ? { ...p, rotation: (p.rotation + 1) % 4 } : p,
                           )
                         }
                       >
-                        {placement.kind === "path"
-                          ? "Erase paths"
-                          : "Draw paths"}
+                        <RotateCw size={15} /> Rotate [R]
                       </button>
-                    )}
-                    {placement.kind === "coaster" && (
+                      {(placement.kind === "path" ||
+                        placement.kind === "erase") && (
+                        <button
+                          onClick={() =>
+                            setPlacement((p) =>
+                              p
+                                ? {
+                                    ...p,
+                                    kind: p.kind === "path" ? "erase" : "path",
+                                  }
+                                : p,
+                            )
+                          }
+                        >
+                          {placement.kind === "path"
+                            ? "Erase paths"
+                            : "Draw paths"}
+                        </button>
+                      )}
+                      {placement.kind !== "path" &&
+                        placement.kind !== "erase" && (
+                          <button
+                            onClick={() => {
+                              setDraftDesign(placement.design);
+                              setDesigningKind(placement.kind as Kind);
+                              setPlacement(null);
+                            }}
+                          >
+                            Edit design
+                          </button>
+                        )}
                       <button
-                        onClick={() =>
-                          setPlacement((p) =>
-                            p ? { ...p, variant: p.variant ? 0 : 1 } : p,
-                          )
-                        }
+                        aria-label="Cancel placement"
+                        onClick={() => setPlacement(null)}
                       >
-                        Layout {placement.variant ? "B" : "A"}
+                        <X size={17} />
                       </button>
-                    )}
-                    <button
-                      aria-label="Cancel placement"
-                      onClick={() => setPlacement(null)}
-                    >
-                      <X size={17} />
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="mp-build-dock">
-                {CATALOG.map((a) => {
-                  return (
-                    <button
-                      className={`mp-blueprint ${placement?.kind === a.kind ? "selected" : ""}`}
-                      key={a.kind}
-                      disabled={run.cash < a.cost}
-                      onClick={() => {
-                        setSelection(null);
-                        setPlacement((p) =>
-                          p?.kind === a.kind
-                            ? null
-                            : { kind: a.kind, rotation: 0, variant: 0 },
-                        );
-                      }}
-                      aria-label={`Build ${a.name}`}
-                      title={a.description}
-                    >
-                      <span
-                        className="mp-blueprint-art"
-                        style={{ color: a.color }}
-                      >
-                        <img
-                          src={`/art/${a.kind}-s0-v3.webp`}
-                          alt=""
-                          draggable={false}
-                        />
-                      </span>
-                      <strong>{a.name}</strong>
-                      <small>
-                        <Coins size={11} />
-                        {money(a.cost)}
-                      </small>
-                    </button>
-                  );
-                })}
-                <button
-                  className={`mp-blueprint ${placement?.kind === "path" ? "selected" : ""}`}
-                  onClick={() => {
+                    </div>
+                  )}
+                </div>
+                <BuildCatalogue
+                  run={run}
+                  placement={placement}
+                  onDesign={(kind) => {
+                    setSelection(null);
+                    setPlacement(null);
+                    setDraftDesign(undefined);
+                    setDesigningKind(kind);
+                  }}
+                  onPath={() => {
                     setSelection(null);
                     setPlacement({ kind: "path", rotation: 0, variant: 0 });
                   }}
-                  aria-label="Build path"
-                >
-                  <span className="mp-blueprint-art">
-                    <Route size={27} />
-                  </span>
-                  <strong>Paths</strong>
-                  <small>
-                    <Coins size={11} />2 / tile
-                  </small>
-                </button>
+                />
               </div>
-            </div>
-          )}
+            )}
           {rideId !== null && (
             <div className="mp-ride-controls">
               <span>
@@ -1269,7 +1565,7 @@ export default function Game() {
                     {hoverBuilding.powered
                       ? `${hoverBuilding.queue.length} waiting · ${hoverBuilding.served} served`
                       : hoverBuilding.connected
-                        ? "Check power and opening status"
+                        ? "Preparing to welcome guests"
                         : "Connect the entrance to a path"}
                   </p>
                   <small>Click to inspect</small>
@@ -1383,7 +1679,7 @@ export default function Game() {
                 >
                   <Trophy size={16} /> Rankings & prize escrow
                 </button>
-                <a href="/archive/v6">Earlier parks & earnings</a>
+                <a href="/archive/v7">Earlier parks & earnings</a>
                 <a href="/legacy-claims">Earlier concession claims</a>
                 <a
                   href={
@@ -1461,12 +1757,19 @@ export default function Game() {
               <p className="mp-subtle">
                 The colony has a home. Give it somewhere wonderful to go.
               </p>
+              <p>
+                Sign in with Google to return to your NEAR park on another
+                device. Your sponsored account recovery is encrypted in
+                Moonpark’s database. Confirmed layouts and finances are stored
+                on NEAR. Offline practice saves on this device.
+              </p>
               <ol>
                 <li>
-                  <strong>Build a reason to visit.</strong> Pick a ride, place
-                  its blueprint and connect its entrance. Guests arrive by
-                  shuttle every 40 simulation seconds. Watch them disembark and
-                  catch their ride home. Your opening cohort begins at the first
+                  <strong>Build a reason to visit.</strong> Design your mass
+                  driver before placing it, then open a kitchen. Your first two
+                  entrances connect automatically. Guests arrive by shuttle
+                  every 40 simulation seconds. Watch them disembark and catch
+                  their ride home. Your opening cohort begins at the first
                   landing.
                 </li>
                 <li>
@@ -1476,14 +1779,14 @@ export default function Game() {
                 </li>
                 <li>
                   <strong>Help the park flourish.</strong> Add food and drinks,
-                  keep power available and let the maintenance robots look after
-                  your rides.
+                  and let the maintenance robots look after your rides. Solar
+                  canopies earn steady export income.
                 </li>
                 <li>
                   <strong>Make your opening day count.</strong> Happy visitors,
                   a healthy business and new experiences earn points. The first
                   96 visitors seal your score when they depart. Later rockets
-                  keep your park earning. Pause to build or use 2× and 4×.
+                  keep your park earning. Pause whenever you want time to plan.
                 </li>
               </ol>
               <p>

@@ -226,7 +226,7 @@ impl Moonpark {
         assert_eq!(run.revision, expected_revision, "Stale revision");
         let now = env::block_timestamp();
         let started: u64 = record["started_at"].as_str().unwrap().parse().unwrap();
-        let allowed = ((now.saturating_sub(started)) as u128 * 4 / 1_000_000_000 + 10)
+        let allowed = ((now.saturating_sub(started)) as u128 / 1_000_000_000 + 10)
             .min(u32::MAX as u128) as u32;
         assert!(
             run.tick.saturating_add(ticks as u32) <= allowed,
@@ -319,7 +319,7 @@ impl Moonpark {
             .collect()
     }
     pub fn get_challenge(&self) -> serde_json::Value {
-        serde_json::json!({"id":VERSION,"seconds":null,"persistent":true,"score_basis":"first_96_departed_visitors","approach_seconds":moonpark_sim::LANDING,"simulation_ticks":null,"width":48,"height":48,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":0,"partnerships":0,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"signed_policy_accounts","vendor_policy":self.get_vendor_policy(),"asset_standard":"NEP-245","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":if self.prize_fund>0 {"testnet_escrow"}else{"conditional_unfunded"},"concession_standard":"NEP-171","game_currency":"lunar park credit tokens","reward_currency":"testnet NEAR"})
+        serde_json::json!({"id":VERSION,"seconds":null,"persistent":true,"score_basis":"first_96_departed_visitors","approach_seconds":moonpark_sim::LANDING,"simulation_ticks":null,"width":48,"height":48,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":0,"partnerships":0,"max_batch_ticks":20,"max_commands":16,"max_speed":1,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"signed_policy_accounts","vendor_policy":self.get_vendor_policy(),"asset_standard":"NEP-245","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":if self.prize_fund>0 {"testnet_escrow"}else{"conditional_unfunded"},"concession_standard":"NEP-171","game_currency":"lunar park credit tokens","reward_currency":"testnet NEAR"})
     }
 }
 fn better(a: &Entry, b: &Entry) -> bool {

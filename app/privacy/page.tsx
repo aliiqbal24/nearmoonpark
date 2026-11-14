@@ -14,16 +14,22 @@ export default function Privacy() {
       <p>
         Practice and guest NEAR play do not require sign-in. Ranked play on this
         site uses Google sign-in through Neon Auth to establish a verified,
-        stable player identity. Neon stores your authentication profile and
-        session. Moonpark stores your identity link and chosen public player
+        stable player identity. Signing in also enables cross-device recovery
+        for your sponsored NEAR park. Neon stores your authentication profile
+        and session. Moonpark stores your identity link and chosen public player
         name in Neon Postgres. Your email stays private to authentication.
       </p>
       <p>
         NEAR runs, park ownership, published names, designs, reviews, licenses,
         earnings and transfers are public blockchain records. We link them to a
-        random public player identifier. Browser-generated gameplay and recovery
-        keys stay in your browser. Local game saves contain these private
-        credentials; do not share browser storage or private recovery exports.
+        random public player identifier. Your browser holds the generated
+        gameplay and recovery keys. When you sign in, Moonpark stores a compact
+        recovery copy encrypted with AES-256-GCM in Neon Postgres. It includes
+        the generated testnet account keys, contract and run references, and
+        park identity. The server holds the encryption secret and can recover
+        that sponsored account for your verified sign-in. External wallet seed
+        phrases are handled by your wallet. Local game saves and private backup
+        exports also contain generated credentials. Keep those exports private.
       </p>
       <p>
         Account sponsorship records public keys, account identifiers and

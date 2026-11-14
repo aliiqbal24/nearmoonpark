@@ -13,12 +13,36 @@ fn new_contract() -> Moonpark {
     let mut contract = Moonpark::new("sponsor.testnet".parse().unwrap());
     for name in economy::VENDORS {
         context(&format!("{name}.sponsor.testnet"), time);
-        contract.accept_vendor_policy("moonpark-v7-persistent-vendors-1".into());
+        contract.accept_vendor_policy("moonpark-v8-persistent-vendors-1".into());
     }
     context(&caller, time);
     contract
 }
 
+fn opening_commands() -> Vec<Command> {
+    vec![
+        Command {
+            kind: "build".into(),
+            item: "coaster".into(),
+            x: 2,
+            z: 16,
+            design: Some(moonpark_sim::Design::starter()),
+            ..Default::default()
+        },
+        Command {
+            kind: "build".into(),
+            item: "food".into(),
+            x: 26,
+            z: 41,
+            ..Default::default()
+        },
+    ]
+}
+fn prepared_run() -> Run {
+    let mut run = Run::new();
+    run.apply(&opening_commands(), 0).unwrap();
+    run
+}
 fn economy_fixture() -> Moonpark {
     context("sponsor.testnet", 1_000_000_000);
     let mut c = new_contract();
@@ -29,6 +53,7 @@ fn economy_fixture() -> Moonpark {
     );
     context("alice.testnet", 1_000_000_000);
     c.create_run(VERSION.into(), "economy".into(), None);
+    c.apply_actions("1".into(), 0, "opening".into(), opening_commands(), 0);
     c
 }
 fn finish_economy(c: &mut Moonpark) {
@@ -37,7 +62,8 @@ fn finish_economy(c: &mut Moonpark) {
             break;
         }
         context("alice.testnet", (n + 1) * 10_000_000_000);
-        c.apply_actions("1".into(), n as u32, format!("tick-{n}"), vec![], 10);
+        let revision = c.get_run("1".into())["run"]["revision"].as_u64().unwrap() as u32;
+        c.apply_actions("1".into(), revision, format!("tick-{n}"), vec![], 10);
         let state = c.get_run_economy("1".into());
         let record = c.get_run("1".into());
         let run: Run = serde_json::from_value(record["run"].clone()).unwrap();
@@ -108,7 +134,7 @@ fn vendor_tokens_clear_atomically_conserve_supply_and_isolate_rounds() {
 #[should_panic(expected = "Vendor account only")]
 fn a_player_cannot_authorize_a_vendor_wallet() {
     let mut c = economy_fixture();
-    c.accept_vendor_policy("moonpark-v7-persistent-vendors-1".into());
+    c.accept_vendor_policy("moonpark-v8-persistent-vendors-1".into());
 }
 #[test]
 #[should_panic(expected = "Vendor policy is awaiting")]
@@ -287,9 +313,8 @@ fn construction_continues_after_the_old_deadline() {
         0,
         "late".into(),
         vec![Command {
-            kind: "price".into(),
-            building: 1,
-            value: 500,
+            kind: "theme".into(),
+            value: 2,
             ..Default::default()
         }],
         0,
@@ -304,7 +329,7 @@ fn rejects_instant_full_round() {
     context("alice.testnet", 1);
     let r = c.create_run(VERSION.into(), "run".into(), None);
     let id = r["run_id"].as_str().unwrap().to_owned();
-    c.apply_actions(id.clone(), 0, "one".into(), vec![], 10);
+    c.apply_actions(id.clone(), 0, "one".into(), opening_commands(), 10);
     c.apply_actions(id, 1, "two".into(), vec![], 10);
 }
 
@@ -594,7 +619,7 @@ fn park_fixture() -> Moonpark {
     context("alice.testnet", 1);
     c.create_run(VERSION.into(), "alice".into(), None);
     let mut record = c.get_run("1".into());
-    let mut r = Run::new();
+    let mut r = prepared_run();
     while !r.finished {
         r.apply(&[], 10).unwrap();
     }
@@ -758,8 +783,9 @@ fn track_construction_continues_after_the_old_deadline() {
         vec![Command {
             kind: "build".into(),
             item: "coaster".into(),
-            x: 3,
-            z: 8,
+            x: 2,
+            z: 16,
+            design: Some(moonpark_sim::Design::starter()),
             ..Default::default()
         }],
         0,
@@ -771,10 +797,10 @@ fn track_construction_continues_after_the_old_deadline() {
         "late-height".into(),
         vec![Command {
             kind: "design".into(),
-            building: 3,
+            building: 1,
             design: Some(moonpark_sim::Design {
-                height: 2,
-                ..Default::default()
+                name: "Skyline".into(),
+                ..moonpark_sim::Design::starter()
             }),
             ..Default::default()
         }],
@@ -793,23 +819,25 @@ fn deadline_keeps_free_cosmetic_edits_available() {
     );
     context("alice.testnet", 1);
     c.create_run(VERSION.into(), "day".into(), None);
+    c.apply_actions("1".into(), 0, "opening".into(), opening_commands(), 0);
+    let before = c.get_run("1".into())["run"]["cash"].clone();
     context("alice.testnet", 566_000_000_001);
     let r = c.apply_actions(
         "1".into(),
-        0,
+        1,
         "paint".into(),
         vec![Command {
             kind: "design".into(),
             building: 1,
             design: Some(moonpark_sim::Design {
                 palette: 3,
-                ..Default::default()
+                ..moonpark_sim::Design::starter()
             }),
             ..Default::default()
         }],
         0,
     );
-    assert_eq!(r["run"]["cash"], 320000);
+    assert_eq!(r["run"]["cash"], before);
     assert_eq!(r["run"]["buildings"][0]["design"]["palette"], 3);
 }
 
@@ -883,7 +911,7 @@ fn authorized_operator_handoff_preserves_the_live_economy() {
         "Bob".into(),
     );
     context("alice.testnet", 20_000_000_000);
-    c.apply_actions("1".into(), 0, "before-handoff".into(), vec![], 20);
+    c.apply_actions("1".into(), 1, "before-handoff".into(), vec![], 20);
     let original = c.get_run_economy("1".into());
     c.rotate_park_operator("1".into(), "bob.testnet".parse().unwrap());
     assert_eq!(c.get_run("1".into())["owner"], "bob.testnet");
@@ -894,6 +922,6 @@ fn authorized_operator_handoff_preserves_the_live_economy() {
     );
     assert_eq!(moved["wallets"][0]["account_id"], "bob.testnet");
     context("bob.testnet", 40_000_000_000);
-    c.apply_actions("1".into(), 1, "after-handoff".into(), vec![], 20);
+    c.apply_actions("1".into(), 2, "after-handoff".into(), vec![], 20);
     assert_eq!(c.get_run("1".into())["run"]["tick"], 40);
 }

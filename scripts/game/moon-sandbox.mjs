@@ -6,12 +6,10 @@ import { verifyEconomy } from "./moon-economy-proof.mjs";
 const tmp = resolve(".sites-runtime/moon-sandbox");
 await mkdir(tmp, { recursive: true });
 process.env.TMPDIR = tmp;
-const { Sandbox, DEFAULT_ACCOUNT_ID, DEFAULT_PRIVATE_KEY } = await import(
-  "near-sandbox"
-);
-const { Account, JsonRpcProvider, KeyPair, KeyPairSigner } = await import(
-  "near-api-js"
-);
+const { Sandbox, DEFAULT_ACCOUNT_ID, DEFAULT_PRIVATE_KEY } =
+  await import("near-sandbox");
+const { Account, JsonRpcProvider, KeyPair, KeyPairSigner } =
+  await import("near-api-js");
 // Keep the cutoff jump inside one epoch; advancing thousands of validator epochs
 // would test node maintenance rather than the contract's prize deadline.
 const sandbox = await Sandbox.start({
@@ -64,7 +62,7 @@ try {
     await call(
       new Account(id, p, new KeyPairSigner(key)),
       "accept_vendor_policy",
-      { policy_id: "moonpark-v7-persistent-vendors-1" },
+      { policy_id: "moonpark-v8-persistent-vendors-1" },
     );
   }
   await call(root, "fund_prizes", {}, 500000000000000000000000n);
@@ -75,13 +73,13 @@ try {
   });
   await call(root, "open_challenge", {});
   let state = await call(alice, "create_run", {
-    challenge_id: "moonpark-v7",
+    challenge_id: "moonpark-v8",
     request_id: "sandbox",
   });
   assert.deepEqual(
     state,
     await call(alice, "create_run", {
-      challenge_id: "moonpark-v7",
+      challenge_id: "moonpark-v8",
       request_id: "sandbox",
     }),
   );
@@ -155,7 +153,7 @@ try {
     const expected = simulate(state.run, f.commands, f.ticks);
     let header = (await p.viewBlock({ finality: "final" })).header;
     while (
-      ((BigInt(header.timestamp_nanosec) - BigInt(state.started_at)) * 4n) /
+      (BigInt(header.timestamp_nanosec) - BigInt(state.started_at)) /
         1000000000n +
         10n <
       BigInt(state.run.tick + f.ticks)
@@ -219,7 +217,7 @@ try {
   });
   assert.equal(board.entries[0].score.total, state.run.score.total);
   const design = {
-    ...state.run.buildings[2].design,
+    ...state.run.buildings[0].design,
     name: "Earthskimmer",
     palette: 3,
     style: 1,
@@ -229,7 +227,7 @@ try {
     run_id: state.run_id,
     expected_revision: state.run.revision,
     request_id: "cosmetics",
-    commands: [{ kind: "design", building: 3, design }],
+    commands: [{ kind: "design", building: 1, design }],
     ticks: 0,
   });
   const mine = await p.callFunction({
@@ -247,7 +245,7 @@ try {
   const bp = await call(alice, "publish_blueprint", {
     park_id: mine.id,
     run_id: state.run_id,
-    building_id: 3,
+    building_id: 1,
     name: "Earthskimmer",
   });
   await call(alice, "nominate_park_owner", {
@@ -264,7 +262,7 @@ try {
     display_name: "Bob",
   });
   const buyer = await call(bob, "create_run", {
-    challenge_id: "moonpark-v7",
+    challenge_id: "moonpark-v8",
     request_id: "buyer",
   });
   await assert.rejects(() =>
@@ -310,7 +308,7 @@ try {
     ],
     ticks: 0,
   });
-  assert.equal(built.run.buildings[2].blueprint_id, bp.id);
+  assert.equal(built.run.buildings[0].blueprint_id, bp.id);
   const beforeCreator = (await charlie.getState()).balance.total;
   assert.equal(await call(charlie, "claim_creator_earnings", {}), true);
   assert.ok((await charlie.getState()).balance.total > beforeCreator);
@@ -324,7 +322,7 @@ try {
     published,
     blueprint: bp,
     claimed,
-    licensedBuilding: built.run.buildings[2],
+    licensedBuilding: built.run.buildings[0],
     creatorEarnings: earned,
     privateCallbackRejected: true,
     duplicateLicenseRefunded: true,
@@ -340,7 +338,7 @@ try {
     const expected = simulate(state.run, [], 20);
     let header = (await p.viewBlock({ finality: "final" })).header;
     while (
-      ((BigInt(header.timestamp_nanosec) - BigInt(state.started_at)) * 4n) /
+      (BigInt(header.timestamp_nanosec) - BigInt(state.started_at)) /
         1000000000n +
         10n <
       BigInt(expected.tick)

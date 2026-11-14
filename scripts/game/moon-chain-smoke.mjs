@@ -14,7 +14,7 @@ const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
 assert.equal(cfg.network, "testnet");
 assert.ok(cfg.contractId.endsWith(".testnet"));
 const rootKey = JSON.parse(
-  await readFile(".near-local/moon-v7-deployer.json", "utf8"),
+  await readFile(".near-local/moon-v8-deployer.json", "utf8"),
 );
 const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
   cfg.rpcUrl,
@@ -25,50 +25,70 @@ const root = new Account(
   p,
   KeyPairSigner.fromSecretKey(rootKey.secretKey),
 );
-const key = KeyPair.fromRandom("ed25519"),
-  id = `proof-${Date.now().toString(36)}.${root.accountId}`;
-await root.createAccount({
-  newAccountId: id,
-  publicKey: key.getPublicKey(),
-  nearToTransfer: 700000000000000000000000n,
-});
-const player = new Account(id, p, new KeyPairSigner(key));
-await writeFile(
-  `.near-local/${id}.json`,
-  JSON.stringify({ accountId: id, secretKey: key.toString() }),
-  { mode: 0o600 },
-);
-await root.callFunction({
-  contractId: cfg.contractId,
-  methodName: "register_player",
-  args: {
-    account_id: id,
-    player_id: `guest:${id}`,
-    display_name: "Verification run",
-  },
-  gas: 50000000000000n,
-  waitUntil: "EXECUTED",
-});
-let state = await player.callFunction({
-  contractId: cfg.contractId,
-  methodName: "create_run",
-  args: { challenge_id: "moonpark-v7", request_id: "real-chain-proof" },
-  gas: 180000000000000n,
-  waitUntil: "EXECUTED",
-});
+let player, state;
+let progress = null;
+if (process.argv.includes("--resume"))
+  progress = JSON.parse(
+    await readFile("outputs/moon-v8-chain-progress.json", "utf8"),
+  );
+if (progress) {
+  const saved = JSON.parse(
+    await readFile(`.near-local/${progress.state.owner}.json`, "utf8"),
+  );
+  assert.ok(saved.accountId.endsWith(`.${root.accountId}`));
+  player = new Account(
+    saved.accountId,
+    p,
+    KeyPairSigner.fromSecretKey(saved.secretKey),
+  );
+  state = progress.state;
+} else {
+  const key = KeyPair.fromRandom("ed25519"),
+    id = `proof-${Date.now().toString(36)}.${root.accountId}`;
+  await root.createAccount({
+    newAccountId: id,
+    publicKey: key.getPublicKey(),
+    nearToTransfer: 700000000000000000000000n,
+  });
+  player = new Account(id, p, new KeyPairSigner(key));
+  await writeFile(
+    `.near-local/${id}.json`,
+    JSON.stringify({ accountId: id, secretKey: key.toString() }),
+    { mode: 0o600 },
+  );
+  await root.callFunction({
+    contractId: cfg.contractId,
+    methodName: "register_player",
+    args: {
+      account_id: id,
+      player_id: `guest:${id}`,
+      display_name: "Verification run",
+    },
+    gas: 50000000000000n,
+    waitUntil: "EXECUTED",
+  });
+  state = await player.callFunction({
+    contractId: cfg.contractId,
+    methodName: "create_run",
+    args: { challenge_id: "moonpark-v8", request_id: "real-chain-proof" },
+    gas: 180000000000000n,
+    waitUntil: "EXECUTED",
+  });
+}
+const id = player.accountId;
 const native = spawnSync("target/release/examples/moon_replay", ["gold"], {
   encoding: "utf8",
   maxBuffer: 20000000,
 });
 if (native.status) throw Error(native.stderr);
 const replay = JSON.parse(native.stdout);
-let maxGas = 0n;
-const checkpoints = [];
-for (let i = 0; i < replay.frames.length; i++) {
+let maxGas = BigInt(progress?.maxGas ?? 0);
+const checkpoints = progress?.checkpoints ?? [];
+for (let i = checkpoints.length; i < replay.frames.length; i++) {
   const f = replay.frames[i];
   const earliest =
     Number(BigInt(state.started_at) / 1000000n) +
-    (state.run.tick + f.ticks - 8) * 250;
+    (state.run.tick + f.ticks - 8) * 1000;
   const delay = Math.max(0, earliest - Date.now());
   if (delay) await new Promise((r) => setTimeout(r, delay));
   let raw;
@@ -122,7 +142,7 @@ for (let i = 0; i < replay.frames.length; i++) {
     trades: state.run.trade_count,
   });
   await writeFile(
-    "outputs/moon-v7-chain-progress.json",
+    "outputs/moon-v8-chain-progress.json",
     JSON.stringify({ state, checkpoints, maxGas: maxGas.toString() }),
   );
   if (i % 9 === 0 || state.run.finished)
@@ -181,7 +201,7 @@ async function call(account, methodName, args, deposit = 0n) {
 const contractView = (method, args = {}) =>
   p.callFunction({ contractId: cfg.contractId, method, args });
 const design = {
-  ...state.run.buildings[2].design,
+  ...state.run.buildings[0].design,
   name: "Earthskimmer",
   palette: 3,
   style: 1,
@@ -191,7 +211,7 @@ state = await call(player, "apply_actions", {
   run_id: state.run_id,
   expected_revision: state.run.revision,
   request_id: "cosmetics",
-  commands: [{ kind: "design", building: 3, design }],
+  commands: [{ kind: "design", building: 1, design }],
   ticks: 0,
 });
 const mine = await contractView("get_park", { park_id: state.park_id });
@@ -205,7 +225,7 @@ await call(player, "save_park", {
 const bp = await call(player, "publish_blueprint", {
   park_id: mine.id,
   run_id: state.run_id,
-  building_id: 3,
+  building_id: 1,
   name: "Earthskimmer",
 });
 async function freshAccount(prefix) {
@@ -239,7 +259,7 @@ await call(root, "register_player", {
   display_name: "Blueprint visitor",
 });
 const buying = await call(buyer, "create_run", {
-  challenge_id: "moonpark-v7",
+  challenge_id: "moonpark-v8",
   request_id: "license-test",
 });
 const fee = 5000000000000000000000n;
@@ -277,7 +297,7 @@ const built = await call(buyer, "apply_actions", {
   ],
   ticks: 0,
 });
-assert.equal(built.run.buildings[2].blueprint_id, bp.id);
+assert.equal(built.run.buildings[0].blueprint_id, bp.id);
 assert.equal(await call(wallet, "claim_creator_earnings", {}), true);
 const paid = await contractView("get_creator_earnings", {
   account_id: wallet.accountId,
@@ -297,7 +317,7 @@ const ownershipProof = {
   park: claimed,
   blueprint: bp,
   buyer: buyer.accountId,
-  licensedBuilding: built.run.buildings[2],
+  licensedBuilding: built.run.buildings[0],
   earnings,
   paid,
   transactions,
@@ -329,7 +349,7 @@ const access = await p.viewAccessKeyList({ accountId: cfg.contractId });
 assert.equal(access.keys.length, 0);
 await mkdir("docs", { recursive: true });
 await writeFile(
-  "docs/moon-v7-testnet-smoke.json",
+  "docs/moon-v8-testnet-smoke.json",
   JSON.stringify(
     {
       contractId: cfg.contractId,

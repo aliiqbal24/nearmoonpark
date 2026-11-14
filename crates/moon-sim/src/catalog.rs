@@ -117,7 +117,7 @@ pub const CATALOG: [Item; 8] = [
         price: 0,
         power: 0,
         thrill: 0,
-        description: "Four extra units of clean power. Also excellent shade.",
+        description: "Exports solar energy for 5 credits every 20 seconds.",
     },
 ];
 pub fn item(kind: &str) -> Option<Item> {

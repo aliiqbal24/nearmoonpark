@@ -1,4 +1,4 @@
-export const VERSION = "moonpark-v7";
+export const VERSION = "moonpark-v8";
 export const LANDING = 10;
 export const END = 550;
 export const DAY_SECONDS = END - LANDING;
@@ -131,7 +131,7 @@ export const CATALOG: Blueprint[] = [
     price: 0,
     power: 0,
     color: "#91b9ff",
-    description: "Four extra units of clean power.",
+    description: "Earns 5 credits every 20 seconds by exporting solar energy.",
   },
 ];
 export const blueprint = (kind: string) =>
@@ -152,16 +152,18 @@ export const coasterDuration = (b: Building) =>
 export const isRide = (kind: string) =>
   ["bounce", "wheel", "rover", "coaster"].includes(kind);
 export const isTenant = (kind: string) => ["food", "drink"].includes(kind);
-export const resaleValue = (b: Building) =>
-  Math.floor(
-    (b.invested *
-      70 *
-      (isRide(b.kind) ? Math.max(0, Math.min(100, b.condition)) : 100)) /
-      10000,
-  );
+export const resaleValue = (b: Building, version = VERSION) =>
+  version === VERSION
+    ? Math.floor(b.invested / 2)
+    : Math.floor(
+        (b.invested *
+          70 *
+          (isRide(b.kind) ? Math.max(0, Math.min(100, b.condition)) : 100)) /
+          10000,
+      );
 export type TrackPoint = { x: number; y: number; z: number };
 export const isPersistent = (run: Run) =>
-  run.version === VERSION || run.version === "moonpark-v6";
+  [VERSION, "moonpark-v7", "moonpark-v6"].includes(run.version);
 export const parkWidth = (run: Run) => (isPersistent(run) ? WIDTH : 32);
 export const parkHeight = (run: Run) => (isPersistent(run) ? HEIGHT : 24);
 export const parkOriginZ = (run: Run) => (isPersistent(run) ? 36 : 12);
@@ -169,6 +171,8 @@ export const parkGate = (run: Run) =>
   isPersistent(run) ? 47 * WIDTH + 23 : 23 * 32 + 15;
 export const parkClosed = (run: Run) => run.finished && !isPersistent(run);
 export type Design = {
+  track_w?: number;
+  track_h?: number;
   track?: TrackPoint[];
   name: string;
   palette: number;
@@ -184,6 +188,7 @@ export const defaultDesign = (): Design => ({
   height: 1,
 });
 export type Building = {
+  pending_sale?: boolean;
   blueprint_id?: string;
   design?: Design;
   height_paid?: number;
@@ -274,6 +279,7 @@ export type Partnership = {
   earned: number;
 };
 export type Run = {
+  opening_stage?: number;
   version: string;
   palette?: number;
   bookings?: number[];
@@ -405,18 +411,25 @@ export const money = (n: number) =>
   (n / 100).toLocaleString("en-US", { maximumFractionDigits: n % 100 ? 2 : 0 });
 export const clock = (n: number) =>
   `${Math.floor(Math.max(0, n) / 60)}:${String(Math.floor(Math.max(0, n) % 60)).padStart(2, "0")}`;
-export function footprint(b: Pick<Building, "kind" | "variant" | "rotation">) {
+export function footprint(
+  b: Pick<Building, "kind" | "variant" | "rotation"> & { design?: Design },
+) {
   const a = blueprint(b.kind);
   let w = a.w,
     h = a.h;
-  if (b.kind === "coaster" && b.variant === 1) {
+  if (b.kind === "coaster" && b.design?.track_w) {
+    w = b.design.track_w;
+    h = b.design.track_h!;
+  } else if (b.kind === "coaster" && b.variant === 1) {
     w = 8;
     h = 6;
   }
   return b.rotation % 2 ? { w: h, h: w } : { w, h };
 }
 export function entrance(
-  b: Pick<Building, "kind" | "variant" | "rotation" | "x" | "z">,
+  b: Pick<Building, "kind" | "variant" | "rotation" | "x" | "z"> & {
+    design?: Design;
+  },
 ) {
   const { w, h } = footprint(b);
   return b.rotation % 4 === 0
@@ -518,4 +531,44 @@ export function connectionCost(run: Run, b: Building): number | null {
 }
 export function walkingRoute(run: Run, from: number, to: number): number[] {
   return gridRoute(run, from, to, false);
+}
+
+/** A render-only building for placement and previews. The engine creates the authoritative state. */
+export function previewBuilding(
+  kind: Kind,
+  design = defaultDesign(),
+): Building {
+  const a = blueprint(kind);
+  return {
+    id: 0,
+    kind,
+    design,
+    x: 0,
+    z: 0,
+    rotation: 0,
+    variant: 0,
+    price: a.price,
+    invested: a.cost,
+    level: 0,
+    launch: 2,
+    enabled: true,
+    sold: false,
+    ready_at: 0,
+    connected: true,
+    powered: true,
+    condition: 100,
+    queue: [],
+    riders: [],
+    cycle_left: 0,
+    served: 0,
+    revenue: 0,
+    cash: 0,
+    stock: 12,
+    rent: 10,
+    delivery_qty: 0,
+    delivery_at: 0,
+    recent: 0,
+    reason: "",
+    insolvent: false,
+  };
 }

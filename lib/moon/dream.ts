@@ -1,5 +1,6 @@
 import {
   blueprint,
+  previewBuilding,
   parkWidth,
   parkGate,
   isPersistent,
@@ -13,7 +14,11 @@ import {
 } from "./model";
 export function dreamPark(initial: Run, expanded = false): Run {
   const r = structuredClone(initial);
-  const base = r.buildings[0];
+  const base = r.buildings[0] ?? previewBuilding("bounce");
+  if (!r.buildings.length) r.buildings = [
+    { ...previewBuilding("bounce"), id: 1, x: 19, z: 40 },
+    { ...previewBuilding("food"), id: 2, x: 26, z: 41 },
+  ];
   r.tick = 40;
   const kinds: [Kind, number, number][] = [
     ["coaster", 3, 5],
