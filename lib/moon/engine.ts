@@ -8,14 +8,18 @@ type Exports = {
 };
 const loading = new Map<string, Promise<Exports>>();
 export async function engine(version = VERSION) {
-  if (version !== VERSION && version !== "moonpark-v4")
+  if (
+    version !== VERSION &&
+    version !== "moonpark-v4" &&
+    version !== "moonpark-v5"
+  )
     throw Error("This park uses an unsupported engine version.");
   let result = loading.get(version);
   if (!result) {
     result = (async () => {
       const path =
-        version === "moonpark-v4"
-          ? "/engine/moon-v4.wasm"
+        version === "moonpark-v4" || version === "moonpark-v5"
+          ? `/engine/${version.replace("moonpark", "moon")}.wasm`
           : "/engine/moon.wasm";
       const r = await fetch(`${path}?v=${version}`);
       if (!r.ok) throw Error("Moonpark engine could not load.");

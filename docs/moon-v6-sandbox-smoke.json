@@ -1,0 +1,428 @@
+{
+  "maxGas": "67820802517593",
+  "totalGas": "2186798481599580",
+  "frames": [
+    {
+      "tick": 10,
+      "gas": "39670942729942",
+      "hash": "5e85f3dae39ca950287c3cb031b8ad71ff15a23bbdd5da5a9e8b147717a6d69f"
+    },
+    {
+      "tick": 30,
+      "gas": "44070687627554",
+      "hash": "7220e8e650bceb93b26b7e9d67106b16dec6c368ca028c1da2b5e4750dfaf6e0"
+    },
+    {
+      "tick": 50,
+      "gas": "43994354519243",
+      "hash": "76902537589338f14649afc2304f8a0f8b18a8ca1921d55dc6fc4404abfb3def"
+    },
+    {
+      "tick": 70,
+      "gas": "47362978945205",
+      "hash": "2fa58d2a17089b41d1d0caefed020f02d897a3e81c3ef4baaf03d77462f85dfe"
+    },
+    {
+      "tick": 90,
+      "gas": "47501130654347",
+      "hash": "10be2aaedd01d34abbc8dfb768513347e3d8395d70ec04934f41df82e22e897e"
+    },
+    {
+      "tick": 110,
+      "gas": "52723485663555",
+      "hash": "b9ef0887fef1aa4010302fdcd2f358d93f4eb2436ec5b446aeafccfef36924cf"
+    },
+    {
+      "tick": 130,
+      "gas": "52664104018182",
+      "hash": "02e95f8885ca99386439e73566396c99f007d91bac0f52a6ac9d408b62e1cf33"
+    },
+    {
+      "tick": 150,
+      "gas": "53279879297811",
+      "hash": "4d529179421517bfbdde05179f08e2997cb9e0e4239040747c751d18af0a5d9e"
+    },
+    {
+      "tick": 170,
+      "gas": "54523977574350",
+      "hash": "b59a566f6bd42be8d13b4cb79c3ef35d5eeb1d0acea14203f8e5154fa76ff5ce"
+    },
+    {
+      "tick": 190,
+      "gas": "56087041822989",
+      "hash": "b646628bf04c1b57f8869a9996b8a2f693fdb05fb738329d9914cdf097b7d6c0"
+    },
+    {
+      "tick": 210,
+      "gas": "53925699330535",
+      "hash": "f23166ef632c61761c192378ed5227534459c66a4a27321cf6090baacbc32e8b"
+    },
+    {
+      "tick": 220,
+      "gas": "53274796248529",
+      "hash": "3430b24eea94a3dc4357e792aa2952951473b55565f762ed534dde719d7058cf"
+    },
+    {
+      "tick": 240,
+      "gas": "55667456495650",
+      "hash": "75e9f3b9ed6db20dc6afcd4ab4a099bfd7bd52423cb8bb9ba954af3e5c98475b"
+    },
+    {
+      "tick": 260,
+      "gas": "57515688543214",
+      "hash": "8271a36ebf54fbbac3fbb90e4c13d9f7c99ac01926fc632bef9294d8d733f3a8"
+    },
+    {
+      "tick": 280,
+      "gas": "56340160975258",
+      "hash": "d4f4f0cba637e6b25b7b811c0eabc68458b33eb090bc19cfb512b80b6c6a62e7"
+    },
+    {
+      "tick": 300,
+      "gas": "57143406222244",
+      "hash": "c97fbe6c10aaad8c8c998cf831a4362b126ad37c88e497dfd23dc56e5641c358"
+    },
+    {
+      "tick": 320,
+      "gas": "56657150178874",
+      "hash": "4d7a13496c478aea3055009fb592f7d197a131964d3e82a3724acb722fd94a80"
+    },
+    {
+      "tick": 340,
+      "gas": "57969111013111",
+      "hash": "4f013040866e01a3bc96ddef91838e5e947ab19b53eaf95c23597d979c346bdb"
+    },
+    {
+      "tick": 360,
+      "gas": "61522119713056",
+      "hash": "9f17adbb79baae351a92a6fa94b2f1c311718767147b5b3b50b7aa1b2cfc227d"
+    },
+    {
+      "tick": 380,
+      "gas": "58220770897465",
+      "hash": "2cf5092a4b471eb32ac07d2860c96f828273091afd55fbb77862aed9cafd5cfa"
+    },
+    {
+      "tick": 400,
+      "gas": "60199558348921",
+      "hash": "68793011b81f23abcba65ac8490ddb9b617aba5ccafeaa1d65b640855f5a1435"
+    },
+    {
+      "tick": 420,
+      "gas": "59398104710347",
+      "hash": "31d4095981e602d4ea9a7e9844ff4f15a9cb7697a068913743f72d3cbf7a6a7a"
+    },
+    {
+      "tick": 440,
+      "gas": "62514389300029",
+      "hash": "b3a1ec235e64cfcdcce6078801d13e60f3a6c94acc69bcc7bbce6552cb0d8dd4"
+    },
+    {
+      "tick": 460,
+      "gas": "60522216898276",
+      "hash": "4ecd0e555690689ab42fd3a9050d9a24b138ca32545b8b4f407205d5363d63a1"
+    },
+    {
+      "tick": 480,
+      "gas": "62227891346302",
+      "hash": "572a60aaa958a6e0eacd16b2c02132723b8a3282f6a4dcab28cd4ad3782542fe"
+    },
+    {
+      "tick": 500,
+      "gas": "59883593354941",
+      "hash": "00f1e5e15b8834fd7f15d77ba862341839109c7a2fded3a955767be7b8e65b56"
+    },
+    {
+      "tick": 520,
+      "gas": "61918885513183",
+      "hash": "8e442888956a2955fc7cf35f5307615f41c453250d97af17bc17bdf1b38ecdac"
+    },
+    {
+      "tick": 540,
+      "gas": "60443210683687",
+      "hash": "c36ce31fdd89d50e7fe28c3108bdf577964ad4501fde655d39392511cfd6bcb4"
+    },
+    {
+      "tick": 560,
+      "gas": "59631563173756",
+      "hash": "59d95983ee4024519615c8beed1e77e4f849bc69fc995ca6b290e8f36a9689b5"
+    },
+    {
+      "tick": 580,
+      "gas": "59476620983728",
+      "hash": "2160a7371180e1008c3e01e048c2f6297fa38f98b2cf334a5c580f61d07320fa"
+    },
+    {
+      "tick": 600,
+      "gas": "60953875210042",
+      "hash": "79dc4a42f560c9fd7dd2c27cfb2130ac40d3c0ae6db90b5eee55090af5d3117e"
+    },
+    {
+      "tick": 620,
+      "gas": "58337670399163",
+      "hash": "4466b77203a05f2cfb79e0a800cbd6d0aa91fc4aa728d726b469a463fc693dfe"
+    },
+    {
+      "tick": 640,
+      "gas": "58808695458145",
+      "hash": "9904d4ea1c2ab7b82eaf8397180ca7d149aec0c1c248b30c97119a8c09ad4117"
+    },
+    {
+      "tick": 660,
+      "gas": "57377541855907",
+      "hash": "29265b22e9e667da24ec097b2a30c2239a2933aa8b4c2500d33bd917382cac52"
+    },
+    {
+      "tick": 680,
+      "gas": "58178186920552",
+      "hash": "fd33ea186dc5fe93e41c8daec187d9274238e0d77b4e47148d3396852185f12d"
+    },
+    {
+      "tick": 700,
+      "gas": "57110747320147",
+      "hash": "5d5e691cdd70805f824fa92416220e78a981b7cc3b0042bdcb4eafb5363fcd95"
+    },
+    {
+      "tick": 720,
+      "gas": "57123758696101",
+      "hash": "31d1a128e916a777fad1d76844ceb2f583e6468f10949b697d3b6efd7a6a50ae"
+    },
+    {
+      "tick": 740,
+      "gas": "56903524575157",
+      "hash": "d22c269c4714f5e79ac2aae6d42bac168d9c6a45d38bf4d0c65ad8de9cc06e13"
+    },
+    {
+      "tick": 750,
+      "gas": "55673504380082",
+      "hash": "be185674e6830071e645c5463e4df5923764a46703877181731d16faa5f501c1"
+    }
+  ],
+  "score": {
+    "guests": 5770,
+    "finance": 496,
+    "variety": 1005,
+    "total": 7271,
+    "happy": 95,
+    "equity_gain": 29760,
+    "unique": 193,
+    "satisfaction": 9233
+  },
+  "leaderboard": {
+    "entries": [
+      {
+        "player_id": "opaque-alice",
+        "display_name": "Alice",
+        "run_id": "1",
+        "owner": "alice.sandbox",
+        "score": {
+          "guests": 5770,
+          "finance": 496,
+          "variety": 1005,
+          "total": 7271,
+          "happy": 95,
+          "equity_gain": 29760,
+          "unique": 193,
+          "satisfaction": 9233
+        },
+        "completed_at": "1794654763312690888",
+        "proof_hash": "be185674e6830071e645c5463e4df5923764a46703877181731d16faa5f501c1",
+        "revision": 39
+      }
+    ],
+    "challenge_id": "moonpark-v6",
+    "open": true
+  },
+  "ownershipProof": {
+    "published": {
+      "id": "1",
+      "owner": "alice.sandbox",
+      "operator": "alice.sandbox",
+      "pending_owner": null,
+      "name": "Earthrise Gardens",
+      "emblem": 1,
+      "revision": 1,
+      "run_id": "1",
+      "active_run": "1",
+      "blueprint_ids": [],
+      "rating_sum": 0,
+      "rating_count": 0,
+      "license_count": 0
+    },
+    "blueprint": {
+      "id": "1:3:1",
+      "park_id": "1",
+      "creator": "alice.sandbox",
+      "name": "Earthskimmer",
+      "kind": "coaster",
+      "variant": 0,
+      "launch": 2,
+      "design": {
+        "track": [],
+        "name": "Earthskimmer",
+        "palette": 3,
+        "style": 1,
+        "lights": 2,
+        "height": 1
+      },
+      "source_run": "1",
+      "source_building": 3,
+      "licenses": 0
+    },
+    "claimed": {
+      "id": "1",
+      "owner": "charlie.sandbox",
+      "operator": "alice.sandbox",
+      "pending_owner": null,
+      "name": "Earthrise Gardens",
+      "emblem": 1,
+      "revision": 4,
+      "run_id": "1",
+      "active_run": "1",
+      "blueprint_ids": [
+        "1:3:1"
+      ],
+      "rating_sum": 0,
+      "rating_count": 0,
+      "license_count": 0
+    },
+    "licensedBuilding": {
+      "id": 3,
+      "design": {
+        "track": [],
+        "name": "Earthskimmer",
+        "palette": 3,
+        "style": 1,
+        "lights": 2,
+        "height": 1
+      },
+      "blueprint_id": "1:3:1",
+      "height_paid": 1,
+      "design_paid": 0,
+      "design_revision": 0,
+      "kind": "coaster",
+      "x": 3,
+      "z": 8,
+      "rotation": 0,
+      "variant": 0,
+      "price": 1000,
+      "invested": 120000,
+      "level": 0,
+      "launch": 2,
+      "enabled": true,
+      "sold": false,
+      "ready_at": 15,
+      "connected": false,
+      "powered": false,
+      "condition": 100,
+      "queue": [],
+      "riders": [],
+      "cycle_left": 0,
+      "served": 0,
+      "revenue": 0,
+      "cash": 0,
+      "stock": 0,
+      "rent": 10,
+      "delivery_qty": 0,
+      "delivery_at": 0,
+      "recent": 0,
+      "reason": "Waiting for the first customers.",
+      "insolvent": false
+    },
+    "creatorEarnings": {
+      "available": "4500000000000000000000",
+      "pending": "0",
+      "paid": "0"
+    },
+    "privateCallbackRejected": true,
+    "duplicateLicenseRefunded": true,
+    "collectedPrize": {
+      "account_id": "alice.sandbox",
+      "allocated_yocto": "500000000000000000000000",
+      "claimable_yocto": "0",
+      "paid_yocto": "500000000000000000000000",
+      "pending_yocto": "0",
+      "tier": "track",
+      "currency": "testnet NEAR"
+    }
+  },
+  "economyProof": {
+    "run_id": "1",
+    "revision": 39,
+    "tick": 750,
+    "policy_id": "moonpark-v6-persistent-vendors-1",
+    "token_ids": [
+      "1:credits",
+      "1:food",
+      "1:drink",
+      "1:parts"
+    ],
+    "supplies": [
+      "11491200",
+      "1952",
+      "1943",
+      "2046"
+    ],
+    "locked": true,
+    "cash_value": false,
+    "wallets": [
+      {
+        "role": "park",
+        "account_id": "alice.sandbox",
+        "balances": [
+          "42270",
+          "0",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "role": "passengers",
+        "account_id": "moon.sandbox",
+        "balances": [
+          "84500",
+          "0",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "role": "omar",
+        "account_id": "omar.sandbox",
+        "balances": [
+          "30530",
+          "12",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "role": "mina",
+        "account_id": "mina.sandbox",
+        "balances": [
+          "34950",
+          "0",
+          "15",
+          "0"
+        ]
+      },
+      {
+        "role": "logistics",
+        "account_id": "logistics.sandbox",
+        "balances": [
+          "11298950",
+          "1940",
+          "1928",
+          "2046"
+        ]
+      }
+    ]
+  },
+  "transferProof": {
+    "ongoingSettlement": true,
+    "touristIssuanceVerified": true,
+    "scoreSealed": true,
+    "publishedSnapshotImmutable": true,
+    "operatingAssetsLocked": true
+  }
+}

@@ -10,7 +10,7 @@ import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { createHash, randomBytes } from "node:crypto";
 import assert from "node:assert/strict";
 await mkdir(".near-local", { recursive: true });
-const keyPath = ".near-local/moon-v5-deployer.json";
+const keyPath = ".near-local/moon-v6-deployer.json";
 let key;
 try {
   key = JSON.parse(await readFile(keyPath, "utf8"));
@@ -61,6 +61,53 @@ try {
   if (!/does not exist|UNKNOWN_ACCOUNT|not found/i.test(String(e))) throw e;
 }
 if (!exists) {
+  // The official faucet supplies 10 tNEAR per account. Contract code storage
+  // consumes most of that allocation, so a dedicated faucet-funded treasury
+  // supplies deployment fees and the first sponsored play sessions.
+  const balance = await sponsor.getState();
+  if (balance.balance.available < 11500000000000000000000000n) {
+    const treasuryPath = ".near-local/moon-v6-faucet-treasury.json";
+    let treasuryKey;
+    try {
+      treasuryKey = JSON.parse(await readFile(treasuryPath, "utf8"));
+    } catch {
+      const treasuryPair = KeyPair.fromRandom("ed25519");
+      treasuryKey = {
+        accountId: `moonpark-fund-${Date.now().toString(36)}.testnet`,
+        secretKey: treasuryPair.toString(),
+      };
+      await writeFile(treasuryPath, JSON.stringify(treasuryKey), {
+        mode: 0o600,
+      });
+    }
+    const treasuryPair = KeyPair.fromString(treasuryKey.secretKey);
+    const treasury = new Account(
+      treasuryKey.accountId,
+      provider,
+      new KeyPairSigner(treasuryPair),
+    );
+    try {
+      await treasury.getState();
+    } catch (error) {
+      if (!/does not exist|UNKNOWN_ACCOUNT|not found/i.test(String(error)))
+        throw error;
+      const response = await fetch("https://helper.nearprotocol.com/account", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          newAccountId: treasuryKey.accountId,
+          newAccountPublicKey: treasuryPair.getPublicKey().toString(),
+        }),
+      });
+      if (!response.ok)
+        throw Error(`Testnet treasury faucet returned ${response.status}`);
+    }
+    await treasury.signAndSendTransaction({
+      receiverId: key.accountId,
+      actions: [actions.transfer(9000000000000000000000000n)],
+      waitUntil: "FINAL",
+    });
+  }
   await sponsor.signAndSendTransaction({
     receiverId: contractId,
     actions: [
@@ -175,7 +222,7 @@ let challenge = await provider.callFunction({
   method: "get_challenge",
   args: {},
 });
-assert.equal(challenge.id, "moonpark-v5");
+assert.equal(challenge.id, "moonpark-v6");
 if (process.argv.includes("--open") && !challenge.open) {
   await call("open_challenge");
   challenge = await provider.callFunction({
@@ -228,7 +275,7 @@ await writeFile(
   "public/moon-build.json",
   JSON.stringify(
     {
-      version: "moonpark-v5",
+      version: "moonpark-v6",
       contractSha256: createHash("sha256").update(code).digest("hex"),
       engineSha256: createHash("sha256")
         .update(await readFile("public/engine/moon.wasm"))

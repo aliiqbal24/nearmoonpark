@@ -3463,17 +3463,58 @@ button.mp-chain .mp-near-mark svg {
   display: none;
 }
 
-
-.mp-vendor-wallets { margin: 16px 0; padding: 14px; border: 1px solid #45756e33; border-radius: 14px; background: #70d5bd0c; }
-.mp-vendor-wallets summary { display: flex; gap: 9px; align-items: center; cursor: pointer; font-weight: 700; }
-.mp-vendor-wallets summary .mp-near-mark, .mp-vendor-link .mp-near-mark { width: 18px; }
-.mp-vendor-wallets summary .mp-near-mark svg, .mp-vendor-link .mp-near-mark svg { width: 16px; height: 16px; }
-.mp-wallet-list { display: grid; gap: 12px; margin: 14px 0; }
-.mp-wallet-list > div { display: grid; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid #45756e22; }
-.mp-wallet-list a, .mp-vendor-link { display: flex; align-items: center; gap: 6px; font-size: 12px; overflow-wrap: anywhere; }
-.mp-wallet-list strong { font-size: 14px; }
-.mp-wallet-list small { font-size: 11px; opacity: .75; }
-.mp-vendor-link { margin: 12px 0; }
+.mp-vendor-wallets {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #45756e33;
+  border-radius: 14px;
+  background: #70d5bd0c;
+}
+.mp-vendor-wallets summary {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+}
+.mp-vendor-wallets summary .mp-near-mark,
+.mp-vendor-link .mp-near-mark {
+  width: 18px;
+}
+.mp-vendor-wallets summary .mp-near-mark svg,
+.mp-vendor-link .mp-near-mark svg {
+  width: 16px;
+  height: 16px;
+}
+.mp-wallet-list {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0;
+}
+.mp-wallet-list > div {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #45756e22;
+}
+.mp-wallet-list a,
+.mp-vendor-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.mp-wallet-list strong {
+  font-size: 14px;
+}
+.mp-wallet-list small {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.mp-vendor-link {
+  margin: 12px 0;
+}
 
 .mp-design-families {
   display: grid;
@@ -3583,4 +3624,171 @@ button.mp-chain .mp-near-mark svg {
     font-size: 5px;
     letter-spacing: 0.5px;
   }
+}
+
+.mp-coaster-editor {
+  position: absolute;
+  z-index: 35;
+  right: 24px;
+  top: 120px;
+  bottom: 24px;
+  width: 340px;
+  padding: 24px;
+  overflow-y: auto;
+  background: linear-gradient(145deg, #162b30f5, #0c151ef5);
+  border: 1px solid #b9d8cd44;
+  border-radius: 22px;
+  box-shadow: 0 20px 80px #0008;
+  color: #f3efdf;
+  backdrop-filter: blur(22px);
+}
+.mp-coaster-editor header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mp-coaster-editor header button {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.mp-coaster-editor h2 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 27px;
+  margin: 20px 0 10px;
+}
+.mp-coaster-editor p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #b8c9c6;
+}
+.mp-coaster-editor svg[role="group"] {
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  user-select: none;
+  margin: 8px 0;
+}
+.mp-coaster-editor circle[role="button"] {
+  cursor: grab;
+  outline: none;
+}
+.mp-coaster-editor circle:focus {
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+.mp-coaster-editor label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.mp-coaster-editor label strong {
+  margin-left: auto;
+  font-size: 18px;
+  color: #ffe3a5;
+}
+.mp-coaster-editor input[type="range"] {
+  width: 100%;
+  accent-color: #7fdbcb;
+  margin: 18px 0;
+}
+.mp-track-summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid #ffffff18;
+  margin-bottom: 12px;
+}
+.mp-track-summary span {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 11px;
+  color: #b8c9c6;
+}
+.mp-track-summary strong {
+  font-size: 13px;
+  color: #f3efdf;
+}
+.mp-coaster-editor .full {
+  margin-bottom: 9px;
+}
+@media (max-width: 700px) {
+  .mp-coaster-editor {
+    right: 12px;
+    top: 100px;
+    bottom: 12px;
+    width: min(340px, calc(100vw - 24px));
+    padding: 18px;
+  }
+  .mp-coaster-editor svg[role="group"] {
+    max-height: 230px;
+  }
+}
+
+.mp-intro-captions.film-subtitles {
+  bottom: 110px;
+  animation: none;
+  pointer-events: none;
+}
+.mp-intro-captions.film-subtitles h1 {
+  display: none;
+}
+.mp-intro-captions.film-subtitles .mp-eyebrow {
+  display: block;
+  position: fixed;
+  top: 38px;
+  left: 35px;
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+.mp-intro-captions.film-subtitles p:not(:empty) {
+  display: inline-block;
+  padding: 10px 17px;
+  border-radius: 7px;
+  background: #07121ac9;
+  font-size: clamp(15px, 1.5vw, 22px);
+  color: #fff4db;
+  line-height: 1.45;
+  max-width: 720px;
+}
+.mp-intro-captions.film-subtitles.is-finale .mp-eyebrow {
+  display: none;
+}
+@media (max-width: 800px) {
+  .mp-intro-captions.film-subtitles {
+    bottom: 120px;
+    left: 7%;
+    right: 7%;
+  }
+  .mp-intro-captions.film-subtitles .mp-eyebrow {
+    top: 27px;
+    left: 20px;
+    font-size: 8px;
+    max-width: 220px;
+  }
+  .mp-intro-captions.film-subtitles p:not(:empty) {
+    font-size: 17px;
+    padding: 9px 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mp-intro-captions.film-subtitles h1 {
+    display: block;
+  }
+}
+
+.mp-intro.with-film {
+  background: transparent;
+}
+
+.mp-ride-preview {
+  width: 100%;
+  height: 130px;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 65%, #35574f, #10242d 75%);
 }

@@ -1,32 +1,41 @@
 {
-  "version": 6,
+  "version": 7,
   "duration": 40,
-  "fps": 30,
-  "frames": 1200,
+  "fps": 60,
+  "frames": 2400,
   "narration": {
     "model": "Kokoro 82M v1.0",
-    "voice": "bm_george",
-    "license": "Apache-2.0",
-    "source": "https://huggingface.co/hexgrad/Kokoro-82M"
+    "voices": [
+      "bm_fable",
+      "am_michael"
+    ],
+    "license": "Apache-2.0"
   },
-  "score": "Original Moonpark score and synthesized effects",
+  "music": {
+    "title": "Helios",
+    "artist": "Scott Buckley",
+    "source": "https://www.scottbuckley.com.au/library/helios/",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "edit": "40-second excerpt beginning at 03:23, with dynamic ducking and synchronized original sound effects"
+  },
+  "effects": "Original layered stereo sound design",
   "cameraSource": "lib/moon/cinema.ts",
   "sceneSource": "lib/moon/world.ts",
-  "brandSource": "public/art/near-protocol-film-v1.svg",
   "variants": [
     {
-      "file": "/video/moonpark-opening-v6.mp4",
+      "file": "/video/moonpark-opening-v7.mp4",
       "width": 1920,
       "height": 1080,
-      "bytes": 16101021,
-      "sha256": "02c54679f5754f6e52ce2c48a731014ce1ec3b593b0c1b6a3e2169766e1fed87"
+      "bytes": 30377719,
+      "sha256": "ddc81d9d03a35576e79412bb814786ea0cd09e00a5072769379e63957d470ded"
     },
     {
-      "file": "/video/moonpark-opening-v6-mobile.mp4",
+      "file": "/video/moonpark-opening-v7-mobile.mp4",
       "width": 720,
       "height": 1280,
-      "bytes": 8513200,
-      "sha256": "e1283c8371203969467a49175333943b256e504a5a505399202a3a4ef7664598"
+      "bytes": 12972826,
+      "sha256": "3e55383c1af1682971e407de3083532254a6a0c392c2bf4a9e5cb240a5f28fc6"
     }
   ]
 }

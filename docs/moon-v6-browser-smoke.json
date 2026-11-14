@@ -1,0 +1,32 @@
+{
+  "owner": "m10f41c29b8eb71c9b69b.moonpark-mwgb9j6a.testnet",
+  "parkId": "4",
+  "runId": "4",
+  "score": {
+    "guests": 803,
+    "finance": 0,
+    "variety": 72,
+    "total": 875,
+    "happy": 14,
+    "equity_gain": -36112,
+    "unique": 14,
+    "satisfaction": 1286
+  },
+  "txs": [
+    "AP3Sf5ZTE2Bwk4APfQ1iPuSPZJNX7Th7wEhrm7iiwD8u",
+    "C1ZceXvDG7mCh9sTR2iuvFkBDVrq9m9sTR3r7XUZ6tve",
+    "8S1kThdxstGuYQbLTLLC1yXtSCSntaeJa42ESZZjdGgV",
+    "CiEiXFUdY9FMGNoYdNNiDWLuek5JA6JgB1h95D2HpuXn",
+    "2m4ysg7JvNjKYugGCzg2E7tD5jTf5621F3XBUcCD7HYf",
+    "9K97wUFZxk6xAAx5FGDJwyxV8EfD1G3frAKXR8TjNpoT",
+    "CvpcRU3BvWum3u1S3tWDKCBnPipGWHkjpfiVQhDteukq",
+    "4C58UQx3tG4bfrbmHrTCNUNXmSD2JNpD8KR635e3Bojj",
+    "23JP4YrpBZhXEkN3AYcVXYFy9HxFvUrA81YqnttefS56",
+    "Gjd8zGfhSWurFJoViFMzBMem1cGrFhZUj1kv51uosgMn",
+    "3oVHx1J9vKqm5h3ShyKxi5JiSAcqeFb2BwcPdeZsVYcc",
+    "EACmHb7x3HYdf43F3f1dsNGzQEo3RqYZd3vFYpSxhR7v",
+    "9aNbF2Ui8PBwupUqAxsnT6Vnuo5qjeVoRz5Xy5V5nCVM",
+    "Fxa2C3ZwNfD8zfr3iKbx6JtN2Ys6XnyqTosrexbugz5X"
+  ],
+  "hash": "ac08c407b05d2293f8d7676bdfc2ce11eee225f155422c8420835471517deef8"
+}

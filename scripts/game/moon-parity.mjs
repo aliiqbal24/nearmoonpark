@@ -40,7 +40,7 @@ for (const strategy of ["idle", "coaster", "balanced", "family", "gold"]) {
     );
   }
   assert.equal(run.finished, true);
-  assert.equal(run.tick, 550);
+  assert.ok(run.opening_ended_at > 451);
   assert.ok(run.score.total <= 10000);
   assert.ok(maxActive <= 48);
   if (strategy === "gold") assert.ok(run.score.total >= 7000);

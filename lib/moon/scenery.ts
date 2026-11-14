@@ -30,7 +30,13 @@ import {
   marquee,
 } from "./resort-props";
 export { lunarTerrain } from "./terrain";
-import { WIDTH, HEIGHT, footprint, type Run } from "./model";
+import {
+  parkWidth,
+  parkHeight,
+  parkOriginZ,
+  footprint,
+  type Run,
+} from "./model";
 
 export function walkwayMaterial() {
   const canvas = document.createElement("canvas");
@@ -235,6 +241,28 @@ export function spaceport(scene: T.Scene) {
   for (const side of [-1, 1]) {
     const wing = new T.Group();
     wing.position.set(side * 6.3, 0, 16.95);
+    const canopy = new T.Mesh(
+      new T.CylinderGeometry(1.87, 1.87, 6.5, 48, 1, true, 0, Math.PI),
+      surface("#e1e6df"),
+    );
+    canopy.rotation.z = Math.PI / 2;
+    canopy.position.y = 3.07;
+    canopy.castShadow = canopy.receiveShadow = true;
+    wing.add(canopy);
+    for (const x of [-3.25, -1.62, 0, 1.62, 3.25]) {
+      const rib = new T.Mesh(
+        new T.TorusGeometry(1.91, 0.035, 8, 48, Math.PI),
+        metal("#bd9e6a"),
+      );
+      rib.rotation.y = Math.PI / 2;
+      rib.position.set(x, 3.07, 0);
+      wing.add(rib);
+    }
+    for (const z of [-1.91, 1.91]) {
+      box(wing, "#b7ecda", 0, 3.07, z, 6.45, 0.035, 0.035).material =
+        glow("#b7ecda");
+    }
+
     shapedBox(wing, "#1a2a35", 0, 0.38, 0, 5.8, 0.45, 3.3, 0.1);
     shapedBox(wing, "#405763", 0, 1.75, -1.25, 5.6, 2.5, 0.65, 0.13);
     shapedBox(wing, "#b5c3c9", 0, 3.05, 0, 6.08, 0.22, 3.65, 0.12).material =
@@ -426,6 +454,9 @@ export function observatory(scene: T.Scene) {
 
 /** Decorative amenities follow the existing path and leave build cells usable. */
 export function pathAmenities(run: Run) {
+  const WIDTH = parkWidth(run),
+    HEIGHT = parkHeight(run),
+    originZ = parkOriginZ(run);
   const g = new T.Group(),
     paths = new Set(run.paths);
   const occupied = (cell: number) =>
@@ -451,11 +482,12 @@ export function pathAmenities(run: Run) {
       )
         continue;
       const px = (x + 0.5 - WIDTH / 2) * SCALE,
-        pz = (z + side + 0.5 - HEIGHT / 2) * SCALE;
+        pz = (z + side + 0.5 - originZ) * SCALE;
       if (i % 18 === 0) {
         const bench = resortBench(g, px, pz, side > 0 ? 0 : Math.PI);
         bench.scale.setScalar(0.65);
-      } else pressureGarden(g, px, pz, 0.34, 0.5);
+      } else pressureGarden(g, px, pz, 0.44, 0.8);
+      if (i % 12 === 0) lantern(g, px + 0.32, pz + 0.25, 1.45);
       used.add(neighbor);
       break;
     }

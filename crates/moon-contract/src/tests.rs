@@ -13,7 +13,7 @@ fn new_contract() -> Moonpark {
     let mut contract = Moonpark::new("sponsor.testnet".parse().unwrap());
     for name in economy::VENDORS {
         context(&format!("{name}.sponsor.testnet"), time);
-        contract.accept_vendor_policy("moonpark-v5-fixed-vendors-1".into());
+        contract.accept_vendor_policy("moonpark-v6-persistent-vendors-1".into());
     }
     context(&caller, time);
     contract
@@ -32,7 +32,10 @@ fn economy_fixture() -> Moonpark {
     c
 }
 fn finish_economy(c: &mut Moonpark) {
-    for n in 0..55 {
+    for n in 0..90 {
+        if c.get_run("1".into())["run"]["finished"] == true {
+            break;
+        }
         context("alice.testnet", (n + 1) * 10_000_000_000);
         c.apply_actions("1".into(), n as u32, format!("tick-{n}"), vec![], 10);
         let state = c.get_run_economy("1".into());
@@ -84,7 +87,7 @@ fn vendor_tokens_clear_atomically_conserve_supply_and_isolate_rounds() {
     );
     finish_economy(&mut c);
     let closing = c.get_run_economy("1".into());
-    assert_eq!(closing["locked"], false);
+    assert_eq!(closing["locked"], true);
     assert!(
         closing["supplies"][1]
             .as_str()
@@ -98,14 +101,14 @@ fn vendor_tokens_clear_atomically_conserve_supply_and_isolate_rounds() {
     assert_eq!(
         c.mt_balance_of("omar.sponsor.testnet".parse().unwrap(), "2:food".into())
             .0,
-        12
+        0
     );
 }
 #[test]
 #[should_panic(expected = "Vendor account only")]
 fn a_player_cannot_authorize_a_vendor_wallet() {
     let mut c = economy_fixture();
-    c.accept_vendor_policy("moonpark-v5-fixed-vendors-1".into());
+    c.accept_vendor_policy("moonpark-v6-persistent-vendors-1".into());
 }
 #[test]
 #[should_panic(expected = "Vendor policy is awaiting")]
@@ -121,7 +124,7 @@ fn opening_requires_vendor_signatures() {
     c.create_run(VERSION.into(), "unsigned".into(), None);
 }
 #[test]
-#[should_panic(expected = "committed to the game")]
+#[should_panic(expected = "Park assets are committed")]
 fn active_game_assets_cannot_be_moved_out_of_the_economy() {
     let mut c = economy_fixture();
     asset_context("alice.testnet", 1);
@@ -134,7 +137,8 @@ fn active_game_assets_cannot_be_moved_out_of_the_economy() {
     );
 }
 #[test]
-fn closing_day_assets_transfer_and_cosmetics_preserve_the_new_owner_balance() {
+#[should_panic(expected = "Park assets are committed")]
+fn operating_assets_remain_committed_after_opening_score() {
     let mut c = economy_fixture();
     finish_economy(&mut c);
     let alice: AccountId = "alice.testnet".parse().unwrap();
@@ -163,7 +167,8 @@ fn closing_day_assets_transfer_and_cosmetics_preserve_the_new_owner_balance() {
     assert_eq!(c.mt_balance_of(alice, "1:credits".into()).0, before - 100);
 }
 #[test]
-fn transfer_call_refunds_invalid_receiver_results_without_changing_supply() {
+#[should_panic(expected = "Park assets are committed")]
+fn operating_transfer_calls_cannot_bypass_the_vendor_policy() {
     let mut c = economy_fixture();
     finish_economy(&mut c);
     let alice: AccountId = "alice.testnet".parse().unwrap();
@@ -213,6 +218,8 @@ fn best_scores_and_prize_snapshot() {
     let mut c = new_contract();
     for n in 0..8 {
         let e = Entry {
+            proof_hash: String::new(),
+            revision: 0,
             player_id: format!("p{n}"),
             display_name: format!("Player {n}"),
             run_id: format!("r{n}"),
@@ -268,8 +275,7 @@ fn rejects_stale_revision() {
     );
 }
 #[test]
-#[should_panic(expected = "Opening day time limit reached")]
-fn rejects_late_actions() {
+fn construction_continues_after_the_old_deadline() {
     context("sponsor.testnet", 1);
     let mut c = new_contract();
     c.register_player("alice.testnet".parse().unwrap(), "p".into(), "Alice".into());
@@ -480,6 +486,8 @@ fn prize_fixture() -> Moonpark {
     for n in 0..5 {
         c.record_score(
             Entry {
+                proof_hash: String::new(),
+                revision: 0,
                 player_id: format!("p{n}"),
                 display_name: format!("Player {n}"),
                 run_id: format!("r{n}"),
@@ -630,7 +638,7 @@ fn license_is_deposit_backed_idempotent_and_pays_current_creator_owner() {
     context("bob.testnet", 1);
     c.create_run(VERSION.into(), "bob".into(), None);
     deposit("bob.testnet", parks::LICENSE_FEE, 1);
-    c.license_blueprint("2".into(), "1:1".into());
+    c.license_blueprint("2".into(), "1:1:0".into());
     let amount = parks::LICENSE_FEE * 90 / 100;
     assert_eq!(c.creator_obligations, amount);
     assert_eq!(
@@ -640,11 +648,11 @@ fn license_is_deposit_backed_idempotent_and_pays_current_creator_owner() {
             .available,
         amount
     );
-    c.license_blueprint("2".into(), "1:1".into());
+    c.license_blueprint("2".into(), "1:1:0".into());
     assert_eq!(c.creator_obligations, amount);
-    assert_eq!(c.get_blueprint("1:1".into()).unwrap().licenses, 1);
-    assert!(c.has_license("2".into(), "1:1".into()));
-    let bp = c.get_blueprint("1:1".into()).unwrap();
+    assert_eq!(c.get_blueprint("1:1:0".into()).unwrap().licenses, 1);
+    assert!(c.has_license("2".into(), "1:1:0".into()));
+    let bp = c.get_blueprint("1:1:0".into()).unwrap();
     c.validate_licenses(
         &"bob.testnet".parse().unwrap(),
         &[Command {
@@ -681,7 +689,7 @@ fn license_provenance_cannot_be_forged() {
     let mut c = park_fixture();
     context("bob.testnet", 1);
     c.create_run(VERSION.into(), "bob".into(), None);
-    let bp = c.get_blueprint("1:1".into()).unwrap();
+    let bp = c.get_blueprint("1:1:0".into()).unwrap();
     c.validate_licenses(
         &"bob.testnet".parse().unwrap(),
         &[Command {
@@ -733,8 +741,7 @@ fn reviews_are_once_per_park_and_can_be_updated() {
 }
 
 #[test]
-#[should_panic(expected = "Opening day time limit reached")]
-fn deadline_rejects_height_changes_even_before_passive_closing() {
+fn track_construction_continues_after_the_old_deadline() {
     context("sponsor.testnet", 1);
     let mut c = new_contract();
     c.register_player(
@@ -829,4 +836,64 @@ fn public_park_pages_count_published_parks_when_paging() {
     let listed = c.list_parks(None, Some(1));
     assert_eq!(listed.len(), 1);
     assert_eq!(listed[0].id, "2");
+}
+
+#[test]
+fn published_revisions_and_opening_scores_survive_continued_play() {
+    let mut c = economy_fixture();
+    finish_economy(&mut c);
+    let record = c.get_run("1".into());
+    let original_score = record["run"]["score"].clone();
+    let park = c.get_park("1".into()).unwrap();
+    c.save_park(
+        "1".into(),
+        park.revision,
+        "Permanent Park".into(),
+        0,
+        Some("1".into()),
+    );
+    let snapshot = c.get_park_snapshot("1".into()).unwrap();
+    let mut revision = record["run"]["revision"].as_u64().unwrap() as u32;
+    for n in 0..10 {
+        context("alice.testnet", 1_000_000_000_000 + n * 20_000_000_000);
+        c.apply_actions("1".into(), revision, format!("returning-{n}"), vec![], 20);
+        revision += 1;
+    }
+    let later = c.get_run("1".into());
+    assert_eq!(later["run"]["score"], original_score);
+    assert!(later["run"]["money_supply"].as_i64().unwrap() > snapshot.money_supply);
+    assert_eq!(c.get_park_snapshot("1".into()).unwrap().hash, snapshot.hash);
+    assert_eq!(
+        c.get_run_economy("1".into())["supplies"][0],
+        later["run"]["money_supply"].as_i64().unwrap().to_string()
+    );
+    assert_eq!(
+        c.create_run(VERSION.into(), "return-to-my-park".into(), None),
+        later
+    );
+}
+
+#[test]
+fn authorized_operator_handoff_preserves_the_live_economy() {
+    let mut c = economy_fixture();
+    context("sponsor.testnet", 20_000_000_000);
+    c.register_player(
+        "bob.testnet".parse().unwrap(),
+        "guest:bob".into(),
+        "Bob".into(),
+    );
+    context("alice.testnet", 20_000_000_000);
+    c.apply_actions("1".into(), 0, "before-handoff".into(), vec![], 20);
+    let original = c.get_run_economy("1".into());
+    c.rotate_park_operator("1".into(), "bob.testnet".parse().unwrap());
+    assert_eq!(c.get_run("1".into())["owner"], "bob.testnet");
+    let moved = c.get_run_economy("1".into());
+    assert_eq!(
+        moved["wallets"][0]["balances"],
+        original["wallets"][0]["balances"]
+    );
+    assert_eq!(moved["wallets"][0]["account_id"], "bob.testnet");
+    context("bob.testnet", 40_000_000_000);
+    c.apply_actions("1".into(), 1, "after-handoff".into(), vec![], 20);
+    assert_eq!(c.get_run("1".into())["run"]["tick"], 40);
 }

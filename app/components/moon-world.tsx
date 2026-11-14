@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MoonWorld as World } from "@/lib/moon/world";
 import type { Run, Placement, Detail } from "@/lib/moon/model";
 type Props = {
   identity?: { name: string; emblem: number };
+  onReady?: () => void;
   run: Run | null;
   speed: number;
   placement: Placement | null;
@@ -34,7 +35,7 @@ export default function MoonWorld(props: Props) {
           onPick: (d) => latest.current.onPick(d),
           onHover: (d) => latest.current.onHover(d),
           onPlace: (x, z) => latest.current.onPlace(x, z),
-          onReady: () => {},
+          onReady: () => latest.current.onReady?.(),
         });
         latest.current.worldRef.current = world;
         const p = latest.current;
@@ -66,7 +67,7 @@ export default function MoonWorld(props: Props) {
       latest.current.worldRef.current = null;
     };
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.run)
       props.worldRef.current?.update(
         props.run,

@@ -1,3 +1,4 @@
+import Link from "next/link";
 export default function Terms() {
   return (
     <main
@@ -21,7 +22,7 @@ export default function Terms() {
         US$1,500, US$1,000 and US$500 instead. The larger pool replaces the
         smaller. No qualifying win means no USD payout. The USD pledge is not
         currently funded or escrowed. A separate funded testnet escrow
-        demonstrates the contract's ranking and payout mechanism; testnet tokens
+        demonstrates the contract’s ranking and payout mechanism; testnet tokens
         have no cash value and do not fund this USD pledge.
       </p>
       <p>
@@ -45,7 +46,7 @@ export default function Terms() {
         This release uses NEAR testnet. Signed-in runs become provisionally
         eligible after the published challenge opens. The immutable economy
         contract has no access keys or upgrade method. Its testnet prize pool is
-        allocated after the cutoff and the creator's qualifying-award
+        allocated after the cutoff and the creator’s qualifying-award
         attestation, in frozen rank order with weights 40/30/20/10. If fewer
         than four accounts qualify, those weights are normalized among them.
         Claims pay only the allocated winner account and cannot be redirected by
@@ -53,7 +54,14 @@ export default function Terms() {
         eligibility review and mainnet payment described above.
       </p>
       <p>
-        Parks are recorded on the current Moonpark v5 NEAR testnet contract. A
+        The first 12 inbound rockets carry 96 opening visitors with fixed,
+        finite budgets. Their completed visits seal the competitive score.
+        Regular visitors then keep paying, funding continued construction while
+        the opening score stays sealed. Published park revisions are snapshots.
+        Owners can publish newer revisions as their parks grow.
+      </p>
+      <p>
+        Parks are recorded on the current Moonpark v6 NEAR testnet contract. A
         generated game account initially owns its park. Claiming requires the
         nominated wallet account to sign acceptance onchain. The authorized game
         account may update the park, publish designs and rotate its sponsored
@@ -65,12 +73,13 @@ export default function Terms() {
         stay with their recipient when park ownership changes. These testnet
         tokens have no cash value. Earlier v3 concession ownership and funded
         claims remain accessible through the earlier-claims page. At the v4
-        transition, the v3 eligible prize board was empty. Earlier v4 parks,
-        licenses and earnings remain accessible through the earlier-parks desk.
-        Saved unfinished v4 rounds use their original engine and contract. The
-        current giveaway uses the separate v5 challenge and its published rules.
+        transition, the v3 eligible prize board was empty. Earlier v4 and v5
+        parks, licenses and earnings remain accessible through the earlier-parks
+        desk. Saved unfinished v4 and v5 rounds use their original engine and
+        contract. The current giveaway uses the separate v6 challenge and its
+        published rules.
       </p>
-      <a href="/">Return to Moonpark</a>
+      <Link href="/">Return to Moonpark</Link>
     </main>
   );
 }

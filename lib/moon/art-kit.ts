@@ -50,7 +50,7 @@ export function surface(color: string | number, finish: Finish = "paint") {
   if (!result) {
     const properties = {
       color,
-      roughness: { paint: 0.43, metal: 0.27, cloth: 0.88, stone: 0.94 }[finish],
+      roughness: { paint: 0.34, metal: 0.23, cloth: 0.88, stone: 0.94 }[finish],
       metalness: finish === "metal" ? 0.9 : finish === "paint" ? 0.18 : 0,
       bumpMap: compactArt ? null : finishMap(finish),
       bumpScale:
@@ -60,7 +60,7 @@ export function surface(color: string | number, finish: Finish = "paint") {
       ? new T.MeshStandardMaterial(properties)
       : new T.MeshPhysicalMaterial({
           ...properties,
-          clearcoat: finish === "paint" ? 0.25 : finish === "metal" ? 0.1 : 0,
+          clearcoat: finish === "paint" ? 0.42 : finish === "metal" ? 0.1 : 0,
           clearcoatRoughness: 0.32,
         });
     result.userData.finish = finish;

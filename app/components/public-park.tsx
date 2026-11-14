@@ -14,6 +14,8 @@ import {
 import { type Config } from "@/lib/moon/near";
 import {
   entrance,
+  parkWidth,
+  parkGate,
   walkingRoute,
   isRide,
   type Detail,
@@ -45,9 +47,9 @@ function visitorPreview(source: Run) {
     const b = rides[g.id % rides.length],
       e = entrance(b);
     g.status = "walking";
-    g.cell = 23 * 32 + 15;
+    g.cell = parkGate(run);
     g.target = b.id;
-    g.route = walkingRoute(run, g.cell, e.z * 32 + e.x);
+    g.route = walkingRoute(run, g.cell, e.z * parkWidth(run) + e.x);
     g.thought = "I came to see this park's signature rides.";
   }
   return run;
@@ -57,7 +59,7 @@ export default function PublicPark({
   version,
 }: {
   accountId: string;
-  version?: "v4" | "v5";
+  version?: "v4" | "v5" | "v6";
 }) {
   const [data, setData] = useState<{
       cfg: Config;
@@ -148,7 +150,11 @@ export default function PublicPark({
       {data?.record && (
         <>
           <aside className="mp-visit-card">
-            <span className="mp-eyebrow">VERIFIED OPENING DAY</span>
+            <span className="mp-eyebrow">
+              {data.record.run.finished
+                ? "SEALED OPENING SCORE"
+                : "PUBLISHED PARK REVISION"}
+            </span>
             <strong>
               {data.record.run.score.total.toLocaleString()} points
             </strong>
@@ -240,7 +246,7 @@ export default function PublicPark({
             </a>
             <p className="mp-fine">
               Explore the published layout with ambient visitors. Scores and
-              finances come from its verified closing record.
+              finances come from its published, verified park revision.
             </p>
           </aside>
           {!selection && !ride && (

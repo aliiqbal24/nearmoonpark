@@ -31,9 +31,9 @@ function noise(x: number, z: number) {
 }
 
 const CRATERS = [
-  [-48, -39, 24, 7],
-  [39, -48, 27, 8],
-  [-7, -100, 43, 12],
+  [-62, -49, 24, 7],
+  [58, -68, 27, 8],
+  [-7, -120, 43, 12],
   [58, 35, 22, 5],
   [-59, 35, 27, 7],
   [-114, -13, 37, 10],
@@ -41,14 +41,14 @@ const CRATERS = [
   [-95, -142, 65, 19],
   [25, -260, 105, 23],
   [-32, 13, 4.8, 1.4],
-  [28, -25, 5.4, 1.7],
-  [14, -31, 3.2, 0.9],
-  [-25, -24, 2.8, 0.7],
+  [39, -35, 5.4, 1.7],
+  [14, -55, 3.2, 0.9],
+  [-39, -24, 2.8, 0.7],
   [30, 26, 3.8, 1.1],
 ];
 
 export function lunarHeight(x: number, z: number) {
-  const clearance = Math.max(Math.abs(x) - 22, -18 - z, z - 30, 0);
+  const clearance = Math.max(Math.abs(x) - 32, -48 - z, z - 30, 0);
   const edge = T.MathUtils.smoothstep(clearance, 0, 8);
   let height = 0;
   let amplitude = 1;
@@ -104,7 +104,7 @@ export function lunarTerrain(scene: T.Scene, compact = false) {
     texture.anisotropy = 8;
   }
   const material = new T.MeshStandardMaterial({
-    color: "#adb3bc",
+    color: "#abc5ec",
     map: colorMap,
     normalMap,
     roughnessMap,
@@ -200,11 +200,11 @@ export function lunarTerrain(scene: T.Scene, compact = false) {
           [-27, 10, 9],
           [-30, 13, 14],
           [-25, 15, 5],
-          [29, -25, 12],
-          [32, -28, 7],
-          [26, -28, 5],
-          [-30, -24, 10],
-          [-34, -27, 17],
+          [39, -25, 12],
+          [42, -28, 7],
+          [36, -28, 5],
+          [-40, -24, 10],
+          [-44, -27, 17],
           [34, 24, 11],
           [30, 27, 5],
           [-36, 30, 16],
@@ -249,7 +249,7 @@ export function lunarTerrain(scene: T.Scene, compact = false) {
   const deck = new T.Group();
   const width = WIDTH * 1.25,
     depth = HEIGHT * 1.25;
-  const plotGeometry = new T.PlaneGeometry(width + 0.2, depth + 0.2, 32, 32);
+  const plotGeometry = new T.PlaneGeometry(width + 0.2, depth + 0.2, 64, 64);
   const plotUv = plotGeometry.attributes.uv;
   for (let i = 0; i < plotUv.count; i++) {
     plotUv.setXY(
@@ -260,12 +260,13 @@ export function lunarTerrain(scene: T.Scene, compact = false) {
   }
   const plotMaterial = material.clone();
   plotMaterial.vertexColors = false;
-  plotMaterial.color.set("#999fa8");
+  plotMaterial.color.set("#abc5ec");
   const plot = new T.Mesh(plotGeometry, plotMaterial);
   plot.rotation.x = -Math.PI / 2;
   plot.position.y = 0.025;
   plot.receiveShadow = true;
   deck.add(plot);
+  deck.position.z = -15;
   for (const side of [-1, 1]) {
     for (let x = -width / 2; x < width / 2; x += 2.5) {
       shapedBox(

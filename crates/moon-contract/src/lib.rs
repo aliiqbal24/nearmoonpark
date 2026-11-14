@@ -1,4 +1,4 @@
-use moonpark_sim::{Command, Run, Score, END, VERSION};
+use moonpark_sim::{Command, Run, Score, VERSION};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
     collections::{LookupMap, UnorderedMap},
@@ -22,6 +22,10 @@ pub struct Entry {
     pub owner: AccountId,
     pub score: Score,
     pub completed_at: String,
+    #[serde(default)]
+    pub proof_hash: String,
+    #[serde(default)]
+    pub revision: u32,
 }
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
@@ -161,6 +165,12 @@ impl Moonpark {
             return self.get_run(id);
         }
         let player = self.players.get(&owner).expect("Account not admitted");
+        let park_id = self.ensure_park(&owner);
+        let mut park = self.parks.get(&park_id).unwrap();
+        if let Some(id) = park.active_run {
+            self.requests.insert(&req, &id);
+            return self.get_run(id);
+        }
         let player: serde_json::Value = serde_json::from_str(&player).unwrap();
         let name = display_name.unwrap_or_else(|| player["display_name"].as_str().unwrap().into());
         assert!(
@@ -181,10 +191,11 @@ impl Moonpark {
         let id = self.next.to_string();
         let ranked = player["ranked"].as_bool().unwrap() && self.launch_at > 0;
         let now = env::block_timestamp();
-        let park_id = self.ensure_park(&owner);
         let run = Run::new();
+        park.active_run = Some(id.clone());
+        self.parks.insert(&park_id, &park);
         self.open_economy(&id, &owner, &run);
-        let record = serde_json::json!({"run_id":id,"park_id":park_id,"owner":owner,"player_id":player["player_id"],"display_name":name,"ranked":ranked,"started_at":now.to_string(),"deadline":(now+(END as u64+CONFIRMATION_GRACE)*1_000_000_000).to_string(),"last_request":"","run":run});
+        let record = serde_json::json!({"run_id":id,"park_id":park_id,"owner":owner,"player_id":player["player_id"],"display_name":name,"ranked":ranked,"started_at":now.to_string(),"deadline":"0","last_request":"","run":run});
         self.runs.insert(&id, &record.to_string());
         self.requests.insert(&req, &id);
         self.assert_collateral();
@@ -215,16 +226,10 @@ impl Moonpark {
         assert_eq!(run.revision, expected_revision, "Stale revision");
         let now = env::block_timestamp();
         let started: u64 = record["started_at"].as_str().unwrap().parse().unwrap();
+        let allowed = ((now.saturating_sub(started)) as u128 * 4 / 1_000_000_000 + 10)
+            .min(u32::MAX as u128) as u32;
         assert!(
-            commands.is_empty()
-                || commands.iter().all(|c| run.is_cosmetic(c))
-                || now <= record["deadline"].as_str().unwrap().parse::<u64>().unwrap(),
-            "Opening day time limit reached"
-        );
-        let allowed = (((now.saturating_sub(started)) as u128 * 4 / 1_000_000_000 + 10)
-            .min(END as u128)) as u16;
-        assert!(
-            run.tick.saturating_add(ticks).min(END) <= allowed,
+            run.tick.saturating_add(ticks as u32) <= allowed,
             "Simulation is ahead of the clock"
         );
         let was_finished = run.finished;
@@ -256,9 +261,7 @@ impl Moonpark {
             }
         }
         self.clear_economy(&run_id, &env::predecessor_account_id(), &before, &run);
-        if run.finished {
-            self.close_business_reserves(&run_id, &run);
-        }
+
         record["last_request"] = request_id.into();
         record["run"] = serde_json::to_value(&run).unwrap();
         if run.finished && !was_finished {
@@ -273,6 +276,8 @@ impl Moonpark {
                 run_id: run_id.clone(),
                 score: run.score.clone(),
                 completed_at: now.to_string(),
+                proof_hash: run.hash.clone(),
+                revision: run.revision,
             };
             self.record_score(entry, record["ranked"].as_bool().unwrap() && now <= CUTOFF);
         }
@@ -314,7 +319,7 @@ impl Moonpark {
             .collect()
     }
     pub fn get_challenge(&self) -> serde_json::Value {
-        serde_json::json!({"id":VERSION,"seconds":END-moonpark_sim::LANDING,"approach_seconds":moonpark_sim::LANDING,"simulation_ticks":END,"width":32,"height":24,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":0,"partnerships":0,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"signed_policy_accounts","vendor_policy":self.get_vendor_policy(),"asset_standard":"NEP-245","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":if self.prize_fund>0 {"testnet_escrow"}else{"conditional_unfunded"},"concession_standard":"NEP-171","game_currency":"opening-day lunar credit tokens","reward_currency":"testnet NEAR"})
+        serde_json::json!({"id":VERSION,"seconds":null,"persistent":true,"score_basis":"first_96_departed_visitors","approach_seconds":moonpark_sim::LANDING,"simulation_ticks":null,"width":48,"height":48,"visitors":96,"max_active":48,"shuttle_seconds":40,"inbound_flights":12,"visitors_per_flight":8,"tourism_grant_cents":0,"partnerships":0,"max_batch_ticks":20,"max_commands":16,"max_speed":4,"open":self.launch_at>0,"opened_at":self.launch_at.to_string(),"cutoff":CUTOFF.to_string(),"npc_custody":"signed_policy_accounts","vendor_policy":self.get_vendor_policy(),"asset_standard":"NEP-245","catalog":moonpark_sim::catalog::CATALOG,"score_weights":[6000,2500,1500],"badge_thresholds":[3500,5500,7000],"prize_status":if self.prize_fund>0 {"testnet_escrow"}else{"conditional_unfunded"},"concession_standard":"NEP-171","game_currency":"lunar park credit tokens","reward_currency":"testnet NEAR"})
     }
 }
 fn better(a: &Entry, b: &Entry) -> bool {

@@ -5,28 +5,41 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::VecDeque;
 
-pub const VERSION: &str = "moonpark-v5";
-pub const WIDTH: u16 = 32;
-pub const HEIGHT: u16 = 24;
-pub const LANDING: u16 = 10;
-pub const END: u16 = 550;
+pub const VERSION: &str = "moonpark-v6";
+pub const WIDTH: u16 = 48;
+pub const HEIGHT: u16 = 48;
+pub const LANDING: u32 = 10;
+pub const END: u32 = 550;
 pub const MAX_TICKS: u16 = 20;
-pub const GATE: u16 = 23 * WIDTH + 15;
+pub const GATE: u16 = 47 * WIDTH + 23;
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[cfg_attr(
     feature = "contract",
     derive(borsh::BorshDeserialize, borsh::BorshSerialize)
 )]
 pub struct Design {
+    #[serde(default)]
+    pub track: Vec<TrackPoint>,
     pub name: String,
     pub palette: u8,
     pub style: u8,
     pub lights: u8,
     pub height: u8,
 }
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[cfg_attr(
+    feature = "contract",
+    derive(borsh::BorshDeserialize, borsh::BorshSerialize)
+)]
+pub struct TrackPoint {
+    pub x: i16,
+    pub y: u16,
+    pub z: i16,
+}
 impl Default for Design {
     fn default() -> Self {
         Self {
+            track: vec![],
             name: String::new(),
             palette: 255,
             style: 0,
@@ -46,7 +59,48 @@ impl Design {
         {
             return Err("Choose a valid name, palette and design.".into());
         }
+        if !self.track.is_empty() {
+            if self.track.len() != 8 {
+                return Err("A coaster uses eight control points.".into());
+            }
+            for (i, p) in self.track.iter().enumerate() {
+                if p.x.unsigned_abs() > 40 || p.z.unsigned_abs() > 40 || !(12..=110).contains(&p.y)
+                {
+                    return Err(
+                        "Keep the track inside its plot and between 1.2 and 11 metres high.".into(),
+                    );
+                }
+                let q = &self.track[(i + 1) % self.track.len()];
+                let distance = (p.x as i32 - q.x as i32).pow(2) + (p.z as i32 - q.z as i32).pow(2);
+                if distance < 64 {
+                    return Err("Space neighbouring track points apart.".into());
+                }
+            }
+            if self.track[0]
+                != (TrackPoint {
+                    x: -32,
+                    y: 12,
+                    z: 34,
+                })
+                || self.track[1]
+                    != (TrackPoint {
+                        x: 30,
+                        y: 12,
+                        z: 34,
+                    })
+            {
+                return Err("Keep the station connection in place.".into());
+            }
+        }
         Ok(())
+    }
+    pub fn construction_cost(&self) -> i64 {
+        self.height.saturating_sub(1) as i64 * 20000
+            + self
+                .track
+                .iter()
+                .map(|p| p.y.saturating_sub(35) as i64 * 100)
+                .sum::<i64>()
     }
 }
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -58,6 +112,10 @@ pub struct Building {
     pub blueprint_id: Option<String>,
     #[serde(default = "default_height")]
     pub height_paid: u8,
+    #[serde(default)]
+    pub design_paid: i64,
+    #[serde(default)]
+    pub design_revision: u32,
     pub kind: String,
     pub x: u8,
     pub z: u8,
@@ -69,7 +127,7 @@ pub struct Building {
     pub launch: u8,
     pub enabled: bool,
     pub sold: bool,
-    pub ready_at: u16,
+    pub ready_at: u32,
     pub connected: bool,
     pub powered: bool,
     pub condition: i32,
@@ -82,7 +140,7 @@ pub struct Building {
     pub stock: u16,
     pub rent: u8,
     pub delivery_qty: u16,
-    pub delivery_at: u16,
+    pub delivery_at: u32,
     pub recent: u16,
     pub reason: String,
     #[serde(default)]
@@ -92,7 +150,7 @@ pub struct Building {
 pub struct Guest {
     pub id: u16,
     pub group: u8,
-    pub arrival: u16,
+    pub arrival: u32,
     pub cash: i64,
     pub satisfaction: i32,
     pub hunger: u16,
@@ -101,14 +159,14 @@ pub struct Guest {
     pub route: Vec<u16>,
     pub status: String,
     pub target: Option<u32>,
-    pub timer: u16,
+    pub timer: u32,
     pub rides: Vec<String>,
     pub visits: u16,
     pub thought: String,
 }
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Trade {
-    pub tick: u16,
+    pub tick: u32,
     pub from: String,
     pub to: String,
     pub amount: i64,
@@ -117,7 +175,7 @@ pub struct Trade {
 }
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Event {
-    pub tick: u16,
+    pub tick: u32,
     pub text: String,
 }
 #[derive(Clone, Serialize, Deserialize, Debug, Default, PartialEq)]
@@ -140,7 +198,7 @@ pub struct Run {
     pub bookings: Vec<u8>,
     #[serde(default)]
     pub reputation: u16,
-    pub tick: u16,
+    pub tick: u32,
     pub revision: u32,
     pub cash: i64,
     pub opening_equity: i64,
@@ -149,7 +207,7 @@ pub struct Run {
     pub money_supply: i64,
     pub supplies: [u16; 3],
     #[serde(default)]
-    pub consumed: [u16; 3],
+    pub consumed: [u32; 3],
     pub grant_cash: i64,
     pub grant_escrow: i64,
     pub partnerships: Vec<partnerships::Partnership>,
@@ -160,8 +218,10 @@ pub struct Run {
     pub trades: Vec<Trade>,
     pub trade_count: u32,
     pub events: Vec<Event>,
-    pub actions: u16,
+    pub actions: u32,
     pub finished: bool,
+    pub opening_ended_at: Option<u32>,
+    pub issued_goods: [u32; 3],
     pub score: Score,
     pub hash: String,
 }
@@ -228,9 +288,28 @@ impl Building {
         let n = item(&self.kind).unwrap().seats as usize;
         n + n * self.level as usize / 2
     }
+    fn thrill(&self) -> i32 {
+        if self.kind == "coaster" {
+            self.launch as i32
+                + self.design.height as i32
+                + i32::from(self.design.track.iter().any(|p| p.y >= 80))
+        } else {
+            item(&self.kind).unwrap().thrill
+        }
+    }
     fn duration(&self) -> u16 {
         if self.kind == "coaster" {
-            [36, 30, 24][(self.launch - 1) as usize]
+            let length: u16 = self
+                .design
+                .track
+                .iter()
+                .enumerate()
+                .map(|(i, p)| {
+                    let q = &self.design.track[(i + 1) % self.design.track.len()];
+                    (p.x - q.x).unsigned_abs() + (p.z - q.z).unsigned_abs() + p.y.abs_diff(q.y)
+                })
+                .sum();
+            [36, 30, 24][(self.launch - 1) as usize] + (length / 100).min(12)
         } else {
             item(&self.kind).unwrap().cycle
         }
@@ -251,7 +330,7 @@ fn make_building(
     z: u8,
     rotation: u8,
     variant: u8,
-    tick: u16,
+    tick: u32,
 ) -> Building {
     let a = item(kind).unwrap();
     Building {
@@ -259,6 +338,8 @@ fn make_building(
         design: Design::default(),
         blueprint_id: None,
         height_paid: 1,
+        design_paid: 0,
+        design_revision: 0,
         kind: kind.into(),
         x,
         z,
@@ -308,20 +389,20 @@ impl Run {
             grant_cash: 0,
             grant_escrow: 0,
             partnerships: vec![],
-            departures: vec![0; 14],
-            paths: (0..32)
-                .map(|x| 20 * WIDTH + x)
+            departures: vec![0; 64],
+            paths: (8..40)
+                .map(|x| 44 * WIDTH + x)
                 .chain([
-                    21 * WIDTH + 15,
-                    22 * WIDTH + 15,
+                    45 * WIDTH + 23,
+                    46 * WIDTH + 23,
                     GATE,
-                    19 * WIDTH + 12,
-                    19 * WIDTH + 19,
+                    43 * WIDTH + 20,
+                    43 * WIDTH + 27,
                 ])
                 .collect(),
             buildings: vec![
-                make_building(1, "bounce", 11, 16, 0, 0, 0),
-                make_building(2, "food", 18, 17, 0, 0, 0),
+                make_building(1, "bounce", 19, 40, 0, 0, 0),
+                make_building(2, "food", 26, 41, 0, 0, 0),
             ],
             guests: vec![],
             trades: vec![],
@@ -329,6 +410,8 @@ impl Run {
             events: vec![],
             actions: 0,
             finished: false,
+            opening_ended_at: None,
+            issued_goods: [2048; 3],
             score: Score::default(),
             hash: String::new(),
         };
@@ -348,7 +431,7 @@ impl Run {
             r.guests.push(Guest {
                 id,
                 group,
-                arrival: 11 + (id / 8) * 40,
+                arrival: 11 + (id as u32 / 8) * 40,
                 cash: [2400, 3600, 4800][group as usize],
                 satisfaction: 65,
                 hunger: 20 + (id % 3) * 7,
@@ -592,19 +675,8 @@ impl Run {
         }
     }
     pub fn apply(&mut self, commands: &[Command], ticks: u16) -> Result<(), String> {
-        if self.finished
-            && (ticks > 0
-                || commands
-                    .iter()
-                    .any(|c| c.kind != "theme" && c.kind != "design"))
-        {
-            return Err("Opening day has ended.".into());
-        }
         if ticks > MAX_TICKS || commands.len() > 16 {
             return Err("Batch too large.".into());
-        }
-        if self.actions as usize + commands.len() > 512 {
-            return Err("Action limit reached.".into());
         }
         let mut next = self.clone();
         for c in commands {
@@ -616,14 +688,13 @@ impl Run {
             }
         }
         for _ in 0..ticks {
-            if next.tick >= END {
-                break;
-            }
             next.step();
         }
         next.settle_partnerships();
         next.revision += 1;
-        next.score = next.calculate_score();
+        if !next.finished {
+            next.score = next.calculate_score();
+        }
         next.rehash();
         *self = next;
         Ok(())
@@ -633,6 +704,13 @@ impl Run {
             "theme" => {
                 if !(0..=5).contains(&c.value) {
                     return Err("Invalid park palette.".into());
+                }
+                if self.palette != c.value as u8 {
+                    for b in &mut self.buildings {
+                        if !b.sold && b.design.palette == 255 {
+                            b.design_revision += 1;
+                        }
+                    }
                 }
                 self.palette = c.value as u8;
             }
@@ -647,21 +725,37 @@ impl Run {
                 if self.buildings[i].kind != "coaster" && design.height != 1 {
                     return Err("Only the mass driver has an adjustable height.".into());
                 }
-                if self.finished && design.height != self.buildings[i].design.height {
-                    return Err("Ride construction closes with opening day. Colors and style stay editable.".into());
+                if self.buildings[i].kind != "coaster" && !design.track.is_empty() {
+                    return Err("Track editing is available on the mass driver.".into());
                 }
-                let extra =
-                    design.height.saturating_sub(self.buildings[i].height_paid) as i64 * 20000;
-                if extra > 0 {
-                    self.spend(extra)?;
+                let structural = design.height != self.buildings[i].design.height
+                    || design.track != self.buildings[i].design.track;
+                if structural
+                    && (!self.buildings[i].riders.is_empty() || !self.buildings[i].queue.is_empty())
+                {
+                    return Err(
+                        "Close the ride and wait for its passengers before editing the track."
+                            .into(),
+                    );
                 }
+                let cost = design.construction_cost();
+                let extra = cost.saturating_sub(self.buildings[i].design_paid).max(0);
+                self.spend(extra)?;
                 self.buildings[i].invested += extra;
+                self.buildings[i].design_paid = self.buildings[i].design_paid.max(cost);
                 self.buildings[i].height_paid = self.buildings[i].height_paid.max(design.height);
+                if structural {
+                    self.buildings[i].served = 0;
+                    self.buildings[i].blueprint_id = None;
+                }
+                if self.buildings[i].design != design {
+                    self.buildings[i].design_revision += 1;
+                }
                 self.buildings[i].design = design;
             }
             "build" => {
                 let a = item(&c.item).ok_or("Unknown blueprint")?;
-                if self.buildings.len() >= 32 {
+                if self.buildings.len() >= 128 {
                     return Err("Park building limit reached.".into());
                 }
                 if c.rotation > 3 || c.variant > 1 {
@@ -671,12 +765,13 @@ impl Run {
                 let mut b = make_building(id, &c.item, c.x, c.z, c.rotation, c.variant, self.tick);
                 if let Some(design) = &c.design {
                     design.validate()?;
-                    if c.item != "coaster" && design.height != 1 {
+                    if c.item != "coaster" && (design.height != 1 || !design.track.is_empty()) {
                         return Err("Only the mass driver has an adjustable height.".into());
                     }
                     b.design = design.clone();
                     b.height_paid = b.height_paid.max(design.height);
-                    b.invested += design.height.saturating_sub(1) as i64 * 20000;
+                    b.design_paid = design.construction_cost();
+                    b.invested += b.design_paid;
                 }
                 if c.value != 0 {
                     if !(1..=3).contains(&c.value) {
@@ -784,6 +879,9 @@ impl Run {
                         if k != "coaster" || !(1..=3).contains(&c.value) {
                             return Err("Invalid launch setting.".into());
                         }
+                        if self.buildings[i].launch != c.value as u8 {
+                            self.buildings[i].design_revision += 1;
+                        }
                         self.buildings[i].launch = c.value as u8;
                     }
                     "upgrade" => {
@@ -798,6 +896,19 @@ impl Run {
                     }
                     "toggle" => {
                         self.buildings[i].enabled = !self.buildings[i].enabled;
+                        if !self.buildings[i].enabled {
+                            self.buildings[i].queue.clear();
+                            for g in &mut self.guests {
+                                if g.target == Some(c.building) && g.status != "riding" {
+                                    g.target = None;
+                                    g.route.clear();
+                                    g.status = "walking".into();
+                                    g.timer = 0;
+                                    g.thought =
+                                        "That ride is closed. Finding something else.".into();
+                                }
+                            }
+                        }
                     }
                     "rent" | "invest" => {
                         return Err("Vendors manage their own working capital and pay a fixed 10% park share.".into());
@@ -871,12 +982,7 @@ impl Run {
                             if first {
                                 g.rides.push(kind.clone());
                             }
-                            let thrill = if kind == "coaster" {
-                                self.buildings[i].launch as i32
-                                    + self.buildings[i].design.height as i32
-                            } else {
-                                item(&kind).unwrap().thrill
-                            };
+                            let thrill = self.buildings[i].thrill();
                             let wanted = [1, 2, 4][g.group as usize];
                             let delta = if (thrill - wanted).abs() <= 1 {
                                 if first {
@@ -982,42 +1088,27 @@ impl Run {
                 }
             }
         }
-        if self.tick >= 120 && self.tick <= 440 && self.tick % 40 == 0 {
-            let reviews: Vec<_> = self
-                .guests
-                .iter()
-                .filter(|g| {
-                    g.visits > 0 && matches!(g.status.as_str(), "leaving" | "boarding" | "gone")
-                })
-                .collect();
-            if !reviews.is_empty() {
-                self.reputation = (reviews
-                    .iter()
-                    .map(|g| g.satisfaction.max(0) as u32)
-                    .sum::<u32>()
-                    / reviews.len() as u32) as u16;
-                let flight = self.tick as usize / 40;
-                let booked = (4 + self.reputation.saturating_sub(40) / 10).clamp(4, 8) as u8;
-                self.bookings[flight] = booked;
-                for g in self
-                    .guests
-                    .iter_mut()
-                    .skip(flight * 8 + booked as usize)
-                    .take(8 - booked as usize)
-                {
-                    if g.status == "upcoming" {
-                        g.status = "cancelled".into();
-                    }
-                }
-                self.event(format!("Earth bookings: {booked}/8 seats on the next rocket. Visitor recommendations are {}% positive.", self.reputation));
-            }
-        }
         let mut active = self
             .guests
             .iter()
             .filter(|g| g.status != "upcoming" && g.status != "gone" && g.status != "cancelled")
             .count();
         for gi in 0..self.guests.len() {
+            if self.tick.saturating_sub(self.guests[gi].arrival) > 360
+                && !matches!(
+                    self.guests[gi].status.as_str(),
+                    "upcoming" | "gone" | "cancelled" | "riding"
+                )
+            {
+                let id = self.guests[gi].id;
+                for b in &mut self.buildings {
+                    b.queue.retain(|g| *g != id);
+                }
+                self.guests[gi].route.clear();
+                self.guests[gi].status = "boarding".into();
+                self.guests[gi].timer = self.tick.saturating_sub(40);
+                self.guests[gi].thought = "The terminal shuttle is taking me home.".into();
+            }
             if self.guests[gi].arrival <= self.tick
                 && self.guests[gi].status == "upcoming"
                 && active < 48
@@ -1112,7 +1203,7 @@ impl Run {
                     count += 1;
                 }
             }
-            self.departures[(self.tick / 40) as usize] = count;
+            self.departures[(self.tick / 40 % 64) as usize] = count;
             if count > 0 {
                 self.event(format!(
                     "Shuttle homebound: {count} visitors boarded. See you next time!"
@@ -1120,10 +1211,73 @@ impl Run {
             }
         }
         self.settle_partnerships();
-        if self.tick >= END {
+        if !self.finished
+            && self
+                .guests
+                .iter()
+                .take(96)
+                .all(|g| matches!(g.status.as_str(), "gone" | "cancelled"))
+        {
+            self.score = self.calculate_score();
             self.finished = true;
-            self.event("Last boarding call. Your first day on the Moon is complete.");
+            self.opening_ended_at = Some(self.tick);
+            self.event("Opening cohort complete. Your score is sealed. Your park keeps growing.");
         }
+        if self.finished && self.tick % 40 == 11 {
+            self.next_visitors();
+        }
+    }
+    fn next_visitors(&mut self) {
+        // Returning travellers bring new, explicitly issued test credits. The first
+        // cohort and its sealed score remain untouched. Reuse at most 48 live slots.
+        for seat in 0..8 {
+            let slot = self
+                .guests
+                .iter()
+                .skip(96)
+                .position(|g| g.status == "gone")
+                .map(|i| i + 96);
+            let i = match slot {
+                Some(i) => i,
+                None if self.guests.len() < 144 => self.guests.len(),
+                _ => break,
+            };
+            let group = (seat % 3) as u8;
+            let cash = [2400, 3600, 4800][group as usize];
+            if i < self.guests.len() {
+                self.supplier_cash += self.guests[i].cash;
+            }
+            let guest = Guest {
+                id: i as u16,
+                group,
+                arrival: self.tick,
+                cash,
+                satisfaction: 65,
+                hunger: 25,
+                thirst: 30,
+                cell: GATE,
+                route: vec![],
+                status: "upcoming".into(),
+                target: None,
+                timer: 0,
+                rides: vec![],
+                visits: 0,
+                thought: "Back on the Moon. What is new?".into(),
+            };
+            if i == self.guests.len() {
+                self.guests.push(guest);
+            } else {
+                self.guests[i] = guest;
+            }
+            self.money_supply += cash;
+        }
+        for asset in 0..3 {
+            if self.supplies[asset] < 128 {
+                self.supplies[asset] += 1024;
+                self.issued_goods[asset] += 1024;
+            }
+        }
+        self.event("A new rocket has arrived. Regular visitor income funds your next creation.");
     }
     fn vendor_overhead(&mut self, i: usize, amount: i64) {
         self.buildings[i].cash -= amount;
@@ -1254,11 +1408,7 @@ impl Run {
             let wait = b.cycle_left as i32
                 + (b.queue.len() / b.seats().max(1)) as i32 * b.duration() as i32;
             let utility = if ride(&b.kind) {
-                let thrill = if b.kind == "coaster" {
-                    b.launch as i32 + b.design.height as i32
-                } else {
-                    item(&b.kind).unwrap().thrill
-                };
+                let thrill = b.thrill();
                 let wanted = [1, 2, 4][g.group as usize];
                 105 - (thrill - wanted).abs() * 18
                     - if g.rides.contains(&b.kind) { 48 } else { 0 }
@@ -1398,12 +1548,14 @@ impl Run {
         let satisfaction = self
             .guests
             .iter()
+            .take(96)
             .filter(|g| g.visits > 0)
             .map(|g| g.satisfaction.clamp(0, 100) as u32)
             .sum::<u32>();
         let unique = self
             .guests
             .iter()
+            .take(96)
             .map(|g| g.rides.len().min(3) as u16)
             .sum::<u16>();
         let gain = self.equity() - self.opening_equity;
@@ -1418,6 +1570,7 @@ impl Run {
             happy: self
                 .guests
                 .iter()
+                .take(96)
                 .filter(|g| g.visits > 0 && g.satisfaction >= 75)
                 .count() as u16,
             equity_gain: gain,

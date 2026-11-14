@@ -5,8 +5,13 @@ import { mkdir } from "node:fs/promises";
 const base = process.env.GAME_URL || "http://127.0.0.1:5173",
   sample = process.argv.includes("--sample"),
   portrait = process.argv.includes("--portrait"),
-  robotShot = process.argv.includes("--robot-shot");
-await mkdir("outputs/moonpark-cinema", { recursive: true });
+  robotShot = process.argv.includes("--robot-shot"),
+  range = process.argv
+    .find((arg) => arg.startsWith("--range="))
+    ?.slice(8)
+    .split(",")
+    .map(Number);
+await mkdir("outputs/moonpark-cinema-v7", { recursive: true });
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
   headless: true,
@@ -52,7 +57,7 @@ try {
       onPlace() {},
       onReady() {},
     });
-    const run = dreamPark(await simulate({ op: "new" }));
+    const run = dreamPark(await simulate({ op: "new" }), true);
     world.update(run, 1, null, null, 0, null);
     await world.sceneryReady;
     await document.fonts.ready;
@@ -68,10 +73,12 @@ try {
     }, t);
   };
   if (sample) {
-    for (const t of [2, 8, 12, 15, 16, 18, 20, 23, 26, 30, 34, 38]) {
+    for (const t of [
+      0.7, 2, 3.7, 6, 10, 13, 15.8, 17, 19.5, 23, 26, 28.5, 30.5, 34, 38,
+    ]) {
       await render(t);
       await page.screenshot({
-        path: `outputs/moonpark-cinema/sample-${portrait ? "portrait-" : ""}${t}.png`,
+        path: `outputs/moonpark-cinema-v7/sample-${portrait ? "portrait-" : ""}${t}.png`,
       });
     }
     console.log("Cinematic samples captured");
@@ -86,7 +93,7 @@ try {
         "-f",
         "image2pipe",
         "-framerate",
-        "30",
+        "60",
         "-i",
         "pipe:0",
         "-c:v",
@@ -100,17 +107,17 @@ try {
         "-an",
         "-movflags",
         "+faststart",
-        `outputs/moonpark-cinema/picture-${robotShot ? "robot-" : ""}${portrait ? "mobile-" : ""}master.mp4`,
+        `outputs/moonpark-cinema-v7/picture-${range ? `insert-${range[0]}-${range[1]}-` : ""}${portrait ? "mobile-" : ""}master.mp4`,
       ],
       { stdio: ["pipe", "inherit", "inherit"] },
     );
     let ffError;
     ff.on("error", (e) => (ffError = e));
-    const first = robotShot ? 990 : 0;
-    const last = robotShot ? 1050 : 1200;
+    const first = range ? Math.round(range[0] * 60) : robotShot ? 1980 : 0;
+    const last = range ? Math.round(range[1] * 60) : robotShot ? 2100 : 2400;
     for (let i = first; i < last; i++) {
       if (ffError) throw ffError;
-      await render(i / 30);
+      await render(i / 60);
       const png = await page.screenshot({ type: "png", animations: "allow" });
       if (!ff.stdin.write(png)) await once(ff.stdin, "drain");
       if ((i - first) % 150 === 0)
@@ -120,7 +127,7 @@ try {
     const [code] = await once(ff, "exit");
     if (code !== 0) throw Error(`FFmpeg exited ${code}`);
     console.log(
-      `Rendered ${portrait ? "720×1280 portrait" : "1920×1080"} / 30fps picture master`,
+      `Rendered ${portrait ? "720×1280 portrait" : "1920×1080"} / 60fps picture master`,
     );
   }
 } finally {

@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import {
   blueprint,
+  coasterDuration,
+  parkClosed,
+  isPersistent,
   isRide,
   isTenant,
   money,
@@ -112,6 +115,7 @@ export function Inspector({
   action,
   onClose,
   onRide,
+  onEditCoaster,
   readOnly = false,
   config,
 }: {
@@ -121,6 +125,7 @@ export function Inspector({
   action: (c: Command) => void;
   onClose: () => void;
   onRide: (id: number) => void;
+  onEditCoaster?: (b: Building) => void;
   readOnly?: boolean;
   config?: Config | null;
 }) {
@@ -197,9 +202,9 @@ export function Inspector({
     a = blueprint(b.kind),
     ride = isRide(b.kind),
     tenant = isTenant(b.kind),
-    disabled = run.finished || readOnly;
+    disabled = parkClosed(run) || readOnly;
   const seats = a.seats + Math.floor((a.seats * b.level) / 2),
-    duration = b.kind === "coaster" ? [36, 30, 24][b.launch - 1] : a.cycle;
+    duration = b.kind === "coaster" ? coasterDuration(b) : a.cycle;
   const connectCost = connectionCost(run, b);
   const status =
     b.ready_at > run.tick
@@ -232,7 +237,7 @@ export function Inspector({
       {!readOnly && (
         <AttractionDesign
           building={b}
-          finished={run.finished}
+          finished={parkClosed(run)}
           cash={run.cash}
           action={action}
         />
@@ -336,6 +341,14 @@ export function Inspector({
               >
                 <Play size={16} /> Ride the mass driver
               </button>
+              {!readOnly && onEditCoaster && (
+                <button
+                  className="mp-primary full"
+                  onClick={() => onEditCoaster(b)}
+                >
+                  Design your coaster
+                </button>
+              )}
             </>
           )}
           <div className="mp-meter-label">
@@ -667,11 +680,13 @@ export function Results({
     verified =
       state.mode === "near" &&
       state.record?.run.finished &&
-      state.pending === 0;
+      (isPersistent(r) || state.pending === 0);
   return (
     <div className="mp-results">
       <span className="mp-eyebrow">
-        EVENING DEPARTURES / OPENING DAY COMPLETE
+        {isPersistent(r)
+          ? "FIRST 96 VISITORS / OPENING SCORE SEALED"
+          : "CLOSING TIME / OPENING DAY COMPLETE"}
       </span>
       <div className="mp-medal">
         <Trophy size={34} />
@@ -706,13 +721,17 @@ export function Results({
       <div className="mp-result-actions">
         <button
           className="mp-primary"
-          onClick={onReplay}
+          onClick={isPersistent(r) ? onExplore : onReplay}
           disabled={
+            !isPersistent(r) &&
             state.mode === "near" &&
             (!state.record?.run.finished || state.pending > 0)
           }
         >
-          Build a better opening day <ArrowUpRight size={16} />
+          {isPersistent(r)
+            ? "Keep building your park"
+            : "Build a better opening day"}{" "}
+          <ArrowUpRight size={16} />
         </button>
         <button onClick={onExplore}>Look around your park</button>
         <button onClick={onLeaders}>Top five</button>

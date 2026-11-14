@@ -177,15 +177,16 @@ export function ShuttleStatus({ run }: { run: Run }) {
   const phase = run.tick % 40,
     flight = Math.floor(run.tick / 40),
     waiting = run.guests.filter((g) => g.status === "boarding").length;
-  const text = run.finished
-    ? "Evening shuttles · opening day complete"
-    : phase < 10
-      ? `Shuttle inbound · docking in ${10 - phase}s`
-      : phase < 30
-        ? `${flight < 12 ? `${run.bookings?.[flight] ?? 8} new explorers` : "Return shuttle"} · ${waiting} homebound`
-        : phase < 38
-          ? `Shuttle departing · ${run.departures[flight] ?? 0} aboard`
-          : `Next shuttle in ${40 - phase}s`;
+  const text =
+    run.finished && run.version !== "moonpark-v6"
+      ? "Evening shuttles · opening day complete"
+      : phase < 10
+        ? `Shuttle inbound · docking in ${10 - phase}s`
+        : phase < 30
+          ? `${flight < 12 || (run.version === "moonpark-v6" && run.finished) ? `${run.bookings?.[flight] ?? 8} new explorers` : "Return shuttle"} · ${waiting} homebound`
+          : phase < 38
+            ? `Shuttle departing · ${run.departures[run.version === "moonpark-v6" ? flight % 64 : flight] ?? 0} aboard`
+            : `Next shuttle in ${40 - phase}s`;
   return (
     <span
       className={`mp-shuttle-status phase-${phase < 10 ? "inbound" : phase < 30 ? "docked" : "outbound"}`}

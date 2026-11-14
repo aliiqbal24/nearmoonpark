@@ -50,6 +50,9 @@ import { MoonAudio } from "@/lib/moon/audio";
 import {
   CATALOG,
   VERSION,
+  isPersistent,
+  parkClosed,
+  type Building,
   END,
   LANDING,
   blueprint,
@@ -65,6 +68,9 @@ import {
   type PrizeStatus,
 } from "@/lib/moon/model";
 import type { MoonWorld as World } from "@/lib/moon/world";
+import { CoasterEditor } from "./components/coaster-editor";
+import openingStory from "@/public/video/moonpark-opening-v7-story.json";
+import archivedV5 from "@/public/moon-v5-config.json";
 import archivedV4 from "@/public/moon-v4-config.json";
 import "./moonpark.css";
 
@@ -99,6 +105,8 @@ export default function Game() {
     [launching, setLaunching] = useState(false),
     [openingError, setOpeningError] = useState(false),
     [resumeAvailable, setResumeAvailable] = useState(false),
+    [editingCoaster, setEditingCoaster] = useState<Building | null>(null),
+    [worldReady, setWorldReady] = useState(false),
     [rideId, setRideId] = useState<number | null>(null),
     [showResults, setShowResults] = useState(true),
     [entries, setEntries] = useState<Entry[]>([]),
@@ -140,17 +148,14 @@ export default function Game() {
   const receive = useCallback((s: Snapshot) => {
     setSnapshot(s);
     if (s.run.finished && !finishedRef.current) {
-      setScreen("results");
+      setScreen(isPersistent(s.run) ? "playing" : "results");
       setShowResults(true);
       setPlacement(null);
       audio.current?.effect("finish");
     }
     finishedRef.current = s.run.finished;
-    const wave =
-      s.run.tick < 11
-        ? 0
-        : Math.min(12, Math.floor((s.run.tick - 11) / 40) + 1);
-    if (wave > lastWave.current && s.run.tick < 540) {
+    const wave = s.run.tick < 11 ? 0 : Math.floor((s.run.tick - 11) / 40) + 1;
+    if (wave > lastWave.current) {
       lastWave.current = wave;
       audio.current?.effect("rocket");
     }
@@ -175,11 +180,15 @@ export default function Game() {
             localStorage.getItem("moonpark-current") || "null",
           );
           setResumeAvailable(
-            [VERSION, "moonpark-v4"].includes(saved?.state?.run?.version),
+            [VERSION, "moonpark-v5", "moonpark-v4"].includes(
+              saved?.state?.run?.version,
+            ),
           );
           if (
-            [VERSION, "moonpark-v4"].includes(saved?.state?.run?.version) &&
-            !saved.state.run.finished
+            [VERSION, "moonpark-v5", "moonpark-v4"].includes(
+              saved?.state?.run?.version,
+            ) &&
+            !parkClosed(saved.state.run)
           ) {
             const bootGeneration = generation.current;
             const restored = await ParkSession.resume(
@@ -188,7 +197,8 @@ export default function Game() {
             );
             if (restored && active) {
               session.current = restored;
-              setScreen(restored.state.run.finished ? "results" : "playing");
+              setShowResults(false);
+              setScreen(parkClosed(restored.state.run) ? "results" : "playing");
               setWallLeft(
                 Math.max(0, (restored.state.deadline - Date.now()) / 1000),
               );
@@ -261,7 +271,8 @@ export default function Game() {
       last = now;
       const s = session.current;
       if (s) {
-        setWallLeft(Math.max(0, (s.state.deadline - now) / 1000));
+        if (!isPersistent(s.state.run))
+          setWallLeft(Math.max(0, (s.state.deadline - now) / 1000));
         void s.update(dt, speed).catch((e) => setToast(String(e)));
       }
     }, 200);
@@ -310,6 +321,8 @@ export default function Game() {
       if (e.key === "Escape") {
         setPlacement(null);
         setRideId(null);
+        setEditingCoaster(null);
+        worldRef.current?.setDesignPreview(null);
         worldRef.current?.home();
       }
       if (e.key.toLowerCase() === "r")
@@ -475,7 +488,7 @@ export default function Game() {
       const next = await ParkSession.resume(receive);
       if (next) {
         session.current = next;
-        setScreen(next.state.run.finished ? "results" : "playing");
+        setScreen(parkClosed(next.state.run) ? "results" : "playing");
         setShowResults(true);
         worldRef.current?.home();
       } else setToast("No saved park found.");
@@ -608,50 +621,25 @@ export default function Game() {
                 ? "A Lunar Care Depot keeps your rides healthy while you grow."
                 : "Watch the queues. New attractions, good value and fresh stock make happy visitors."
     : "";
-  const introBeat =
-    introTime < 6
-      ? {
-          k: "A NEAR PROTOCOL PRESENTATION",
-          title: "We came here to build a future.",
-          text: "384,000 kilometres from the everyday.",
-        }
-      : introTime < 14
-        ? {
-            k: "NEAR LUNAR TRANSIT / FINAL APPROACH",
-            title: "Then someone asked about the weekend.",
-            text: "Every great adventure begins with an arrival.",
-          }
-        : introTime < 21
-          ? {
-              k: "WELCOME TO MOONPARK",
-              title: "Make room for a little wonder.",
-              text: "Big dreams. Small businesses. An extraordinary day out.",
-            }
-          : introTime < 29
-            ? {
-                k: "THE MASS DRIVER",
-                title: "One small launch. One giant scream.",
-                text: "Please keep all dreams inside the vehicle.",
-              }
-            : introTime < 33
-              ? {
-                  k: "YOUR NEIGHBOURS. YOUR NEXT BIG IDEA.",
-                  title: "Nobody builds a dream alone.",
-                  text: "Meet the people who will help your park thrive.",
-                }
-              : introTime < 35
-                ? {
-                    k: "LOW GRAVITY. HIGH EXPECTATIONS.",
-                    title: "And nobody mentioned the popcorn.",
-                    text: "Some jobs are bigger than they look.",
-                  }
-                : {
-                    k: "YOUR PARK. YOUR CREATIONS. ON NEAR.",
-                    title: "MOONPARK",
-                    text: "Your ideas. Your park. A NEAR future.",
-                  };
+  const spokenLine = openingStory.segments.find(
+    (line) => introTime >= line.start && introTime < line.end + 0.3,
+  );
+  const introBeat = {
+    k:
+      introTime < 4
+        ? "A NEAR PROTOCOL PRESENTATION"
+        : introTime >= 35.5
+          ? "YOUR PARK. YOUR CREATIONS. ON NEAR."
+          : "",
+    title: introTime >= 35.5 ? "MOONPARK" : "",
+    text: spokenLine?.text ?? "",
+  };
   const activeConfig =
-    snapshot?.run.version === "moonpark-v4" ? (archivedV4 as Config) : cfg;
+    snapshot?.run.version === "moonpark-v4"
+      ? (archivedV4 as Config)
+      : snapshot?.run.version === "moonpark-v5"
+        ? (archivedV5 as Config)
+        : cfg;
   return (
     <main
       className="moonpark"
@@ -660,6 +648,7 @@ export default function Game() {
       data-finished={!!run?.finished}
     >
       <MoonWorld
+        onReady={() => setWorldReady(true)}
         run={worldRun}
         identity={parkIdentity}
         speed={screen === "playing" ? speed : 0.4}
@@ -677,7 +666,7 @@ export default function Game() {
       <video
         ref={videoRef}
         className={`mp-opening-film ${screen === "intro" && !videoFailed ? "playing" : ""} ${introLeaving ? "leaving" : ""}`}
-        poster="/video/moonpark-opening-v6-poster.jpg"
+        poster="/video/moonpark-opening-v7-poster.jpg"
         preload="auto"
         playsInline
         muted={muted}
@@ -692,12 +681,12 @@ export default function Game() {
         }}
       >
         <source
-          src="/video/moonpark-opening-v6-mobile.mp4"
+          src="/video/moonpark-opening-v7-mobile.mp4"
           media="(max-width: 800px)"
           type="video/mp4"
         />
         <source
-          src="/video/moonpark-opening-v6.mp4"
+          src="/video/moonpark-opening-v7.mp4"
           type="video/mp4"
           onError={() => setVideoFailed(true)}
         />
@@ -705,7 +694,7 @@ export default function Game() {
       {screen === "intro" && !videoFailed && (
         <img
           className="mp-opening-still"
-          src="/video/moonpark-opening-v6-poster.jpg"
+          src="/video/moonpark-opening-v7-poster.jpg"
           alt="A lunar park under the stars"
         />
       )}
@@ -769,8 +758,8 @@ export default function Game() {
               </div>
               <div className="mp-title-entry">
                 <p className="mp-title-details">
-                  Free to play <span aria-hidden="true">·</span> 9-minute
-                  opening day
+                  Free to play <span aria-hidden="true">·</span> Your own lunar
+                  park
                 </p>
                 <button
                   className="mp-primary"
@@ -827,7 +816,7 @@ export default function Game() {
         </section>
       )}
       {screen === "intro" && (
-        <div className="mp-intro">
+        <div className={`mp-intro${videoFailed ? "" : " with-film"}`}>
           <div className="mp-cinema-top">
             <div className="mp-film-credit">
               {videoFailed && (
@@ -847,7 +836,7 @@ export default function Game() {
             </button>
           </div>
           <div
-            className={`mp-intro-captions${introTime >= 35 ? " is-finale" : ""}`}
+            className={`mp-intro-captions${introTime >= 35.5 ? " is-finale" : ""}${videoFailed ? "" : " film-subtitles"}`}
             key={introBeat.k}
           >
             <span className="mp-eyebrow">{introBeat.k}</span>
@@ -918,7 +907,7 @@ export default function Game() {
                 <small>IN YOUR PARK</small>
                 <strong>
                   {active}
-                  <em> / 96 guests</em>
+                  {!isPersistent(run) && <em> / 96 guests</em>}
                 </strong>
               </div>
             </div>
@@ -928,7 +917,11 @@ export default function Game() {
             >
               <Star size={21} />
               <div>
-                <small>OPENING DAY SCORE</small>
+                <small>
+                  {run.finished && isPersistent(run)
+                    ? "SEALED OPENING SCORE"
+                    : "OPENING COHORT SCORE"}
+                </small>
                 <strong>
                   {run.score.total.toLocaleString()}
                   <em> / 10,000</em>
@@ -939,25 +932,36 @@ export default function Game() {
               <span>
                 <span className="mp-live-dot" />{" "}
                 {run.finished
-                  ? "PARK CLOSED"
+                  ? isPersistent(run)
+                    ? "YOUR PARK KEEPS GROWING"
+                    : "PARK CLOSED"
                   : run.tick < LANDING
                     ? "FIRST LANDING"
                     : "OPENING DAY"}
               </span>
               <strong data-testid="opening-day-clock">
-                {clock(
-                  run.tick < LANDING ? 540 : Math.min(END - run.tick, wallLeft),
-                )}
+                {isPersistent(run)
+                  ? run.tick < LANDING
+                    ? "First landing"
+                    : run.finished
+                      ? "Score sealed"
+                      : `${run.guests.slice(0, 96).filter((g) => ["gone", "cancelled"].includes(g.status)).length} / 96 completed`
+                  : clock(
+                      run.tick < LANDING
+                        ? 540
+                        : Math.min(END - run.tick, wallLeft),
+                    )}
               </strong>
               <div className="mp-speeds">
-                {[1, 2, 4].map((n) => (
+                {[0, 1, 2, 4].map((n) => (
                   <button
                     key={n}
-                    disabled={run.finished}
+                    disabled={parkClosed(run)}
+                    aria-label={n === 0 ? "Pause" : `${n}×`}
                     aria-pressed={speed === n}
                     onClick={() => setSpeed(n)}
                   >
-                    {n}×
+                    {n === 0 ? "Ⅱ" : `${n}×`}
                   </button>
                 ))}
               </div>
@@ -971,7 +975,7 @@ export default function Game() {
             <ShuttleStatus run={run} />
             <span
               className="mp-reputation"
-              title="Departing visitors influence later rocket bookings"
+              title="Guest satisfaction reflects their rides, queues, food and drinks"
             >
               ★ {run.reputation ?? 65}% word of mouth
             </span>
@@ -1044,7 +1048,34 @@ export default function Game() {
               <Home size={19} />
             </button>
           </nav>
-          {selection && !rideId && (
+          {editingCoaster && (
+            <CoasterEditor
+              building={editingCoaster}
+              cash={run.cash}
+              onPreview={(design) =>
+                worldRef.current?.setDesignPreview(
+                  design ? { id: editingCoaster.id, design } : null,
+                )
+              }
+              onCancel={() => {
+                worldRef.current?.setDesignPreview(null);
+                setEditingCoaster(null);
+              }}
+              onApply={async (design) => {
+                if (!session.current) return;
+                await session.current.action({
+                  kind: "design",
+                  building: editingCoaster.id,
+                  design,
+                });
+                setEditingCoaster(null);
+                setToast(
+                  "Your coaster is ready. Open it when you are happy with the test ride.",
+                );
+              }}
+            />
+          )}
+          {selection && !rideId && !editingCoaster && (
             <Inspector
               key={`${selection?.kind}:${selection?.id}`}
               run={run}
@@ -1053,13 +1084,32 @@ export default function Game() {
               action={(c) => void action(c)}
               config={snapshot?.mode === "near" ? activeConfig : null}
               onClose={() => setSelection(null)}
+              onEditCoaster={
+                isPersistent(run)
+                  ? async (b) => {
+                      if (b.riders.length) {
+                        if (b.enabled)
+                          await action({ kind: "toggle", building: b.id });
+                        setSpeed(1);
+                        setToast(
+                          "The coaster is closing. Let its current passengers finish, then open the designer.",
+                        );
+                        return;
+                      }
+                      setSpeed(0);
+                      if (b.enabled)
+                        await action({ kind: "toggle", building: b.id });
+                      setEditingCoaster(b);
+                    }
+                  : undefined
+              }
               onRide={(id) => {
                 setRideId(id);
                 setSelection(null);
               }}
             />
           )}
-          {screen === "playing" && !rideId && (
+          {screen === "playing" && worldReady && !rideId && !editingCoaster && (
             <div className={`mp-build-area ${selection ? "inspecting" : ""}`}>
               <div className="mp-build-heading">
                 <span>
@@ -1226,39 +1276,42 @@ export default function Game() {
           )}
           {snapshot?.error && (
             <div className="mp-network-status">
-              Reconnecting to NEAR. Your round clock continues; unconfirmed
-              changes are not ranked yet.
+              Reconnecting to NEAR. Your park is saved locally while its pending
+              changes confirm.
             </div>
           )}
-          {screen === "results" && showResults && snapshot && (
-            <div className="mp-ending-scrim">
-              <Results
-                state={snapshot}
-                onReplay={() => start(snapshot.mode, snapshot.record?.ranked)}
-                onExplore={() => setShowResults(false)}
-                onLeaders={() => setPanel("leaderboard")}
-                onOwnership={() => setPanel("near")}
-                onExport={() =>
-                  download(
-                    {
-                      run: snapshot.run,
-                      record: snapshot.record,
-                      transactions: snapshot.txs,
-                    },
-                    "moonpark-opening-day.json",
-                  )
-                }
-              />
-            </div>
-          )}
-          {screen === "results" && !showResults && (
-            <button
-              className="mp-return-results mp-primary"
-              onClick={() => setShowResults(true)}
-            >
-              <Trophy size={17} /> Opening day results
-            </button>
-          )}
+          {(screen === "results" || (run.finished && isPersistent(run))) &&
+            showResults &&
+            snapshot && (
+              <div className="mp-ending-scrim">
+                <Results
+                  state={snapshot}
+                  onReplay={() => start(snapshot.mode, snapshot.record?.ranked)}
+                  onExplore={() => setShowResults(false)}
+                  onLeaders={() => setPanel("leaderboard")}
+                  onOwnership={() => setPanel("near")}
+                  onExport={() =>
+                    download(
+                      {
+                        run: snapshot.run,
+                        record: snapshot.record,
+                        transactions: snapshot.txs,
+                      },
+                      "moonpark-opening-day.json",
+                    )
+                  }
+                />
+              </div>
+            )}
+          {(screen === "results" || (run.finished && isPersistent(run))) &&
+            !showResults && (
+              <button
+                className="mp-return-results mp-primary"
+                onClick={() => setShowResults(true)}
+              >
+                <Trophy size={17} /> Opening day results
+              </button>
+            )}
         </>
       )}
       {panel && (
@@ -1279,6 +1332,10 @@ export default function Game() {
           {panel === "near" ? (
             <>
               <ParkHub
+                onConfirm={async () => {
+                  setSpeed(0);
+                  await session.current?.confirm();
+                }}
                 cfg={activeConfig}
                 state={snapshot}
                 identity={parkIdentity}
@@ -1323,7 +1380,7 @@ export default function Game() {
                 >
                   <Trophy size={16} /> Rankings & prize escrow
                 </button>
-                <a href="/archive/v4">Earlier parks & earnings</a>
+                <a href="/archive/v5">Earlier parks & earnings</a>
                 <a href="/legacy-claims">Earlier concession claims</a>
                 <a
                   href={
@@ -1392,7 +1449,8 @@ export default function Game() {
               <ScoreBreakdown run={run} />
               <p className="mp-subtle">
                 Bronze 3,500 · Silver 5,500 · Gold 7,000. Every run has the same
-                arrivals, budgets and nine-minute opening day.
+                opening visitors and budgets. Your first 96 guests determine the
+                sealed score. Keep building and earning afterwards.
               </p>
             </>
           ) : (
@@ -1405,8 +1463,8 @@ export default function Game() {
                   <strong>Build a reason to visit.</strong> Pick a ride, place
                   its blueprint and connect its entrance. Guests arrive by
                   shuttle every 40 simulation seconds. Watch them disembark and
-                  catch their ride home. Your nine-minute opening-day clock
-                  begins at the first landing.
+                  catch their ride home. Your opening cohort begins at the first
+                  landing.
                 </li>
                 <li>
                   <strong>Watch what people do.</strong> Queues, thirst, budgets
@@ -1420,8 +1478,9 @@ export default function Game() {
                 </li>
                 <li>
                   <strong>Make your opening day count.</strong> Happy visitors,
-                  a healthy business and new experiences earn points. Use 2× or
-                  4× to reach closing time sooner.
+                  a healthy business and new experiences earn points. The first
+                  96 visitors seal your score when they depart. Later rockets
+                  keep your park earning. Pause to build or use 2× and 4×.
                 </li>
               </ol>
               <p>
@@ -1441,8 +1500,9 @@ export default function Game() {
                   <p>
                     Give your park its own identity and claim it with your NEAR
                     account. Customize a signature ride, then publish it on the
-                    ride exchange after closing. Other parks can license the
-                    design. NEAR records the license and credits its creator.
+                    ride exchange once guests have tested it. Other parks can
+                    license the design. NEAR records the license and credits its
+                    creator.
                   </p>
                 </div>
               </div>
@@ -1485,6 +1545,25 @@ export default function Game() {
                   Poly Haven
                 </a>{" "}
                 lunar soil and scanned rocks (CC0).
+              </p>
+              <p className="mp-fine">
+                Opening music is “Helios” by Scott Buckley, edited with original
+                sound effects and narration. Released under CC BY 4.0.{" "}
+                <a
+                  href="https://www.scottbuckley.com.au/library/helios/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Music source
+                </a>
+                {" · "}
+                <a
+                  href="https://creativecommons.org/licenses/by/4.0/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  License
+                </a>
               </p>
             </div>
           )}

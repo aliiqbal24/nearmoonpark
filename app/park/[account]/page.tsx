@@ -8,7 +8,7 @@ export default async function ParkPage({
 }) {
   const [{ account }, query] = await Promise.all([params, searchParams]);
   const version =
-    query.version === "v4" || query.version === "v5"
+    query.version === "v4" || query.version === "v5" || query.version === "v6"
       ? query.version
       : undefined;
   return <PublicPark accountId={account} version={version} />;

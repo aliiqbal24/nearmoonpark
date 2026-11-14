@@ -352,7 +352,7 @@ export function foundation(
   );
   shapedBox(
     g,
-    "#697984",
+    "#b6bdbb",
     0,
     0.3,
     0,
@@ -360,7 +360,7 @@ export function foundation(
     0.12,
     h - 0.22,
     style === 1 ? 0.4 : 0.16,
-  ).material = surface("#697984", "stone");
+  ).material = surface("#b6bdbb", "stone");
   for (const side of [-1, 1]) {
     box(
       g,
@@ -376,6 +376,7 @@ export function foundation(
       bolt(g, side * (w / 2 - 0.22), 0.38, z, 0.032);
   }
   for (const z of [-h / 2 + 0.12, h / 2 - 0.12]) {
+    box(g, c.light, 0, 0.32, z, w - 0.35, 0.025, 0.022).material = glow(c.light);
     box(g, "#263944", 0, 0.37, z, w - 0.48, 0.018, 0.06);
     for (let i = 0; i < Math.floor(w / 0.28); i++)
       box(g, "#c1c8c9", -w / 2 + 0.3 + i * 0.28, 0.385, z, 0.13, 0.006, 0.025);

@@ -1,7 +1,20 @@
 import { simulate } from "./engine";
-import { create, settle, view, type Config, type Credentials } from "./near";
+import {
+  create,
+  settle,
+  view,
+  provision,
+  type Config,
+  type Credentials,
+} from "./near";
 import type { Run, RecordState, Command } from "./model";
-import { VERSION, END, isCosmeticCommand } from "./model";
+import {
+  VERSION,
+  END,
+  isCosmeticCommand,
+  isPersistent,
+  parkClosed,
+} from "./model";
 type Op = { commands: Command[]; ticks: number; id: string };
 export type Snapshot = {
   run: Run;
@@ -20,6 +33,7 @@ export class ParkSession {
   private working = false;
   private serial: Promise<unknown> = Promise.resolve();
   private disposed = false;
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private desired = 0;
   constructor(
     run: Run,
@@ -36,9 +50,12 @@ export class ParkSession {
       pending: 0,
       error: null,
       txs: [],
-      deadline: deadline ?? Date.now() + (END + 15) * 1000,
+      deadline: isPersistent(run)
+        ? Number.MAX_SAFE_INTEGER
+        : (deadline ?? Date.now() + (END + 15) * 1000),
     };
     this.desired = run.tick;
+    this.flushTimer = setInterval(() => void this.flush(true), 5000);
   }
   static async start(
     onChange: (s: Snapshot) => void,
@@ -96,7 +113,9 @@ export class ParkSession {
       config: Config | null;
     } | null;
     if (!saved) return null;
-    if (![VERSION, "moonpark-v4"].includes(saved.state.run.version))
+    if (
+      ![VERSION, "moonpark-v5", "moonpark-v4"].includes(saved.state.run.version)
+    )
       throw Error(
         "This saved park uses the previous rules. Start a new opening day for the automatic vendor wallets. Earlier parks remain available in the archive.",
       );
@@ -118,7 +137,7 @@ export class ParkSession {
     );
     s.state.txs = saved.state.txs;
     let ops = saved.ops;
-    if (record?.run.finished)
+    if (record && parkClosed(record.run))
       ops = ops.filter(
         (o) =>
           o.ticks === 0 &&
@@ -181,15 +200,19 @@ export class ParkSession {
     });
   }
   async update(dt: number, speed: number) {
-    if (this.disposed || this.state.run.finished) return;
-    this.desired = Math.min(END, this.desired + dt * speed);
-    const closing = Date.now() >= this.state.deadline;
+    if (this.disposed || parkClosed(this.state.run)) return;
+    this.desired = Math.min(
+      isPersistent(this.state.run) ? 4_000_000_000 : END,
+      this.desired + dt * speed,
+    );
+    const closing =
+      !isPersistent(this.state.run) && Date.now() >= this.state.deadline;
     if (closing) this.desired = END;
     return this.enqueue(async () => {
-      if (this.disposed || this.state.run.finished) return;
-      // The day is bounded by END. Keep play responsive while its journal confirms.
+      if (this.disposed || parkClosed(this.state.run)) return;
+      // Keep prediction responsive while bounded batches confirm on NEAR.
       const ticks = Math.min(
-        10,
+        Math.min(10, this.batchTicks()),
         Math.max(0, Math.floor(this.desired) - this.state.run.tick),
       );
       if (!ticks) return;
@@ -200,7 +223,11 @@ export class ParkSession {
       });
       if (this.state.mode === "near") {
         const last = this.ops.at(-1);
-        if (last && last.commands.length === 0 && last.ticks + ticks <= 20)
+        if (
+          last &&
+          last.commands.length === 0 &&
+          last.ticks + ticks <= this.batchTicks()
+        )
           last.ticks += ticks;
         else this.ops.push({ commands: [], ticks, id: crypto.randomUUID() });
       }
@@ -220,7 +247,11 @@ export class ParkSession {
       });
     this.state.run = run;
   }
-  private async flush() {
+  private batchTicks() {
+    const buildings = this.state.run.buildings.filter((b) => !b.sold).length;
+    return buildings > 48 ? 5 : buildings > 24 ? 10 : 20;
+  }
+  private async flush(force = false) {
     if (
       this.working ||
       this.disposed ||
@@ -232,10 +263,11 @@ export class ParkSession {
       return;
     const head = this.ops[0];
     if (
+      !force &&
       head.commands.length === 0 &&
-      head.ticks < 20 &&
+      head.ticks < this.batchTicks() &&
       this.ops.length === 1 &&
-      !this.state.run.finished
+      !parkClosed(this.state.run)
     )
       return;
     this.working = true;
@@ -280,7 +312,40 @@ export class ParkSession {
         this.emit();
       });
     } catch (e) {
-      const error = e instanceof Error ? e.message : "Reconnecting to NEAR.";
+      let error = e instanceof Error ? e.message : "Reconnecting to NEAR.";
+      if (
+        isPersistent(this.state.run) &&
+        /allowance|NotEnoughBalance|insufficient.*gas/i.test(error) &&
+        this.config &&
+        this.credentials
+      ) {
+        try {
+          const next = await provision(
+            this.config,
+            this.credentials.identity,
+            !!this.state.record?.ranked,
+            this.credentials.displayName,
+          );
+          this.credentials = next;
+          const record = await view<RecordState>(this.config, "get_run", {
+            run_id: this.state.record!.run_id,
+          });
+          await this.enqueue(async () => {
+            if (this.active && record.last_request !== this.active.id)
+              this.ops.unshift(this.active);
+            this.active = null;
+            this.state.record = record;
+            this.state.error = null;
+            this.state.notice =
+              "Sponsored NEAR access refreshed. Your park and sealed score are preserved.";
+            await this.rebase();
+            this.emit();
+          });
+          return;
+        } catch (renewal) {
+          error = renewal instanceof Error ? renewal.message : error;
+        }
+      }
       await this.enqueue(async () => {
         if (this.active) this.ops.unshift(this.active);
         this.active = null;
@@ -348,7 +413,16 @@ export class ParkSession {
       2,
     );
   }
+  async confirm() {
+    await this.serial;
+    while (!this.disposed && (this.working || this.ops.length)) {
+      if (this.state.error) throw Error(this.state.error);
+      await this.flush(true);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
   dispose() {
+    if (this.flushTimer) clearInterval(this.flushTimer);
     this.disposed = true;
   }
 }

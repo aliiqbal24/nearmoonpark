@@ -2,11 +2,12 @@ import { test, expect, type Page } from "@playwright/test";
 import { PerspectiveCamera, Vector3 } from "three";
 import { KeyPair, JsonRpcProvider, Account, KeyPairSigner } from "near-api-js";
 import { readFile, writeFile } from "node:fs/promises";
+import type { RecordState } from "../lib/moon/model";
 function project(page: Page, x: number, z: number, y = 0.1) {
   const size = page.viewportSize()!;
   const camera = new PerspectiveCamera(50, size.width / size.height, 0.1, 250);
-  camera.position.set(32, 28, 44);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(24, 24, 38);
+  camera.lookAt(0, 0, 4);
   camera.updateMatrixWorld();
   const p = new Vector3((x - 16) * 1.25, y, (z - 12) * 1.25).project(camera);
   return { x: ((p.x + 1) / 2) * size.width, y: ((1 - p.y) / 2) * size.height };
@@ -109,14 +110,17 @@ test("opening day: build, connect, tune, economy, ride camera and closing", asyn
   await expect(
     page
       .locator(".mp-results")
-      .getByText("OPENING DAY COMPLETE", { exact: false }),
+      .getByText("OPENING SCORE SEALED", { exact: false }),
   ).toBeVisible({ timeout: 60000 });
   await expect(
     page.locator("canvas[data-session-canvas=original]"),
   ).toHaveCount(1);
   await page.screenshot({ path: "outputs/moon-results.png" });
   await page.reload();
-  await page.getByRole("button", { name: /Return to your park/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Opening day results" }).click();
   await expect(
     page
       .getByText("GOLD OPENING DAY", { exact: true })
@@ -165,7 +169,7 @@ test("overlap is rejected without spending and construction survives reload", as
     await page.evaluate(() =>
       JSON.parse(
         localStorage.getItem("moonpark-current")!,
-      ).state.run.paths.includes(19 * 32 + 20),
+      ).state.run.paths.includes(43 * 48 + 28),
     ),
   ).toBe(false);
   await page.mouse.click(tile.x, tile.y);
@@ -174,7 +178,7 @@ test("overlap is rejected without spending and construction survives reload", as
       page.evaluate(() =>
         JSON.parse(
           localStorage.getItem("moonpark-current")!,
-        ).state.run.paths.includes(19 * 32 + 20),
+        ).state.run.paths.includes(43 * 48 + 28),
       ),
     )
     .toBe(true);
@@ -185,7 +189,7 @@ test("overlap is rejected without spending and construction survives reload", as
       page.evaluate(() =>
         JSON.parse(
           localStorage.getItem("moonpark-current")!,
-        ).state.run.paths.includes(19 * 32 + 20),
+        ).state.run.paths.includes(43 * 48 + 28),
       ),
     )
     .toBe(false);
@@ -219,7 +223,7 @@ test("ranked provisioning and player profiles require sign-in", async ({
   expect(renamed.status()).toBe(401);
 });
 
-test("sponsored NEAR round publishes a customized park and signature ride", async ({
+test("sponsored NEAR park publishes an authored coaster and park revision", async ({
   page,
 }) => {
   test.skip(
@@ -241,6 +245,10 @@ test("sponsored NEAR round publishes a customized park and signature ride", asyn
   const p = project(page, 3.2, 8.2);
   await page.mouse.click(p.x, p.y);
   await page.getByRole("button", { name: /Connect entrance/ }).click();
+  await page.getByRole("button", { name: "Design your coaster" }).click();
+  await page.getByLabel("Hill 2").fill("75");
+  await page.getByRole("button", { name: "Apply track design" }).click();
+  await page.getByRole("button", { name: "Open", exact: true }).click();
   await page.getByText("Customize your attraction").click();
   await page.getByLabel("Attraction name").fill("Earthskimmer");
   await page.getByLabel("Attraction name").press("Enter");
@@ -273,8 +281,10 @@ test("sponsored NEAR round publishes a customized park and signature ride", asyn
             localStorage.getItem("moonpark-current") || "null",
           );
           return {
-            complete:
-              s?.state.record?.run.finished === true && s.state.pending === 0,
+            complete: s?.state.record?.run.buildings.some(
+              (b: { kind: string; served: number }) =>
+                b.kind === "coaster" && b.served > 0,
+            ),
             error: s?.state.error,
             tick: s?.state.run.tick,
             confirmed: s?.state.record?.run.tick,
@@ -287,8 +297,8 @@ test("sponsored NEAR round publishes a customized park and signature ride", asyn
             "NEAR synchronization diagnostic",
             JSON.stringify(status),
           );
-          const saved = await page.evaluate(
-            () => localStorage.getItem("moonpark-current")!,
+          const saved = await page.evaluate(() =>
+            localStorage.getItem("moonpark-current")!,
           );
           await writeFile(".near-local/moon-sync-debug.json", saved, {
             mode: 0o600,
@@ -299,14 +309,14 @@ test("sponsored NEAR round publishes a customized park and signature ride", asyn
       { timeout: 420000, intervals: [2000] },
     )
     .toBe(true);
-  await page
-    .getByRole("button", { name: "Publish your park & signature rides" })
-    .click();
+  await page.getByRole("button", { name: "My park and ride exchange" }).click();
   await expect(page.getByRole("tab", { name: "My park" })).toBeVisible({
     timeout: 30000,
   });
   await page.getByLabel("Park name").fill("Earthrise Gardens");
-  await page.getByRole("button", { name: "Publish this opening day" }).click();
+  await page
+    .getByRole("button", { name: "Publish this park revision" })
+    .click();
   await expect(
     page.getByText("Your park is published.", { exact: false }),
   ).toBeVisible({ timeout: 45000 });
@@ -326,7 +336,7 @@ test("sponsored NEAR round publishes a customized park and signature ride", asyn
       .design.name,
   ).toBe("Earthskimmer");
   await writeFile(
-    "outputs/moon-v5-browser-proof.json",
+    "outputs/moon-v6-browser-proof.json",
     JSON.stringify(
       {
         owner: saved.record.owner,
@@ -345,7 +355,9 @@ test("sponsored NEAR round publishes a customized park and signature ride", asyn
 
 test("opening clock waits for the first landing", async ({ page }) => {
   await open(page);
-  await expect(page.getByTestId("opening-day-clock")).toHaveText("9:00");
+  await expect(page.getByTestId("opening-day-clock")).toHaveText(
+    "First landing",
+  );
   await expect(page.getByText("FIRST LANDING", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "4×", exact: true }).click();
   await expect
@@ -355,7 +367,9 @@ test("opening clock waits for the first landing", async ({ page }) => {
       { timeout: 10000 },
     )
     .toBeGreaterThan(10);
-  await expect(page.getByTestId("opening-day-clock")).not.toHaveText("9:00");
+  await expect(page.getByTestId("opening-day-clock")).not.toHaveText(
+    "First landing",
+  );
 });
 
 test("NEAR ownership explanation is clear and fits mobile", async ({
@@ -430,6 +444,7 @@ test("attraction customization previews immediately and persists through reload"
       ),
     )
     .toEqual({
+      track: [],
       name: "Starlight Express",
       palette: 3,
       style: 1,
@@ -508,7 +523,7 @@ test("opening film decodes, advances smoothly and hands over to the park", async
   );
   await expect(
     page.getByText("YOUR PARK. YOUR CREATIONS. ON NEAR.", { exact: true }),
-  ).toBeVisible();
+  ).toHaveText("YOUR PARK. YOUR CREATIONS. ON NEAR.");
   await expect
     .poll(() =>
       page
@@ -581,7 +596,9 @@ test("published park visits show the verified layout and allow coaster rides", a
     page.getByRole("heading", { name: /Earthrise Gardens/ }),
   ).toBeVisible({ timeout: 30000 });
   await expect(page.getByText("7,161 points", { exact: true })).toBeVisible();
-  const current = JSON.parse(await readFile("public/moon-config.json", "utf8"));
+  const current = JSON.parse(
+    await readFile("public/moon-v5-config.json", "utf8"),
+  );
   await expect(
     page.getByRole("link", { name: /Park ownership & day/ }),
   ).toHaveAttribute(
@@ -613,6 +630,49 @@ test("published park visits show the verified layout and allow coaster rides", a
   expect(errors).toEqual([]);
 });
 
+test("persistent public parks show an authored snapshot without changing a local save", async ({
+  page,
+}) => {
+  test.skip(
+    process.env.MOON_PUBLIC_UI !== "1",
+    "Read-only v6 testnet fixture.",
+  );
+  const proof = JSON.parse(
+    await readFile("docs/moon-v6-browser-smoke.json", "utf8"),
+  );
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() =>
+    localStorage.setItem("moonpark-current", "preserve-my-park"),
+  );
+  await page.goto(`/park/p-${proof.parkId}?version=v6`);
+  await expect(
+    page.getByRole("heading", { name: /Earthrise Gardens/ }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(
+    page.getByText("PUBLISHED PARK REVISION", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(`${proof.score.total.toLocaleString()} points`, {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Ride the mass driver", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Back to the park", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Back to the park", exact: true })
+    .click();
+  await page.screenshot({ path: "outputs/moon-v6-public-authored-park.png" });
+  expect(
+    await page.evaluate(() => localStorage.getItem("moonpark-current")),
+  ).toBe("preserve-my-park");
+  expect(errors).toEqual([]);
+});
+
 test("ride exchange licenses a design, credits its creator and builds its verified configuration", async ({
   page,
 }) => {
@@ -622,22 +682,50 @@ test("ride exchange licenses a design, credits its creator and builds its verifi
   );
   test.setTimeout(120000);
   const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
-  const proof = JSON.parse(
-    await readFile("docs/moon-v5-testnet-smoke.json", "utf8"),
-  );
-  const saved = JSON.parse(
-    await readFile(`.near-local/${proof.ownershipProof.buyer}.json`, "utf8"),
-  );
   const provider = new JsonRpcProvider({ url: cfg.rpcUrl });
+  const sponsorKey = JSON.parse(
+    await readFile(".near-local/moon-v6-deployer.json", "utf8"),
+  );
+  const sponsor = new Account(
+    sponsorKey.accountId,
+    provider,
+    KeyPairSigner.fromSecretKey(sponsorKey.secretKey),
+  );
+  const pair = KeyPair.fromRandom("ed25519");
+  const saved = {
+    accountId: `license-${Date.now().toString(36)}.${sponsorKey.accountId}`,
+    secretKey: pair.toString(),
+  };
+  await writeFile(
+    `.near-local/${saved.accountId}.json`,
+    JSON.stringify(saved),
+    { mode: 0o600 },
+  );
+  await sponsor.createAccount({
+    newAccountId: saved.accountId,
+    publicKey: pair.getPublicKey(),
+    nearToTransfer: 500000000000000000000000n,
+  });
+  await sponsor.callFunction({
+    contractId: cfg.contractId,
+    methodName: "register_player",
+    args: {
+      account_id: saved.accountId,
+      player_id: `guest:${saved.accountId}`,
+      display_name: "Browser license proof",
+    },
+    gas: 50000000000000n,
+    waitUntil: "FINAL",
+  });
   const account = new Account(
     saved.accountId,
     provider,
     KeyPairSigner.fromSecretKey(saved.secretKey),
   );
-  const record = await account.callFunction({
+  const record = await account.callFunction<RecordState>({
     contractId: cfg.contractId,
     methodName: "create_run",
-    args: { challenge_id: "moonpark-v5", request_id: crypto.randomUUID() },
+    args: { challenge_id: "moonpark-v6", request_id: crypto.randomUUID() },
     gas: 180000000000000n,
     waitUntil: "FINAL",
   });
@@ -652,7 +740,7 @@ test("ride exchange licenses a design, credits its creator and builds its verifi
       park_id: string;
       creator: string;
       name: string;
-      design: { palette: number };
+      design: { palette: number; track?: unknown[] };
     }[]
   >({
     contractId: cfg.contractId,
@@ -661,21 +749,10 @@ test("ride exchange licenses a design, credits its creator and builds its verifi
   });
   if (!mine || !designs?.length)
     throw Error("The testnet park and blueprint fixtures must exist.");
-  let chosen = designs[0];
-  let newLicense = false;
-  for (const design of designs) {
-    if (design.park_id === mine.id) continue;
-    const owned = await provider.callFunction({
-      contractId: cfg.contractId,
-      method: "has_license",
-      args: { park_id: mine.id, blueprint_id: design.id },
-    });
-    if (!owned) {
-      chosen = design;
-      newLicense = true;
-      break;
-    }
-  }
+  designs.sort(
+    (a, b) => (b.design.track?.length ?? 0) - (a.design.track?.length ?? 0),
+  );
+  const chosen = designs.find((design) => design.park_id !== mine.id)!;
   const creator = await provider.callFunction<{ owner: string }>({
     contractId: cfg.contractId,
     method: "get_park",
@@ -730,6 +807,10 @@ test("ride exchange licenses a design, credits its creator and builds its verifi
   await page.getByRole("button", { name: "My park and ride exchange" }).click();
   await page.getByRole("tab", { name: "Ride exchange" }).click();
   const card = page.locator("article").filter({ hasText: chosen.creator });
+  if (chosen.design.track?.length)
+    await expect(
+      card.getByRole("img", { name: /authored track/ }),
+    ).toBeVisible();
   await card.getByRole("button", { name: /License & build/ }).click();
   await expect(page.getByRole("button", { name: "Close panel" })).toHaveCount(
     0,
@@ -755,11 +836,23 @@ test("ride exchange licenses a design, credits its creator and builds its verifi
   if (!after)
     throw Error("Creator earnings could not be read after licensing.");
   expect(BigInt(after.available) - BigInt(before.available)).toBe(
-    newLicense ? 4500000000000000000000n : 0n,
+    4500000000000000000000n,
+  );
+  const confirmed = await provider.callFunction<{
+    run: {
+      buildings: { blueprint_id?: string; design: { track?: unknown[] } }[];
+    };
+  }>({
+    contractId: cfg.contractId,
+    method: "get_run",
+    args: { run_id: record.run_id },
+  });
+  expect(confirmed?.run.buildings.at(-1)?.design.track).toEqual(
+    chosen.design.track,
   );
   await page.screenshot({ path: "outputs/moon-licensed-ride.png" });
   await writeFile(
-    "outputs/moon-v5-license-ui-proof.json",
+    "outputs/moon-v6-license-ui-proof.json",
     JSON.stringify(
       {
         parkId: mine.id,
@@ -768,8 +861,9 @@ test("ride exchange licenses a design, credits its creator and builds its verifi
         creditedYocto: (
           BigInt(after.available) - BigInt(before.available)
         ).toString(),
-        licensePreviouslyOwned: !newLicense,
+        licensePreviouslyOwned: false,
         verifiedConstruction: true,
+        trackPoints: chosen.design.track?.length ?? 0,
       },
       null,
       2,
@@ -787,7 +881,7 @@ test("private park backups validate account control, restore ownership and expor
   test.setTimeout(90000);
   const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
   const proof = JSON.parse(
-    await readFile("docs/moon-v5-testnet-smoke.json", "utf8"),
+    await readFile("docs/moon-v6-testnet-smoke.json", "utf8"),
   );
   const saved = JSON.parse(
     await readFile(`.near-local/${proof.ownershipProof.buyer}.json`, "utf8"),
@@ -809,6 +903,7 @@ test("private park backups validate account control, restore ownership and expor
     .getByText("Use an existing park on this browser", { exact: true })
     .click();
   const file = page.locator('input[type="file"]');
+  await expect(file).toBeEnabled();
   await file.setInputFiles({
     name: "invalid-backup.json",
     mimeType: "application/json",
@@ -860,7 +955,7 @@ test("private park backups validate account control, restore ownership and expor
   ).toContain(saved.accountId);
 });
 
-test("a queued cosmetic edit survives resuming an already closed NEAR day", async ({
+test("a queued cosmetic edit survives resuming a sealed NEAR opening", async ({
   page,
 }) => {
   test.skip(
@@ -870,7 +965,7 @@ test("a queued cosmetic edit survives resuming an already closed NEAR day", asyn
   test.setTimeout(90000);
   const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
   const proof = JSON.parse(
-    await readFile("docs/moon-v5-testnet-smoke.json", "utf8"),
+    await readFile("docs/moon-v6-testnet-smoke.json", "utf8"),
   );
   const saved = JSON.parse(
     await readFile(`.near-local/${proof.owner}.json`, "utf8"),
@@ -926,17 +1021,17 @@ test("a queued cosmetic edit survives resuming an already closed NEAR day", asyn
     { cfg, credentials, record, id },
   );
   await page.reload();
-  await page.getByRole("button", { name: /Return to your park/ }).click();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
   await expect
     .poll(
       () =>
         page.evaluate(() => {
           const s = JSON.parse(localStorage.getItem("moonpark-current")!).state;
-          return s.pending === 0 ? s.record.last_request : null;
+          return s.record.run.palette === 1 && s.pending === 0;
         }),
       { timeout: 45000 },
     )
-    .toBe(id);
+    .toBe(true);
   const state = await page.evaluate(
     () => JSON.parse(localStorage.getItem("moonpark-current")!).state,
   );
@@ -944,16 +1039,13 @@ test("a queued cosmetic edit survives resuming an already closed NEAR day", asyn
   expect(state.run.score).toEqual(proof.score);
   expect(state.run.finished).toBe(true);
   await page
-    .getByRole("button", { name: "Look around your park", exact: true })
-    .click();
-  await page
     .getByRole("button", { name: "Economy ledger", exact: true })
     .click();
   await page.getByText("View testnet wallets", { exact: true }).click();
   await expect(page.locator(".mp-wallet-list > div")).toHaveCount(5, {
     timeout: 30000,
   });
-  await page.screenshot({ path: "outputs/moon-v5-vendor-wallets.png" });
+  await page.screenshot({ path: "outputs/moon-v6-vendor-wallets.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("button", { name: "Close panel" })).toBeVisible();
   expect(
@@ -961,7 +1053,7 @@ test("a queued cosmetic edit survives resuming an already closed NEAR day", asyn
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: "outputs/moon-v5-vendor-wallets-mobile.png" });
+  await page.screenshot({ path: "outputs/moon-v6-vendor-wallets-mobile.png" });
 });
 
 test("sponsorship failure can open practice immediately without replaying the intro", async ({
@@ -1154,69 +1246,72 @@ test("eight building types keep the two merchant businesses automatic", async ({
   ).toHaveCount(0);
 });
 
-test("v4 practice saves resume with the archived engine", async ({ page }) => {
-  const wasm = await WebAssembly.compile(
-    new Uint8Array(await readFile("public/engine/moon-v4.wasm")),
-  );
-  const exports = new WebAssembly.Instance(wasm, {}).exports as {
-    memory: WebAssembly.Memory;
-    sim_alloc: (n: number) => number;
-    sim_call: (p: number, n: number) => bigint;
-    sim_free: (p: number, n: number) => void;
-  };
-  const bytes = new TextEncoder().encode(JSON.stringify({ op: "new" }));
-  const ptr = exports.sim_alloc(bytes.length);
-  new Uint8Array(exports.memory.buffer, ptr, bytes.length).set(bytes);
-  const output = exports.sim_call(ptr, bytes.length);
-  exports.sim_free(ptr, bytes.length);
-  const address = Number(output >> 32n),
-    length = Number(output & 0xffffffffn);
-  const run = JSON.parse(
-    new TextDecoder().decode(
-      new Uint8Array(exports.memory.buffer, address, length),
-    ),
-  ).run;
-  exports.sim_free(address, length);
-  expect(run.version).toBe("moonpark-v4");
-  await page.goto("/");
-  await page.evaluate(
-    (run) =>
-      localStorage.setItem(
-        "moonpark-current",
-        JSON.stringify({
-          state: {
-            run,
-            mode: "practice",
-            record: null,
-            pending: 0,
-            error: null,
-            txs: [],
-            deadline: Date.now() + 565000,
-          },
-          ops: [],
-          credentials: null,
-          config: null,
-        }),
+for (const version of ["v4", "v5"])
+  test(`${version} practice saves resume with the archived engine`, async ({
+    page,
+  }) => {
+    const wasm = await WebAssembly.compile(
+      new Uint8Array(await readFile(`public/engine/moon-${version}.wasm`)),
+    );
+    const exports = new WebAssembly.Instance(wasm, {}).exports as {
+      memory: WebAssembly.Memory;
+      sim_alloc: (n: number) => number;
+      sim_call: (p: number, n: number) => bigint;
+      sim_free: (p: number, n: number) => void;
+    };
+    const bytes = new TextEncoder().encode(JSON.stringify({ op: "new" }));
+    const ptr = exports.sim_alloc(bytes.length);
+    new Uint8Array(exports.memory.buffer, ptr, bytes.length).set(bytes);
+    const output = exports.sim_call(ptr, bytes.length);
+    exports.sim_free(ptr, bytes.length);
+    const address = Number(output >> 32n),
+      length = Number(output & 0xffffffffn);
+    const run = JSON.parse(
+      new TextDecoder().decode(
+        new Uint8Array(exports.memory.buffer, address, length),
       ),
-    run,
-  );
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible();
-  await expect
-    .poll(
-      async () =>
-        Number(await page.locator(".moonpark").getAttribute("data-tick")),
-      { timeout: 20000 },
-    )
-    .toBeGreaterThanOrEqual(2);
-  const state = await page.evaluate(
-    () => JSON.parse(localStorage.getItem("moonpark-current")!).state,
-  );
-  expect(state.run.version).toBe("moonpark-v4");
-  expect(state.error).toBeNull();
-});
+    ).run;
+    exports.sim_free(address, length);
+    expect(run.version).toBe(`moonpark-${version}`);
+    await page.goto("/");
+    await page.evaluate(
+      (run) =>
+        localStorage.setItem(
+          "moonpark-current",
+          JSON.stringify({
+            state: {
+              run,
+              mode: "practice",
+              record: null,
+              pending: 0,
+              error: null,
+              txs: [],
+              deadline: Date.now() + 565000,
+            },
+            ops: [],
+            credentials: null,
+            config: null,
+          }),
+        ),
+      run,
+    );
+    await page.reload();
+    await expect(
+      page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+    ).toBeVisible();
+    await expect
+      .poll(
+        async () =>
+          Number(await page.locator(".moonpark").getAttribute("data-tick")),
+        { timeout: 20000 },
+      )
+      .toBeGreaterThanOrEqual(2);
+    const state = await page.evaluate(
+      () => JSON.parse(localStorage.getItem("moonpark-current")!).state,
+    );
+    expect(state.run.version).toBe(`moonpark-${version}`);
+    expect(state.error).toBeNull();
+  });
 
 test("earlier park ownership and public visits stay accessible", async ({
   page,
@@ -1246,4 +1341,54 @@ test("earlier park ownership and public visits stay accessible", async ({
     page.getByRole("link", { name: /Park ownership & day/ }),
   ).toHaveAttribute("href", /game\.moonpark-mw65jiya\.testnet$/);
   expect(errors).toEqual([]);
+});
+
+test("custom coaster editing previews, saves a closed loop and survives refresh", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await page.getByRole("button", { name: "Build Mass-Driver Coaster" }).click();
+  const spot = project(page, 3.2, 8.2);
+  await page.mouse.click(spot.x, spot.y);
+  await page.getByRole("button", { name: /Connect entrance/ }).click();
+  const canvas = page.locator('[data-testid="moon-world"] canvas');
+  await canvas.evaluate((element) =>
+    element.setAttribute("data-coaster-canvas", "original"),
+  );
+  await page.getByRole("button", { name: "Design your coaster" }).click();
+  await expect(
+    page.getByRole("complementary", { name: "Coaster designer" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Track handle/ })).toHaveCount(
+    6,
+  );
+  await page.getByLabel("Hill 2").fill("60");
+  await page
+    .getByRole("button", { name: "Track handle 5", exact: true })
+    .focus();
+  await page.keyboard.press("ArrowLeft");
+  await page.getByRole("button", { name: "Apply track design" }).click();
+  await expect(
+    page.getByRole("complementary", { name: "Coaster designer" }),
+  ).toHaveCount(0);
+  await expect(canvas).toHaveAttribute("data-coaster-canvas", "original");
+  const design = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("moonpark-current")!).state.run
+        .buildings[2].design,
+  );
+  expect(design.track).toHaveLength(8);
+  expect(design.track[3].y).toBe(60);
+  expect(design.track[6].x).toBe(-19);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
+  ).toBeVisible();
+  const restored = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("moonpark-current")!).state.run
+        .buildings[2].design,
+  );
+  expect(restored).toEqual(design);
 });

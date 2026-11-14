@@ -15,6 +15,9 @@ pub struct Park {
     pub emblem: u8,
     pub revision: u32,
     pub run_id: Option<String>,
+    pub active_run: Option<String>,
+    #[serde(skip_serializing)]
+    pub snapshot: Option<String>,
     pub blueprint_ids: Vec<String>,
     pub rating_sum: u32,
     pub rating_count: u32,
@@ -79,6 +82,8 @@ impl Moonpark {
             emblem: 0,
             revision: 0,
             run_id: None,
+            active_run: None,
+            snapshot: None,
             blueprint_ids: vec![],
             rating_sum: 0,
             rating_count: 0,
@@ -92,6 +97,15 @@ impl Moonpark {
             serde_json::json!({"park_id":id,"owner":operator}),
         );
         id
+    }
+    fn handoff_run(&mut self, park: &Park, operator: &AccountId) {
+        if let Some(id) = &park.active_run {
+            let mut record = self.get_run(id.clone());
+            let previous: AccountId = record["owner"].as_str().unwrap().parse().unwrap();
+            self.rebind_economy(id, &previous, operator);
+            record["owner"] = serde_json::to_value(operator).unwrap();
+            self.runs.insert(id, &record.to_string());
+        }
     }
     fn editable_park(&self, id: &str) -> Park {
         let p = self.parks.get(&id.to_string()).expect("Park not found");
@@ -127,6 +141,12 @@ impl Moonpark {
 impl Moonpark {
     pub fn get_park(&self, park_id: String) -> Option<Park> {
         self.parks.get(&park_id)
+    }
+    pub fn get_park_snapshot(&self, park_id: String) -> Option<Run> {
+        self.parks
+            .get(&park_id)
+            .and_then(|p| p.snapshot)
+            .map(|s| serde_json::from_str(&s).unwrap())
     }
     pub fn get_park_by_owner(&self, account_id: AccountId) -> Option<Park> {
         self.park_owners
@@ -171,9 +191,10 @@ impl Moonpark {
             );
             let run: Run = serde_json::from_value(record["run"].clone()).unwrap();
             assert!(
-                run.finished,
-                "Finish and confirm opening day before publishing"
+                run.tick >= moonpark_sim::LANDING,
+                "Land your first rocket before publishing"
             );
+            p.snapshot = Some(serde_json::to_string(&run).unwrap());
             p.run_id = Some(id);
         }
         p.name = name.trim().into();
@@ -255,6 +276,7 @@ impl Moonpark {
             self.parks.remove(&id);
         }
         self.park_operators.remove(&p.operator);
+        self.handoff_run(&p, &operator);
         p.operator = operator.clone();
         p.revision += 1;
         self.park_operators.insert(&operator, &park_id);
@@ -289,6 +311,7 @@ impl Moonpark {
             "Session identity mismatch"
         );
         self.park_operators.remove(&p.operator);
+        self.handoff_run(&p, &operator);
         p.operator = operator.clone();
         p.revision += 1;
         self.park_operators.insert(&operator, &park_id);
@@ -305,15 +328,6 @@ impl Moonpark {
     ) -> RideBlueprint {
         let mut p = self.editable_park(&park_id);
         valid_name(&name);
-        let id = format!("{run_id}:{building_id}");
-        if let Some(b) = self.blueprints.get(&id) {
-            assert_eq!(b.park_id, park_id, "Creator mismatch");
-            return b;
-        }
-        assert!(
-            p.blueprint_ids.len() < 5 && self.blueprints.len() < 10_000,
-            "Blueprint publication limit reached"
-        );
         let record = self.get_run(run_id.clone());
         assert_eq!(
             record["park_id"].as_str(),
@@ -321,7 +335,7 @@ impl Moonpark {
             "This opening day belongs to another park"
         );
         let run: Run = serde_json::from_value(record["run"].clone()).unwrap();
-        assert!(run.finished, "Finish and confirm opening day first");
+
         let b = run
             .buildings
             .iter()
@@ -334,6 +348,15 @@ impl Moonpark {
         assert!(
             b.served > 0,
             "Test your signature ride with guests before publishing"
+        );
+        let id = format!("{run_id}:{building_id}:{}", b.design_revision);
+        if let Some(existing) = self.blueprints.get(&id) {
+            assert_eq!(existing.park_id, park_id, "Creator mismatch");
+            return existing;
+        }
+        assert!(
+            p.blueprint_ids.len() < 32 && self.blueprints.len() < 10_000,
+            "Blueprint publication limit reached"
         );
         let mut design = b.design.clone();
         if design.palette == 255 {

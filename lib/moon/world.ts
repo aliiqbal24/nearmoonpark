@@ -1,3 +1,4 @@
+import { resortDistrict } from "./resort-district";
 import { configureArt } from "./art-kit";
 import { createSky, lunarEnvironment, SUN_DIRECTION } from "./sky";
 import { PALETTES } from "./parks";
@@ -21,7 +22,6 @@ import {
 import {
   SCALE,
   box,
-  sphere,
   label,
   astronaut,
   rocket,
@@ -33,6 +33,13 @@ import {
 import {
   WIDTH,
   HEIGHT,
+  parkWidth,
+  parkHeight,
+  parkOriginZ,
+  parkGate,
+  parkClosed,
+  coasterDuration,
+  type Design,
   footprint,
   entrance,
   walkingRoute,
@@ -42,7 +49,7 @@ import {
   type Detail,
 } from "./model";
 
-import { cinematicPose } from "./cinema";
+import { cinematicPose, introCoasterProgress } from "./cinema";
 type Options = {
   autoStart?: boolean;
   preview?: boolean;
@@ -52,6 +59,14 @@ type Options = {
   onReady: () => void;
 };
 export class MoonWorld {
+  private width = WIDTH;
+  private height = HEIGHT;
+  private originZ = 36;
+  private designPreview: { id: number; design: Design } | null = null;
+  setDesignPreview(preview: { id: number; design: Design } | null) {
+    this.designPreview = preview;
+    this.sync();
+  }
   renderer: T.WebGLRenderer;
   scene = new T.Scene();
   private sky = new T.Scene();
@@ -105,8 +120,6 @@ export class MoonWorld {
   private cockpit = new T.Group();
   private rideNose = new T.Group();
   private founder: T.Group;
-  private gagRobot = new T.Group();
-  private popcorn: T.Object3D[] = [];
   private last = 0;
   private time = 0;
   private speed = 1;
@@ -161,20 +174,20 @@ export class MoonWorld {
     this.renderer.shadowMap.type = T.PCFShadowMap;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.toneMapping = T.AgXToneMapping;
-    this.renderer.toneMappingExposure = 1.18;
+    this.renderer.toneMappingExposure = 1.42;
     host.appendChild(this.renderer.domElement);
     this.renderer.autoClear = false;
     this.renderer.setClearColor("#03060c");
     this.scene.background = null;
     this.scene.fog = new T.Fog("#080d16", 300, 1600);
     this.camera = new T.PerspectiveCamera(50, 1, 0.1, 2200);
-    this.camera.position.set(32, 28, 44);
+    this.camera.position.set(24, 24, 38);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.target.set(0, 0, 0);
+    this.controls.target.set(0, 0, 4);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.09;
     this.controls.minDistance = 10;
-    this.controls.maxDistance = 72;
+    this.controls.maxDistance = 90;
     this.controls.minPolarAngle = Math.PI * 0.12;
     this.controls.maxPolarAngle = Math.PI * 0.46;
     this.controls.mouseButtons = {
@@ -208,7 +221,7 @@ export class MoonWorld {
     }
     this.rideNose.visible = false;
     this.camera.add(this.rideNose);
-    this.scene.add(new T.HemisphereLight("#93b8e0", "#555962", 0.23));
+    this.scene.add(new T.HemisphereLight("#a7c6ed", "#6b7483", 0.85));
     const sun = new T.DirectionalLight("#ffe4c4", 4.2);
     this.sun = sun;
     sun.position.copy(SUN_DIRECTION).multiplyScalar(60);
@@ -221,22 +234,24 @@ export class MoonWorld {
           ? 1024
           : 2048;
     sun.shadow.mapSize.set(shadowSize, shadowSize);
-    sun.target.position.set(0, 0, 0);
-    sun.shadow.camera.left = -36;
-    sun.shadow.camera.right = 36;
-    sun.shadow.camera.top = 30;
-    sun.shadow.camera.bottom = -30;
+    sun.target.position.set(0, 0, -12);
+    sun.position.add(sun.target.position);
+    this.scene.add(sun.target);
+    sun.shadow.camera.left = -48;
+    sun.shadow.camera.right = 48;
+    sun.shadow.camera.top = 48;
+    sun.shadow.camera.bottom = -48;
     sun.shadow.normalBias = 0.018;
     sun.shadow.bias = -0.00008;
     sun.shadow.radius = 2;
     this.scene.add(sun);
-    const rim = new T.DirectionalLight("#83b9ed", 0.65);
+    const rim = new T.DirectionalLight("#83b9ed", 1.2);
     rim.position.set(20, 8, -25);
     this.scene.add(rim);
     if (floatColor && (this.manual || !softwareRenderer)) {
       this.environmentTarget = lunarEnvironment(this.renderer);
       this.scene.environment = this.environmentTarget.texture;
-      this.scene.environmentIntensity = 0.75;
+      this.scene.environmentIntensity = 1.15;
     }
     this.sceneryReady = this.environment(!this.manual && softwareRenderer);
     void this.sceneryReady.catch((error: unknown) =>
@@ -245,12 +260,17 @@ export class MoonWorld {
     this.paths = new T.InstancedMesh(
       new T.BoxGeometry(1.2, 0.065, 1.2),
       walkwayMaterial(),
-      WIDTH * HEIGHT,
+      this.width * this.height,
     );
     this.paths.count = 0;
     this.paths.receiveShadow = true;
     this.scene.add(this.paths, this.amenities);
-    this.grid = new T.GridHelper(WIDTH * SCALE, WIDTH, "#c8e4e8", "#9aa4b6");
+    this.grid = new T.GridHelper(
+      this.width * SCALE,
+      this.width,
+      "#c8e4e8",
+      "#9aa4b6",
+    );
     this.grid.position.y = 0.18;
     this.grid.visible = false;
     (this.grid.material as T.Material).transparent = true;
@@ -305,17 +325,6 @@ export class MoonWorld {
     this.founder = astronaut("#a9e4d3", 1.5, 4);
     this.founder.position.set(2, 0.19, 15.7);
     this.scene.add(this.founder);
-    this.gagRobot.add(serviceRover("#e4b17d"));
-    box(this.gagRobot, "#f7edd5", 0, 0.78, 0.44, 0.38, 0.38, 0.32);
-    for (const x of [-0.13, 0, 0.13])
-      box(this.gagRobot, "#d87f67", x, 0.78, 0.61, 0.055, 0.34, 0.02);
-    for (let i = 0; i < 25; i++) {
-      const piece = sphere(this.gagRobot, "#fff0c2", 0, 2, 0, 0.07);
-      this.popcorn.push(piece);
-    }
-    this.gagRobot.position.set(-2, 0.08, 20.3);
-    this.gagRobot.visible = false;
-    this.scene.add(this.gagRobot);
     // Single-sample targets avoid ANGLE's resolve failure during bloom composition.
     // SMAA smooths geometry edges after tone mapping.
     this.post = new EffectComposer(
@@ -353,7 +362,7 @@ export class MoonWorld {
       );
     this.depthOfField.enabled = false;
     this.post.addPass(this.depthOfField);
-    this.bloom = new UnrealBloomPass(new T.Vector2(1, 1), 0.18, 0.28, 3.0);
+    this.bloom = new UnrealBloomPass(new T.Vector2(1, 1), 0.22, 0.34, 2.2);
     this.post.addPass(this.bloom);
     this.post.addPass(new OutputPass());
     this.post.addPass(
@@ -389,6 +398,7 @@ export class MoonWorld {
     const sky = createSky(this.sky);
     this.earth = sky.earth;
     observatory(this.scene);
+    resortDistrict(this.scene);
     await Promise.all([terrainReady, sky.ready]);
   }
 
@@ -414,6 +424,10 @@ export class MoonWorld {
     cinematic: number | null,
     rideId: number | null,
   ) {
+    this.width = parkWidth(run);
+    this.height = parkHeight(run);
+    this.originZ = parkOriginZ(run);
+    this.grid.position.z = (this.height / 2 - this.originZ) * SCALE;
     const returnToPark =
       (this.cinematic !== null && cinematic === null) ||
       (this.rideId !== null && rideId === null);
@@ -425,7 +439,7 @@ export class MoonWorld {
       cinematic === null && rideId === null && !this.attractMode;
     if (returnToPark) {
       this.home();
-      this.renderer.toneMappingExposure = 1.18;
+      this.renderer.toneMappingExposure = 1.42;
     }
     if (this.run !== run) {
       this.run = run;
@@ -443,9 +457,9 @@ export class MoonWorld {
       const { w, h } = footprint(b);
       this.selection.scale.set(w * SCALE, 1, h * SCALE);
       this.selection.position.set(
-        (b.x + w / 2 - WIDTH / 2) * SCALE,
+        (b.x + w / 2 - this.width / 2) * SCALE,
         0.23,
-        (b.z + h / 2 - HEIGHT / 2) * SCALE,
+        (b.z + h / 2 - this.originZ) * SCALE,
       );
     }
     if (JSON.stringify(placement) !== JSON.stringify(this.placement)) {
@@ -528,9 +542,9 @@ export class MoonWorld {
       const mat = new T.Matrix4();
       run.paths.forEach((c, i) => {
         mat.makeTranslation(
-          ((c % WIDTH) + 0.5 - WIDTH / 2) * SCALE,
+          ((c % this.width) + 0.5 - this.width / 2) * SCALE,
           0.15,
-          (Math.floor(c / WIDTH) + 0.5 - HEIGHT / 2) * SCALE,
+          (Math.floor(c / this.width) + 0.5 - this.originZ) * SCALE,
         );
         this.paths.setMatrixAt(i, mat);
       });
@@ -555,7 +569,11 @@ export class MoonWorld {
         disposeObject(m.root);
         this.models.delete(id);
       }
-    for (const b of run.buildings) {
+    for (const original of run.buildings) {
+      const b =
+        original.id === this.designPreview?.id
+          ? { ...original, design: this.designPreview.design }
+          : original;
       if (b.sold) continue;
       let m = this.models.get(b.id);
       const signature = `${b.kind}:${b.rotation}:${b.variant}:${b.x}:${b.z}:${run.palette ?? 0}:${JSON.stringify(b.design)}`;
@@ -570,9 +588,9 @@ export class MoonWorld {
         m.root.userData.signature = signature;
         const { w, h } = footprint(b);
         m.root.position.set(
-          (b.x + w / 2 - WIDTH / 2) * SCALE,
+          (b.x + w / 2 - this.width / 2) * SCALE,
           0.18,
-          (b.z + h / 2 - HEIGHT / 2) * SCALE,
+          (b.z + h / 2 - this.originZ) * SCALE,
         );
         if (isTenant(b.kind) || b.kind === "depot") {
           const owner = astronaut(
@@ -611,15 +629,15 @@ export class MoonWorld {
         ? { w: 1, h: 1 }
         : footprint({ ...this.placement, kind: this.placement.kind });
     this.ghost.position.set(
-      (this.cell.x + size.w / 2 - WIDTH / 2) * SCALE,
+      (this.cell.x + size.w / 2 - this.width / 2) * SCALE,
       0.25,
-      (this.cell.z + size.h / 2 - HEIGHT / 2) * SCALE,
+      (this.cell.z + size.h / 2 - this.originZ) * SCALE,
     );
     this.ghost.visible =
       this.cell.x >= 0 &&
       this.cell.z >= 0 &&
-      this.cell.x + size.w <= WIDTH &&
-      this.cell.z + size.h <= HEIGHT;
+      this.cell.x + size.w <= this.width &&
+      this.cell.z + size.h <= this.height;
     const occupied = (x: number, z: number) =>
       this.run?.buildings.some((b) => {
         const f = footprint(b);
@@ -634,7 +652,7 @@ export class MoonWorld {
           occupied(x, z) ||
           (this.placement.kind !== "path" &&
             this.placement.kind !== "erase" &&
-            this.run?.paths.includes(z * WIDTH + x))
+            this.run?.paths.includes(z * this.width + x))
         )
           valid = false;
     if (
@@ -642,8 +660,8 @@ export class MoonWorld {
       this.placement.kind !== "erase" &&
       (this.cell.x < 1 ||
         this.cell.z < 1 ||
-        this.cell.x + size.w >= WIDTH ||
-        this.cell.z + size.h >= HEIGHT)
+        this.cell.x + size.w >= this.width ||
+        this.cell.z + size.h >= this.height)
     )
       valid = false;
     const mesh = this.ghost.children[0] as
@@ -663,8 +681,8 @@ export class MoonWorld {
     this.ray.setFromCamera(this.mouse, this.renderCamera());
     if (this.ray.ray.intersectPlane(this.plane, this.pointer)) {
       this.cell = {
-        x: Math.floor(this.pointer.x / SCALE + WIDTH / 2),
-        z: Math.floor(this.pointer.z / SCALE + HEIGHT / 2),
+        x: Math.floor(this.pointer.x / SCALE + this.width / 2),
+        z: Math.floor(this.pointer.z / SCALE + this.originZ),
       };
       this.moveGhost();
     }
@@ -731,13 +749,15 @@ export class MoonWorld {
     const reach = T.MathUtils.clamp(
       (this.controls.maxDistance - distance) * 0.55,
       7,
-      18,
+      this.width === 48 ? 30 : 18,
     );
     const x = T.MathUtils.clamp(target.x, -reach, reach);
     const z = T.MathUtils.clamp(
       target.z,
-      -Math.min((HEIGHT * SCALE) / 2 - 2, reach),
-      Math.min((HEIGHT * SCALE) / 2 + 8, reach + 5),
+      this.height === 48
+        ? -43
+        : -Math.min((this.height * SCALE) / 2 - 2, reach),
+      Math.min((this.height * SCALE) / 2 + 8, reach + 5),
     );
     this.camera.position.x += x - target.x;
     this.camera.position.y -= target.y;
@@ -755,8 +775,8 @@ export class MoonWorld {
       this.camera.position.set(26, 30, 50);
       this.controls.target.set(0, 0, 8);
     } else {
-      this.camera.position.set(32, 28, 44);
-      this.controls.target.set(0, 0, 0);
+      this.camera.position.set(24, 24, 38);
+      this.controls.target.set(0, 0, 4);
     }
     this.controls.update();
   }
@@ -798,9 +818,9 @@ export class MoonWorld {
   }
   project(x: number, z: number) {
     const p = new T.Vector3(
-      (x + 0.5 - WIDTH / 2) * SCALE,
+      (x + 0.5 - this.width / 2) * SCALE,
       0.2,
-      (z + 0.5 - HEIGHT / 2) * SCALE,
+      (z + 0.5 - this.originZ) * SCALE,
     ).project(this.renderCamera());
     const r = this.host.getBoundingClientRect();
     return { x: ((p.x + 1) / 2) * r.width, y: ((1 - p.y) / 2) * r.height };
@@ -838,29 +858,14 @@ export class MoonWorld {
           (this.manual
             ? 0
             : Math.max(0, Math.min(0.25, (now - this.cinematicAt) / 1000)));
-    this.cockpit.visible = cinematic !== null && cinematic < 9;
-    this.gagRobot.visible =
-      cinematic !== null && cinematic >= 33 && cinematic < 35;
+    this.cockpit.visible =
+      cinematic !== null && cinematic >= 4 && cinematic < 9;
     this.rideNose.visible =
       this.rideId !== null ||
       (cinematic !== null && cinematic >= 21 && cinematic < 29);
     this.founder.rotation.y = 0;
     (this.founder.userData.arms[1] as T.Object3D).rotation.z =
       2.2 + Math.sin(this.time * 5) * 0.25;
-    if (this.gagRobot.visible) {
-      const t = cinematic! - 33;
-      this.gagRobot.rotation.z = Math.sin(t * 9) * 0.07;
-      this.popcorn.forEach((p, i) => {
-        const start = i * 0.07,
-          fall = Math.max(0, t - start);
-        p.position.set(
-          Math.sin(i * 4.1) * (0.1 + Math.min(1, fall)),
-          Math.max(0.1, 2.7 - fall * fall * 2) +
-            (fall > 1.1 ? Math.abs(Math.sin(fall * 9 + i)) * 0.12 : 0),
-          0.35 + Math.cos(i * 3.2) * Math.min(0.8, fall * 0.4),
-        );
-      });
-    }
     if (run) {
       this.visualTick = T.MathUtils.clamp(
         Math.max(run.tick, this.visualTick) + dt * this.speed,
@@ -874,18 +879,47 @@ export class MoonWorld {
             ? 40 + (this.reducedMotion ? 1 : this.time * 0.8)
             : this.opts.preview
               ? 40 + (this.reducedMotion ? 1 : this.previewTime)
-              : run.finished
+              : parkClosed(run)
                 ? run.tick
                 : this.visualTick;
+      const heroCoaster = run.buildings.find(
+        (b) => b.kind === "coaster" && !b.sold,
+      )?.id;
       for (const b of run.buildings) {
         const m = this.models.get(b.id);
-        if (m && !b.sold)
+        if (m?.train)
+          m.train.visible =
+            this.rideId !== b.id &&
+            !(
+              cinematic !== null &&
+              cinematic >= 21 &&
+              cinematic < 29 &&
+              b.id === heroCoaster
+            );
+        if (
+          m &&
+          !b.sold &&
+          cinematic !== null &&
+          b.kind === "coaster" &&
+          (cinematic < 4 || (cinematic >= 21 && cinematic < 29))
+        ) {
+          m.animate(
+            visual,
+            {
+              ...b,
+              riders: [0, 1, 2, 3],
+              cycle_left:
+                coasterDuration(b) * (1 - introCoasterProgress(cinematic)),
+            },
+            0,
+          );
+        } else if (m && !b.sold)
           m.animate(
             visual,
             b,
             cinematic !== null
               ? cinematic % 1
-              : run.finished
+              : parkClosed(run)
                 ? Math.min(b.cycle_left, (now - this.updateTime) / 1000)
                 : Math.min(1, visual - run.tick),
           );
@@ -894,7 +928,9 @@ export class MoonWorld {
       this.animateDeliveries(run, visual);
       const shuttleTime =
         cinematic !== null
-          ? Math.min(39.99, Math.max(0, (cinematic - 6) * 1.25))
+          ? cinematic < 9
+            ? 39
+            : Math.min(39.99, Math.max(0, (cinematic - 9) * 1.43))
           : visual;
       this.animateShuttle(shuttleTime);
       for (const building of run.buildings) {
@@ -903,6 +939,11 @@ export class MoonWorld {
           ?.root.getObjectByName("merchant-owner");
         if (owner) {
           owner.visible = building.ready_at <= run.tick;
+          if (building.kind === "food")
+            owner.position.z =
+              cinematic !== null && cinematic >= 29 && cinematic < 33
+                ? 1.15
+                : 0.02;
           (owner.userData.arms[1] as T.Object3D).rotation.z = building.insolvent
             ? 0
             : 0.5 + Math.sin(this.time * 2 + building.id) * 0.18;
@@ -973,9 +1014,13 @@ export class MoonWorld {
   };
   private animateGuests(run: Run, dt: number, time: number) {
     for (const g of run.guests) {
-      const visible = !["upcoming", "gone", "riding", "cancelled"].includes(
-        g.status,
-      );
+      const visible =
+        !(
+          this.cinematic !== null &&
+          this.cinematic >= 29 &&
+          this.cinematic < 33 &&
+          g.id >= 3
+        ) && !["upcoming", "gone", "riding", "cancelled"].includes(g.status);
       let p = this.people.get(g.id);
       if (!visible) {
         if (p) p.visible = false;
@@ -990,8 +1035,8 @@ export class MoonWorld {
         p.traverse((o) => (o.userData.guest = g.id));
         this.scene.add(p);
         this.people.set(g.id, p);
-        const x = ((g.cell % WIDTH) + 0.5 - WIDTH / 2) * SCALE,
-          z = (Math.floor(g.cell / WIDTH) + 0.5 - HEIGHT / 2) * SCALE;
+        const x = ((g.cell % this.width) + 0.5 - this.width / 2) * SCALE,
+          z = (Math.floor(g.cell / this.width) + 0.5 - this.originZ) * SCALE;
         if (g.status === "arriving")
           p.position.set(
             ((g.id % 2) - 0.5) * 0.42,
@@ -1023,18 +1068,18 @@ export class MoonWorld {
         progress = T.MathUtils.clamp(time - run.tick, 0, 1);
       }
       let x =
-        (T.MathUtils.lerp(cell % WIDTH, nextCell % WIDTH, progress) +
+        (T.MathUtils.lerp(cell % this.width, nextCell % this.width, progress) +
           0.5 -
-          WIDTH / 2) *
+          this.width / 2) *
         SCALE;
       let z =
         (T.MathUtils.lerp(
-          Math.floor(cell / WIDTH),
-          Math.floor(nextCell / WIDTH),
+          Math.floor(cell / this.width),
+          Math.floor(nextCell / this.width),
           progress,
         ) +
           0.5 -
-          HEIGHT / 2) *
+          this.originZ) *
         SCALE;
       if (g.status === "arriving") {
         const delay = Math.floor((g.id % 8) / 2) * 0.24;
@@ -1070,8 +1115,9 @@ export class MoonWorld {
       }
       if (["walking", "leaving"].includes(g.status)) {
         const lane = ((g.id % 3) - 1) * 0.23;
-        const dx = (nextCell % WIDTH) - (cell % WIDTH);
-        const dz = Math.floor(nextCell / WIDTH) - Math.floor(cell / WIDTH);
+        const dx = (nextCell % this.width) - (cell % this.width);
+        const dz =
+          Math.floor(nextCell / this.width) - Math.floor(cell / this.width);
         if (dx !== 0) z += Math.sign(dx) * lane;
         else if (dz !== 0) x -= Math.sign(dz) * lane;
       }
@@ -1138,8 +1184,8 @@ export class MoonWorld {
         const entry = entrance(b);
         d.userData.route = walkingRoute(
           run,
-          23 * WIDTH + 15,
-          entry.z * WIDTH + entry.x,
+          parkGate(run),
+          entry.z * this.width + entry.x,
         );
         d.userData.paths = this.pathSignature;
       }
@@ -1153,29 +1199,29 @@ export class MoonWorld {
         to = route[Math.min(route.length - 1, Math.floor(index) + 1)],
         fraction = index - Math.floor(index);
       d.position.set(
-        (T.MathUtils.lerp(from % WIDTH, to % WIDTH, fraction) +
+        (T.MathUtils.lerp(from % this.width, to % this.width, fraction) +
           0.5 -
-          WIDTH / 2) *
+          this.width / 2) *
           SCALE,
         0.19,
         (T.MathUtils.lerp(
-          Math.floor(from / WIDTH),
-          Math.floor(to / WIDTH),
+          Math.floor(from / this.width),
+          Math.floor(to / this.width),
           fraction,
         ) +
           0.5 -
-          HEIGHT / 2) *
+          this.originZ) *
           SCALE,
       );
       if (from !== to)
         d.rotation.y = Math.atan2(
-          (to % WIDTH) - (from % WIDTH),
-          Math.floor(to / WIDTH) - Math.floor(from / WIDTH),
+          (to % this.width) - (from % this.width),
+          Math.floor(to / this.width) - Math.floor(from / this.width),
         );
     }
   }
   private introCamera(t: number) {
-    this.cockpit.visible = false;
+    this.cockpit.visible = t >= 4 && t < 9;
     if (this.reducedMotion) {
       this.camera.position.set(32, 28, 44);
       this.camera.lookAt(0, 0, 0);
@@ -1201,7 +1247,7 @@ export class MoonWorld {
     }
     this.camera.fov = Math.min(82, lens);
     this.camera.updateProjectionMatrix();
-    this.renderer.toneMappingExposure = 1.18 * pose.fade;
+    this.renderer.toneMappingExposure = 1.42 * pose.fade;
   }
   private animateShuttle(t: number) {
     const phase = t % 40,
@@ -1281,7 +1327,7 @@ export class MoonWorld {
     this.paused = value;
     if (!value) {
       this.last = performance.now();
-      this.renderer.toneMappingExposure = 1.18;
+      this.renderer.toneMappingExposure = 1.42;
     }
   }
   setAttractMode(value: boolean) {

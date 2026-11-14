@@ -1,6 +1,12 @@
 import * as T from "three";
 import { PALETTES } from "./parks";
-import { blueprint, footprint, defaultDesign, type Building } from "./model";
+import {
+  coasterDuration,
+  blueprint,
+  footprint,
+  defaultDesign,
+  type Building,
+} from "./model";
 import { foundation } from "./resort-props";
 import { kitchen, drinks, maintenance, solar } from "./shops";
 import {
@@ -30,6 +36,7 @@ export {
 } from "./art-kit";
 export { astronaut } from "./characters";
 export type AnimatedModel = {
+  train?: T.Group;
   root: T.Group;
   animate: (time: number, b: Building, offset: number) => void;
   curve?: T.CatmullRomCurve3;
@@ -129,7 +136,7 @@ export function createBuilding(
   batchStatic(model);
   const animate = (time: number, state: Building, offset: number) => {
     const duration =
-      state.kind === "coaster" ? [36, 30, 24][state.launch - 1] : a.cycle;
+      state.kind === "coaster" ? coasterDuration(state) : a.cycle;
     const progress =
       duration > 0
         ? state.cycle_left > 0
@@ -141,5 +148,11 @@ export function createBuilding(
     rig?.animate(state.powered ? time : 0, state, progress);
   };
   animate(0, b, 0);
-  return { root, animate, curve: rig?.curve, upAt: rig?.upAt };
+  return {
+    root,
+    animate,
+    train: rig?.train,
+    curve: rig?.curve,
+    upAt: rig?.upAt,
+  };
 }

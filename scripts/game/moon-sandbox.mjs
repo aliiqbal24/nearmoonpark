@@ -64,7 +64,7 @@ try {
     await call(
       new Account(id, p, new KeyPairSigner(key)),
       "accept_vendor_policy",
-      { policy_id: "moonpark-v5-fixed-vendors-1" },
+      { policy_id: "moonpark-v6-persistent-vendors-1" },
     );
   }
   await call(root, "fund_prizes", {}, 500000000000000000000000n);
@@ -75,13 +75,13 @@ try {
   });
   await call(root, "open_challenge", {});
   let state = await call(alice, "create_run", {
-    challenge_id: "moonpark-v5",
+    challenge_id: "moonpark-v6",
     request_id: "sandbox",
   });
   assert.deepEqual(
     state,
     await call(alice, "create_run", {
-      challenge_id: "moonpark-v5",
+      challenge_id: "moonpark-v6",
       request_id: "sandbox",
     }),
   );
@@ -264,7 +264,7 @@ try {
     display_name: "Bob",
   });
   const buyer = await call(bob, "create_run", {
-    challenge_id: "moonpark-v5",
+    challenge_id: "moonpark-v6",
     request_id: "buyer",
   });
   await assert.rejects(() =>
@@ -329,49 +329,90 @@ try {
     privateCallbackRejected: true,
     duplicateLicenseRefunded: true,
   };
-  // Transfers unlock only after closing. Failed receiver calls refund fully.
-  await call(
-    bob,
-    "register_asset_storage",
-    { token_id: `${state.run_id}:credits` },
-    10000000000000000000000n,
-  );
-  const originalBalance = economyProof.wallets.find((w) => w.role === "park")
-    .balances[0];
-  const transferArgs = {
-    receiver_id: bob.accountId,
-    token_id: `${state.run_id}:credits`,
-    amount: "100",
-    approval: null,
-    memo: null,
-  };
-  const unused = await call(
-    alice,
-    "mt_transfer_call",
-    { ...transferArgs, msg: "refund-test" },
-    1n,
-  );
-  assert.deepEqual(unused, ["0"]);
-  assert.equal(
-    await call(alice, "mt_balance_of", {
-      account_id: alice.accountId,
-      token_id: transferArgs.token_id,
+  const sealedScore = structuredClone(state.run.score);
+  const publishedSnapshot = await p.callFunction({
+    contractId: contract.accountId,
+    method: "get_park_snapshot",
+    args: { park_id: mine.id },
+  });
+  const originalSupply = state.run.money_supply;
+  for (let n = 0; n < 6; n++) {
+    const expected = simulate(state.run, [], 20);
+    let header = (await p.viewBlock({ finality: "final" })).header;
+    while (
+      ((BigInt(header.timestamp_nanosec) - BigInt(state.started_at)) * 4n) /
+        1000000000n +
+        10n <
+      BigInt(expected.tick)
+    ) {
+      await fetch(sandbox.rpcUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "persistent-clock",
+          method: "sandbox_fast_forward",
+          params: { delta_height: 10 },
+        }),
+      });
+      header = (await p.viewBlock({ finality: "final" })).header;
+    }
+    const raw = await alice.callFunctionRaw({
+      contractId: contract.accountId,
+      methodName: "apply_actions",
+      args: {
+        run_id: state.run_id,
+        expected_revision: state.run.revision,
+        request_id: `persistent-${n}`,
+        commands: [],
+        ticks: 20,
+      },
+      gas: 250000000000000n,
+      waitUntil: "FINAL",
+    });
+    state = await p.callFunction({
+      contractId: contract.accountId,
+      method: "get_run",
+      args: { run_id: state.run_id },
+    });
+    assert.deepEqual(state.run, expected);
+    assert.deepEqual(state.run.score, sealedScore);
+    await verifyEconomy(p, contract.accountId, state);
+    const gas = raw.receipts_outcome.reduce(
+      (n, o) => n + BigInt(o.outcome.gas_burnt),
+      0n,
+    );
+    maxGas = gas > maxGas ? gas : maxGas;
+  }
+  assert.ok(state.run.money_supply > originalSupply);
+  assert.deepEqual(
+    await p.callFunction({
+      contractId: contract.accountId,
+      method: "get_park_snapshot",
+      args: { park_id: mine.id },
     }),
-    originalBalance,
+    publishedSnapshot,
   );
-  await call(alice, "mt_transfer", transferArgs, 1n);
-  assert.equal(
-    await call(bob, "mt_balance_of", {
-      account_id: bob.accountId,
-      token_id: transferArgs.token_id,
-    }),
-    "100",
+  await assert.rejects(() =>
+    call(
+      alice,
+      "mt_transfer",
+      {
+        receiver_id: bob.accountId,
+        token_id: `${state.run_id}:credits`,
+        amount: "100",
+        approval: null,
+        memo: null,
+      },
+      1n,
+    ),
   );
   const transferProof = {
-    receiver: bob.accountId,
-    token_id: transferArgs.token_id,
-    amount: "100",
-    failedReceiverRefunded: true,
+    ongoingSettlement: true,
+    touristIssuanceVerified: true,
+    scoreSealed: true,
+    publishedSnapshotImmutable: true,
+    operatingAssetsLocked: true,
   };
   const cutoff = 1795046340000000000n;
   let finalHeader = (await p.viewBlock({ finality: "final" })).header;

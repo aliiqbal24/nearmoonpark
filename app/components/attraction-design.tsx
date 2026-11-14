@@ -62,6 +62,18 @@ export function AttractionDesign({
   action: (c: Command) => void;
 }) {
   const design = building.design ?? defaultDesign();
+  const heightCost = (height: number) =>
+    building.design_paid === undefined
+      ? Math.max(0, height - (building.height_paid ?? 1)) * 20000
+      : Math.max(
+          0,
+          Math.max(0, height - 1) * 20000 +
+            (design.track ?? []).reduce(
+              (n, p) => n + Math.max(0, p.y - 35) * 100,
+              0,
+            ) -
+            building.design_paid,
+        );
   const [name, setName] = useState(design.name);
   const change = (patch: Partial<Design>) =>
     action({
@@ -133,17 +145,12 @@ export function AttractionDesign({
               {["Low", "Classic", "Skyline"].map((name, height) => (
                 <button
                   key={name}
-                  disabled={
-                    finished ||
-                    (height > (building.height_paid ?? 1) && cash < 20000)
-                  }
+                  disabled={finished || cash < heightCost(height)}
                   aria-pressed={design.height === height}
                   onClick={() => change({ height })}
                 >
                   {name}
-                  {height === 2 && (building.height_paid ?? 1) < 2
-                    ? " +200"
-                    : ""}
+                  {heightCost(height) ? ` +${heightCost(height) / 100}` : ""}
                 </button>
               ))}
             </div>

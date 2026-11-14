@@ -1,49 +1,169 @@
-"""Original score, effects and optional local narration for the 40-second opening."""
-import json, pathlib, wave, numpy as np, os
-P=pathlib.Path('outputs/moonpark-cinema');P.mkdir(parents=True,exist_ok=True)
-SR=48000;N=40*SR;rng=np.random.default_rng(94);mix=np.zeros((N,2),np.float64)
-def add(a,start,pan=0):
- i=int(start*SR);end=min(N,i+len(a));
- if i>=N:return
- a=np.asarray(a[:end-i]);mix[i:end,0]+=a*np.sqrt((1-pan)/2);mix[i:end,1]+=a*np.sqrt((1+pan)/2)
-def tone(f,start,duration,amp=.12):
- t=np.arange(int(duration*SR))/SR;env=np.minimum(1,t/.08)*np.exp(-t/max(.2,duration*.35));
- a=(np.sin(2*np.pi*f*t)+.19*np.sin(2*np.pi*f*2*t)+.07*np.sin(2*np.pi*f*3*t))*env*amp;add(a,start,np.sin(start)*.2)
-# Warm expanding chords: tentative in orbit, hopeful at the reveal, a lift under the mass driver.
-for start,chord in [(0,[130.81,196,261.63,329.63]),(6,[110,164.81,220,329.63]),(14,[146.83,220,293.66,369.99]),(21,[130.81,196,261.63,392]),(29,[110,164.81,220,329.63]),(35,[130.81,196,261.63,329.63,523.25])]:
- dur=min(8,40-start);t=np.arange(int(dur*SR))/SR;env=np.minimum(1,t/1.4)*np.minimum(1,(dur-t)/1.7)
- a=sum(np.sin(2*np.pi*f*t+np.sin(t*.7)*.07) for f in chord)*env*.052;add(a,start)
-for j in range(56):
- start=12+j*.48
- if start<39:
-  tone([261.63,329.63,392,523.25,440,392,329.63,293.66][j%8],start,.7,.045 if start<21 else .065)
-# Rocket burn: band-limited noise, a low engine fundamental and a controlled touchdown impact.
-for start,dur in [(6,7.8),(35,4.5)]:
- t=np.arange(int(dur*SR))/SR;noise=rng.normal(0,1,len(t));noise=np.convolve(noise,np.ones(45)/45,mode='same');env=np.sin(np.pi*np.minimum(1,t/dur))**.7
- add((noise*.6+np.sin(2*np.pi*(43+3*np.sin(t))*t)*.055)*env,start)
-for start in [13.8,21]:
- t=np.arange(int(.9*SR))/SR;add(np.sin(2*np.pi*(70*t-24*t*t))*np.exp(-t*7)*.13,start)
-# Airy rail rush, a tiny comic popcorn rattle, and a final bright resolution.
-t=np.arange(int(8*SR))/SR;noise=rng.normal(0,1,len(t));noise=np.convolve(noise,np.ones(14)/14,mode='same');add(noise*np.sin(np.pi*t/8)*.12,21)
-for j in range(12):
- t=np.arange(int(.04*SR))/SR;add(rng.normal(0,.06,len(t))*np.exp(-t*90),33.3+j*.09,(-1)**j*.45)
-for j,f in enumerate([261.63,329.63,392,523.25]):tone(f,36+j*.16,2.8,.075)
-# Optional original narration. The installed local model is a production dependency, not a runtime dependency.
-voice_root=pathlib.Path(os.environ.get('MOON_KOKORO_DIR','./.media-tools/kokoro'))
-segments=[(1.0,'We came here to build a future.'),(7.0,'Then someone asked about the weekend.'),(14.6,'Welcome to Moonpark. Make room for a little wonder.'),(22.0,'One small launch. One giant scream.'),(29.2,'Nobody builds a dream alone.'),(33.1,'Mind the popcorn.'),(36.0,'Give the Moon a reason to smile.')]
-try:
- from kokoro_onnx import Kokoro
- k=Kokoro(str(voice_root/'kokoro-v1.0.onnx'),str(voice_root/'voices-v1.0.bin'))
- for start,text in segments:
-  voice,rate=k.create(text,voice='bm_george',speed=1.03,lang='en-gb');length=len(voice)/rate
-  if start+length>40:raise RuntimeError('Narration crosses ending')
-  audio=np.interp(np.arange(round(length*SR))/SR,np.arange(len(voice))/rate,voice)
-  i=int(start*SR);end=min(N,i+len(audio));mix[i:end]*=.40;add(audio*.70,start)
-  print(text,round(length,2),'seconds',flush=True)
- (P/'narration.json').write_text(json.dumps({'voice':'bm_george','model':'Kokoro ONNX v1.0','segments':[{'start':a,'text':b} for a,b in segments]},indent=2))
-except ImportError:
- print('Narration unavailable: install kokoro-onnx and point MOON_KOKORO_DIR at its model files.')
-fade=np.minimum(1,np.arange(N)/SR/.5)*np.minimum(1,(40-np.arange(N)/SR)/1.3);mix*=fade[:,None]
-peak=np.max(np.abs(mix));mix*=.88/max(peak,.88)
-with wave.open(str(P/'score-master.wav'),'wb') as f:f.setnchannels(2);f.setsampwidth(2);f.setframerate(SR);f.writeframes((np.clip(mix,-1,1)*32767).astype('<i2').tobytes())
-print('Wrote original stereo score and effects',flush=True)
+"""Reproducible stereo sound edit for Moonpark's 40-second opening film."""
+from pathlib import Path
+import json
+import os
+import subprocess
+import urllib.request
+import wave
+
+import numpy as np
+from kokoro_onnx import Kokoro
+
+OUTPUT = Path("outputs/moonpark-cinema-v7")
+SOURCE = OUTPUT / "source"
+SOURCE.mkdir(parents=True, exist_ok=True)
+RATE = 48000
+DURATION = 40
+SAMPLES = RATE * DURATION
+RANDOM = np.random.default_rng(1789)
+MUSIC_URL = "https://www.scottbuckley.com.au/library/wp-content/uploads/2020/05/sb_helios.mp3"
+MUSIC_PATH = SOURCE / "helios.mp3"
+if not MUSIC_PATH.exists():
+    urllib.request.urlretrieve(MUSIC_URL, MUSIC_PATH)
+
+
+def read_audio(path, start=0, duration=None):
+    args = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-ss", str(start), "-i", str(path)]
+    if duration is not None:
+        args += ["-t", str(duration)]
+    args += ["-ac", "2", "-ar", str(RATE), "-f", "f32le", "pipe:1"]
+    result = subprocess.run(args, check=True, capture_output=True)
+    return np.frombuffer(result.stdout, dtype="<f4").reshape(-1, 2).astype(np.float64)
+
+
+def write_audio(path, samples):
+    samples = np.clip(samples, -1, 1)
+    with wave.open(str(path), "wb") as output:
+        output.setnchannels(2)
+        output.setsampwidth(2)
+        output.setframerate(RATE)
+        output.writeframes((samples * 32767).astype("<i2").tobytes())
+
+
+def add(layer, samples, start, pan=0):
+    offset = round(start * RATE)
+    end = min(SAMPLES, offset + len(samples))
+    if end <= offset:
+        return
+    samples = samples[:end - offset]
+    if samples.ndim == 1:
+        samples = samples[:, None] * np.array([np.sqrt((1 - pan) / 2), np.sqrt((1 + pan) / 2)])
+    layer[offset:end] += samples
+
+
+def filtered_noise(duration, low=30, high=5000):
+    count = round(duration * RATE)
+    signal = RANDOM.normal(size=count)
+    spectrum = np.fft.rfft(signal)
+    frequency = np.fft.rfftfreq(count, 1 / RATE)
+    spectrum *= np.minimum(1, frequency / low) ** 3 / (1 + (frequency / high) ** 6)
+    signal = np.fft.irfft(spectrum, count)
+    return signal / max(1e-8, np.sqrt(np.mean(signal ** 2)))
+
+
+music = np.zeros((SAMPLES, 2))
+source = read_audio(MUSIC_PATH, 203, DURATION)
+# The licensed orchestral performance supplies a continuous musical phrase.
+# Dynamics are edited around the launch, Earth reveal and landing.
+time = np.arange(SAMPLES) / RATE
+music_envelope = np.interp(time, [0, 3.8, 4, 8.8, 9.1, 15.5, 16, 20.8, 21.1, 29, 33, 38, 40],
+                           [.08, .2, .65, .65, .85, 1, .55, .7, 1.1, .65, .95, 1.2, 0])
+music[:len(source)] = source * music_envelope[:len(source), None] * .9
+voice_layer = np.zeros_like(music)
+effects = np.zeros_like(music)
+
+# Magnetic launch. Harmonic coils rise into a broadband acceleration rush.
+t = np.arange(round(4 * RATE)) / RATE
+phase = 2 * np.pi * (75 * t + 68 * t ** 2)
+charge = (np.sin(phase) + .22 * np.sin(phase * 2)) * .035 * np.minimum(1, t / .5)
+add(effects, charge, 0, -.2)
+rush = filtered_noise(3.1, 70, 7200)
+t = np.arange(len(rush)) / RATE
+envelope = np.sin(np.pi * np.clip(t / 3.1, 0, 1)) ** .8
+add(effects, rush * envelope * .12, .9, .25)
+
+# Landing burn and liftoff have independently editable, stereo engine layers.
+for start, duration, level in [(9, 7, .12), (33, 6, .09)]:
+    rumble = filtered_noise(duration, 25, 1400)
+    t = np.arange(len(rumble)) / RATE
+    envelope = np.sin(np.pi * t / duration) ** .65
+    engine = np.sin(2 * np.pi * 43 * t + .15 * np.sin(2 * np.pi * 2.3 * t))
+    add(effects, (rumble * level + engine * .025) * envelope, start, -.18)
+    add(effects, filtered_noise(duration, 300, 5000) * envelope * .022, start, .4)
+
+# The touchdown transients coincide with the landing struts settling.
+t = np.arange(round(1.4 * RATE)) / RATE
+impact = np.sin(2 * np.pi * (58 * t - 9 * t ** 2)) * np.exp(-t * 5) * .22
+impact += filtered_noise(1.4, 70, 2200) * np.exp(-t * 13) * .08
+add(effects, impact, 15.85)
+
+# Human-scale foley brings the arrival promenade into focus.
+for index, start in enumerate(np.arange(16.5, 20.7, .54)):
+    step = filtered_noise(.19, 130, 4200)
+    t = np.arange(len(step)) / RATE
+    add(effects, step * np.exp(-t * 24) * .043, start, (-1) ** index * .3)
+
+# Front-seat track rush and restrained wheel chatter.
+rush = filtered_noise(8, 130, 8500)
+t = np.arange(len(rush)) / RATE
+add(effects, rush * (.035 + .045 * np.sin(np.pi * t / 8)), 21, -.25)
+add(effects, filtered_noise(8, 300, 6000) * (.025 + .02 * np.sin(t * 3)), 21, .3)
+for start in np.arange(21.2, 28.7, .22):
+    t = np.arange(round(.06 * RATE)) / RATE
+    add(effects, np.sin(2 * np.pi * 320 * t) * np.exp(-t * 85) * .025, start)
+
+# A bright kitchen bell releases the tension before the final resort reveal.
+t = np.arange(round(1.3 * RATE)) / RATE
+bell = (np.sin(2 * np.pi * 1568 * t) + .4 * np.sin(2 * np.pi * 2410 * t)) * np.exp(-t * 5) * .035
+add(effects, bell, 29.2, .25)
+
+model_dir = Path(os.environ.get("MOON_KOKORO_DIR", ".media-tools/kokoro"))
+model = Kokoro(str(model_dir / "kokoro-v1.0.onnx"), str(model_dir / "voices-v1.0.bin"))
+script = [
+    (.25, "Mass driver online.", "am_michael", 1.0, True),
+    (4.6, "Generations dreamed of life on the Moon.", "bm_fable", .99, False),
+    (9.6, "Nobody planned the weekend.", "bm_fable", .98, False),
+    (16.3, "Your first visitors have come a long way.", "bm_fable", .99, False),
+    (23.0, "Build them a story worth bringing home.", "bm_fable", .98, False),
+    (29.4, "And yes. We brought the pie.", "bm_fable", .98, False),
+    (34.1, "The gates are yours. Make it worth the trip.", "bm_fable", .98, False),
+]
+segments = []
+for index, (start, text, voice, speed, radio) in enumerate(script):
+    samples, rate = model.create(text, voice=voice, speed=speed, lang="en-us" if radio else "en-gb")
+    length = len(samples) / rate
+    audio = np.interp(np.arange(round(length * RATE)) / RATE, np.arange(len(samples)) / rate, samples)
+    rms = max(1e-6, np.sqrt(np.mean(audio ** 2)))
+    audio *= .14 / rms
+    if radio:
+        frequency = np.fft.rfftfreq(len(audio), 1 / RATE)
+        spectrum = np.fft.rfft(audio)
+        spectrum *= (frequency > 300) * (frequency < 3400)
+        audio = np.fft.irfft(spectrum, len(audio)) * 1.1
+    if start + length > (script[index + 1][0] - .15 if index + 1 < len(script) else 39):
+        raise RuntimeError(f"Narration overruns its shot: {text} ({length:.2f}s)")
+    add(voice_layer, audio, start)
+    write_audio(SOURCE / f"voice-{index}.wav", np.column_stack([audio, audio]))
+    end = start + length
+    duck = np.minimum(1, np.maximum(0, (time - start + .15) / .15)) * np.minimum(1, np.maximum(0, (end + .35 - time) / .35))
+    music *= (1 - duck * .7)[:, None]
+    effects *= (1 - duck * .42)[:, None]
+    segments.append({"start": start, "end": round(end, 3), "text": text, "voice": voice, "speed": speed})
+    print(text, f"{length:.2f}s", flush=True)
+
+fade = np.minimum(1, time / .03) * np.minimum(1, (DURATION - time) / .65)
+for name, layer in [("music", music), ("narration", voice_layer), ("effects", effects)]:
+    write_audio(OUTPUT / f"{name}-stem.wav", layer * fade[:, None])
+mix = (music + voice_layer + effects) * fade[:, None]
+peak = np.max(np.abs(mix))
+mix *= min(1, .94 / max(peak, 1e-6))
+write_audio(OUTPUT / "score-master.wav", mix)
+
+story = {"duration": DURATION, "segments": segments, "music": {
+    "title": "Helios", "artist": "Scott Buckley", "source": "https://www.scottbuckley.com.au/library/helios/",
+    "license": "CC BY 4.0", "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "edit": "40-second excerpt beginning at 03:23, with dynamic ducking and synchronized original sound effects",
+}}
+(OUTPUT / "sound-edit.json").write_text(json.dumps(story, indent=2) + "\n")
+Path("public/video/moonpark-opening-v7-story.json").write_text(json.dumps(story, indent=2) + "\n")
+print("Wrote the orchestral edit, original effects, narration and separate stereo stems.")

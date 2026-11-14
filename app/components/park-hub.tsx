@@ -25,6 +25,7 @@ import {
 } from "@/lib/moon/parks";
 import type { Snapshot } from "@/lib/moon/session";
 import { NearMark, testNear } from "./near-economy";
+import { RidePreview } from "./ride-preview";
 import { PalettePicker } from "./attraction-design";
 export type ParkIdentity = { name: string; emblem: number };
 export function ParkHub({
@@ -35,6 +36,7 @@ export function ParkHub({
   action,
   onUse,
   onPlay,
+  onConfirm,
 }: {
   cfg: Config | null;
   state: Snapshot | null;
@@ -43,6 +45,7 @@ export function ParkHub({
   action: (c: Command) => void;
   onUse: (b: RideBlueprint, receipt?: string) => void;
   onPlay: () => void;
+  onConfirm?: () => Promise<void>;
 }) {
   const [parkPage, setParkPage] = useState(0),
     [designPage, setDesignPage] = useState(0);
@@ -73,8 +76,7 @@ export function ParkHub({
   const accountId = credentials?.accountId;
   const credentialIdentity = credentials?.identity;
   const ownerCredentials = cfg && park ? credentialsFor(cfg, park.owner) : null;
-  const versionQuery =
-    cfg?.archivedVersion === "v4" ? "?version=v4" : "?version=v5";
+  const versionQuery = `?version=${cfg?.archivedVersion ?? "v6"}`;
   const loadKey = `${cfg?.contractId ?? "local"}:${accountId ?? "guest"}`;
   const loading = loadedFor !== loadKey;
   const refresh = useCallback(async () => {
@@ -196,24 +198,41 @@ export function ParkHub({
         );
         return;
       }
+      await onConfirm?.();
+      const [confirmed, currentPark] =
+        state?.record && state.run.version === "moonpark-v6"
+          ? await Promise.all([
+              view<typeof state.record>(cfg, "get_run", {
+                run_id: state.record.run_id,
+              }),
+              view<Park>(cfg, "get_park", { park_id: park.id }),
+            ])
+          : [state?.record, park];
       const runId =
-        state?.record?.park_id === park.id &&
-        state.record.run.finished &&
-        !state.pending
-          ? state.record.run_id
+        confirmed?.park_id === park.id &&
+        (confirmed.run.version === "moonpark-v6"
+          ? confirmed.run.tick >= 10
+          : confirmed.run.finished) &&
+        (confirmed.run.version === "moonpark-v6" || !state?.pending)
+          ? confirmed.run_id
           : null;
-      const r = await parkAction(cfg, credentials, "save_park", {
-        park_id: park.id,
-        expected_revision: park.revision,
-        name,
-        emblem,
-        run_id: runId,
-      });
+      const r = await parkAction(
+        cfg,
+        credentialsFor(cfg, confirmed?.owner) ?? credentials,
+        "save_park",
+        {
+          park_id: park.id,
+          expected_revision: currentPark.revision,
+          name,
+          emblem,
+          run_id: runId,
+        },
+      );
       setTx(r.tx);
       setMessage(
         runId
           ? "Your park is published. Share its link and invite someone aboard."
-          : "Your park identity is saved on NEAR. Publish your layout after closing day.",
+          : "Your park identity is saved on NEAR. Publish your layout after the first landing.",
       );
     });
   const claim = () =>
@@ -241,7 +260,12 @@ export function ParkHub({
         "Confirm the ownership transaction in your wallet. The registry updates after NEAR confirms it.",
       );
     });
-  const ready = !!state?.record?.run.finished && !state.pending;
+  const ready =
+    !!state?.record &&
+    (state.run.version === "moonpark-v6"
+      ? state.run.tick >= 10
+      : state.run.finished) &&
+    (state.run.version === "moonpark-v6" || !state.pending);
   return (
     <div className="mp-park-hub">
       <div className="mp-near-intro">
@@ -270,8 +294,8 @@ export function ParkHub({
       {tab === "park" && (
         <>
           <p className="mp-subtle">
-            Build a park with a name of its own. Publish your opening day,
-            invite visitors and earn from your signature rides.
+            Build a park with a name of its own. Publish your park, invite
+            visitors and earn from your signature rides.
           </p>
           <div className="mp-park-identity">
             <label>
@@ -317,7 +341,7 @@ export function ParkHub({
               {busy === "save"
                 ? "Saving on NEAR…"
                 : ready
-                  ? "Publish this opening day"
+                  ? "Publish this park revision"
                   : "Save park identity"}
             </button>
           </div>
@@ -461,6 +485,7 @@ export function ParkHub({
               <input
                 type="file"
                 accept="application/json"
+                disabled={!cfg || !!busy}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file || !cfg) return;
@@ -579,9 +604,11 @@ export function ParkHub({
                   )
                   .map((b) => (
                     <article key={b.id}>
-                      <img
-                        src={`/art/${b.kind}-s${b.design?.style ?? 0}-v3.webp`}
-                        alt=""
+                      <RidePreview
+                        kind={b.kind}
+                        design={b.design}
+                        variant={b.variant}
+                        name={b.design?.name || blueprint(b.kind).name}
                       />
                       <strong>
                         {b.design?.name || blueprint(b.kind).name}
@@ -597,14 +624,21 @@ export function ParkHub({
                         disabled={
                           !!busy ||
                           park.blueprint_ids.includes(
-                            `${state.record!.run_id}:${b.id}`,
+                            `${state.record!.run_id}:${b.id}${state.run.version === "moonpark-v6" ? `:${b.design_revision ?? 0}` : ""}`,
                           )
                         }
                         onClick={() =>
                           void perform(`publish-${b.id}`, async () => {
+                            await onConfirm?.();
+                            const confirmed = await view<
+                              NonNullable<typeof state.record>
+                            >(cfg!, "get_run", {
+                              run_id: state.record!.run_id,
+                            });
                             const r = await parkAction(
                               cfg!,
-                              credentials!,
+                              credentialsFor(cfg!, confirmed.owner) ??
+                                credentials!,
                               "publish_blueprint",
                               {
                                 park_id: park.id,
@@ -621,7 +655,7 @@ export function ParkHub({
                         }
                       >
                         {park.blueprint_ids.includes(
-                          `${state.record!.run_id}:${b.id}`,
+                          `${state.record!.run_id}:${b.id}${state.run.version === "moonpark-v6" ? `:${b.design_revision ?? 0}` : ""}`,
                         )
                           ? "Published"
                           : "Publish design"}
@@ -633,8 +667,8 @@ export function ParkHub({
           )}
           {!ready && (
             <p className="mp-fine">
-              Finish a NEAR opening day to publish your guest-tested rides. You
-              can use another creator’s design during your next day.
+              Publish your guest-tested signature rides from a NEAR park. You
+              can build licensed designs in your park at any time.
             </p>
           )}
           <h3>Community ride exchange</h3>
@@ -642,9 +676,11 @@ export function ParkHub({
             <div className="mp-exchange-grid">
               {designs.map((b) => (
                 <article key={b.id}>
-                  <img
-                    src={`/art/${b.kind}-s${b.design?.style ?? 0}-v3.webp`}
-                    alt=""
+                  <RidePreview
+                    kind={b.kind}
+                    design={b.design}
+                    variant={b.variant}
+                    name={b.name}
                   />
                   <strong>{b.name}</strong>
                   <a
@@ -659,7 +695,12 @@ export function ParkHub({
                   </span>
                   <button
                     className="mp-primary"
-                    disabled={!!busy || !!state?.run.finished || !state}
+                    disabled={
+                      !!busy ||
+                      (!!state?.run.finished &&
+                        state.run.version !== "moonpark-v6") ||
+                      !state
+                    }
                     onClick={() =>
                       void perform(`use-${b.id}`, async () => {
                         let receipt: string | undefined;
@@ -702,8 +743,8 @@ export function ParkHub({
               <Sparkles size={30} />
               <h3>The first signature ride could be yours.</h3>
               <p>
-                Customize a ride, give guests a great day and publish after
-                closing.
+                Customize a ride, welcome its first guests and publish your
+                design.
               </p>
             </div>
           )}
@@ -723,7 +764,7 @@ export function ParkHub({
       {tab === "visit" && (
         <>
           <p className="mp-subtle">
-            Drop into a real player’s opening day. Explore their layout, meet
+            Visit a real player’s published park. Explore their layout, meet
             their guests and take the front seat.
           </p>
           <div className="mp-exchange-grid">
@@ -756,7 +797,7 @@ export function ParkHub({
             label="Public park pages"
           />
           {!parks.length && parkPage === 0 && (
-            <p>Publish an opening day to put the first park on the map.</p>
+            <p>Publish your park to put it on the map.</p>
           )}
         </>
       )}

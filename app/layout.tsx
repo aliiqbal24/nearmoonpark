@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MOONPARK — A NEAR Future",
   description:
-    "Build the Moon’s best day out. A lively nine-minute theme park tycoon with rocket arrivals, mass-driver coasters and an economy on NEAR.",
+    "Build the Moon’s best day out. Own a lunar theme park. Design coasters, welcome rocket arrivals and visit player-built worlds with an economy on NEAR.",
   icons: {
     icon: [
       { url: "/favicon.svg?v=moonpark-2", type: "image/svg+xml" },

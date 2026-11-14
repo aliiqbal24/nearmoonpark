@@ -9,7 +9,7 @@ export async function verifyEconomy(provider, contractId, record) {
   const run = record.run;
   assert.equal(economy.revision, run.revision);
   assert.equal(economy.tick, run.tick);
-  assert.equal(economy.locked, !run.finished);
+  assert.equal(economy.locked, run.version === "moonpark-v6" || !run.finished);
   const expected = {
     park: [run.cash, 0, 0, 0],
     passengers: [
@@ -45,7 +45,11 @@ export async function verifyEconomy(provider, contractId, record) {
     assert.equal(supply.toString(), economy.supplies[asset]);
     assert.equal(
       supply.toString(),
-      String(asset === 0 ? run.money_supply : 2048 - run.consumed[asset - 1]),
+      String(
+        asset === 0
+          ? run.money_supply
+          : (run.issued_goods?.[asset - 1] ?? 2048) - run.consumed[asset - 1],
+      ),
     );
   }
   return economy;

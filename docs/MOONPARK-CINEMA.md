@@ -1,4 +1,17 @@
-# Moonpark opening film
+# Moonpark opening film v7
+
+The current opening is a 40-second, 60 fps film with 2,400 frames in each delivery. Desktop is 1920×1080. Mobile uses a separately composed 720×1280 render. The film opens on a magnetic coaster launch, reveals Earth, lands a passenger rocket, welcomes visitors, rides the mass driver, visits the kitchen and ends with the player's invitation to open the park.
+
+The film uses the playable Three.js models, terrain, materials, custom coaster curves and character rigs. An expanded established park is staged for the cinematic. Editorial cuts have no black exposure dips. The last shot approaches the gameplay camera. H.264 High Profile, AAC stereo and fast-start MP4 support hardware playback. The WebGL scene pauses during the movie.
+
+The soundtrack edits a continuous 40-second excerpt of “Helios” by Scott Buckley, starting at 03:23. It is licensed under CC BY 4.0. Original stereo effects add the magnetic launch, engine burn, touchdown, footsteps, wheel chatter and kitchen bell. Locally generated Kokoro narration uses bm_fable with an am_michael radio cue. The mix ducks music and effects around speech and targets −16 LUFS and −1.8 dBTP. The encoded delivery measures −15.75 LUFS, −1.67 dBTP and 4.5 LU loudness range. Music, narration and effects have separate editable stems. [Music source](https://www.scottbuckley.com.au/library/helios/) and [license](https://creativecommons.org/licenses/by/4.0/).
+
+Both complete exports decode successfully. Exported desktop and portrait contact sheets were visually reviewed, including a corrected front-seat insert that hides the camera's own train and riders. Continuous browser playback completed the handoff in 40.9 seconds on desktop and 40.8 seconds in portrait. On this workstation, sampled frame counters recorded 2 dropped frames out of 2,302 and 3 out of 2,290 respectively. Both runs reported zero page errors. This environment cannot audition audio. Signal levels, speech timing, ducking and stereo structure were checked, while perceptual listening remains for a person with audio playback.
+
+The current camera source is `lib/moon/cinema.ts`. `scripts/video/moonpark-intro.mjs` captures deterministic 60 fps picture masters and supports `--sample`, `--range=0,4` and `--portrait`. `scripts/video/moonpark-score.py` generates narration, the sound edit and its stems. Set MOON_KOKORO_DIR to the local model folder. `scripts/video/moonpark-finish.mjs` composites branding and titles, encodes delivery files, checks all frames and writes their hashes. Masters and review outputs are kept in the ignored `outputs/moonpark-cinema-v7` directory. The game plays the checked-in exports without production tools or models.
+
+## Earlier v6 production record
+
 
 The v6 opening is a 40-second film rendered deterministically from the game's original Three.js scene, at 1920×1080 and 30 fps. A separately rendered 720×1280 portrait variant serves smaller viewports. Both use H.264 video, stereo AAC audio and a fast-start MP4 container. The complete assets are checked in; playing the game needs no rendering tools, model download or AI service.
 

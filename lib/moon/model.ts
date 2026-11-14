@@ -1,10 +1,10 @@
-export const VERSION = "moonpark-v5";
+export const VERSION = "moonpark-v6";
 export const LANDING = 10;
 export const END = 550;
 export const DAY_SECONDS = END - LANDING;
 export const GOLD_SCORE = 7000;
-export const WIDTH = 32;
-export const HEIGHT = 24;
+export const WIDTH = 48;
+export const HEIGHT = 48;
 export const CUTOFF = "2026-11-18T23:59:00Z";
 export type Kind =
   | "bounce"
@@ -136,10 +136,22 @@ export const CATALOG: Blueprint[] = [
 ];
 export const blueprint = (kind: string) =>
   CATALOG.find((x) => x.kind === kind)!;
+export const coasterDuration = (b: Building) =>
+  [36, 30, 24][b.launch - 1] +
+  Math.min(
+    12,
+    Math.floor(
+      (b.design?.track ?? []).reduce((n, p, i, points) => {
+        const q = points[(i + 1) % points.length];
+        return (
+          n + Math.abs(p.x - q.x) + Math.abs(p.z - q.z) + Math.abs(p.y - q.y)
+        );
+      }, 0) / 100,
+    ),
+  );
 export const isRide = (kind: string) =>
   ["bounce", "wheel", "rover", "coaster"].includes(kind);
-export const isTenant = (kind: string) =>
-  ["food", "drink"].includes(kind);
+export const isTenant = (kind: string) => ["food", "drink"].includes(kind);
 export const resaleValue = (b: Building) =>
   Math.floor(
     (b.invested *
@@ -147,7 +159,16 @@ export const resaleValue = (b: Building) =>
       (isRide(b.kind) ? Math.max(0, Math.min(100, b.condition)) : 100)) /
       10000,
   );
+export type TrackPoint = { x: number; y: number; z: number };
+export const isPersistent = (run: Run) => run.version === VERSION;
+export const parkWidth = (run: Run) => (isPersistent(run) ? WIDTH : 32);
+export const parkHeight = (run: Run) => (isPersistent(run) ? HEIGHT : 24);
+export const parkOriginZ = (run: Run) => (isPersistent(run) ? 36 : 12);
+export const parkGate = (run: Run) =>
+  isPersistent(run) ? 47 * WIDTH + 23 : 23 * 32 + 15;
+export const parkClosed = (run: Run) => run.finished && !isPersistent(run);
 export type Design = {
+  track?: TrackPoint[];
   name: string;
   palette: number;
   style: number;
@@ -165,6 +186,8 @@ export type Building = {
   blueprint_id?: string;
   design?: Design;
   height_paid?: number;
+  design_paid?: number;
+  design_revision?: number;
   id: number;
   kind: Kind;
   x: number;
@@ -275,6 +298,8 @@ export type Run = {
   events: { tick: number; text: string }[];
   actions: number;
   finished: boolean;
+  opening_ended_at?: number | null;
+  issued_goods?: number[];
   score: Score;
   hash: string;
 };
@@ -303,6 +328,7 @@ export type Command = {
   value?: number;
 };
 export function isCosmeticCommand(run: Run, command: Command): boolean {
+  if (isPersistent(run)) return false;
   if (command.kind === "theme") return true;
   if (command.kind !== "design" || !command.design) return false;
   const building = run.buildings.find(
@@ -427,6 +453,8 @@ export function gridRoute(
   to: number,
   build: boolean,
 ): number[] {
+  const WIDTH = parkWidth(run),
+    HEIGHT = parkHeight(run);
   const paths = new Set(run.paths),
     occupied = new Set<number>();
   if (build)
@@ -483,7 +511,7 @@ export function gridRoute(
 }
 export function connectionCost(run: Run, b: Building): number | null {
   const e = entrance(b),
-    route = gridRoute(run, e.z * WIDTH + e.x, 23 * WIDTH + 15, true);
+    route = gridRoute(run, e.z * parkWidth(run) + e.x, parkGate(run), true);
   if (!route.length) return null;
   return route.filter((c) => !run.paths.includes(c)).length * 200;
 }

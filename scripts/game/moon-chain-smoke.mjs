@@ -14,7 +14,7 @@ const cfg = JSON.parse(await readFile("public/moon-config.json", "utf8"));
 assert.equal(cfg.network, "testnet");
 assert.ok(cfg.contractId.endsWith(".testnet"));
 const rootKey = JSON.parse(
-  await readFile(".near-local/moon-v5-deployer.json", "utf8"),
+  await readFile(".near-local/moon-v6-deployer.json", "utf8"),
 );
 const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
   cfg.rpcUrl,
@@ -52,7 +52,7 @@ await root.callFunction({
 let state = await player.callFunction({
   contractId: cfg.contractId,
   methodName: "create_run",
-  args: { challenge_id: "moonpark-v5", request_id: "real-chain-proof" },
+  args: { challenge_id: "moonpark-v6", request_id: "real-chain-proof" },
   gas: 180000000000000n,
   waitUntil: "EXECUTED",
 });
@@ -122,7 +122,7 @@ for (let i = 0; i < replay.frames.length; i++) {
     trades: state.run.trade_count,
   });
   await writeFile(
-    "outputs/moon-v5-chain-progress.json",
+    "outputs/moon-v6-chain-progress.json",
     JSON.stringify({ state, checkpoints, maxGas: maxGas.toString() }),
   );
   if (i % 9 === 0 || state.run.finished)
@@ -239,7 +239,7 @@ await call(root, "register_player", {
   display_name: "Blueprint visitor",
 });
 const buying = await call(buyer, "create_run", {
-  challenge_id: "moonpark-v5",
+  challenge_id: "moonpark-v6",
   request_id: "license-test",
 });
 const fee = 5000000000000000000000n;
@@ -329,7 +329,7 @@ const access = await p.viewAccessKeyList({ accountId: cfg.contractId });
 assert.equal(access.keys.length, 0);
 await mkdir("docs", { recursive: true });
 await writeFile(
-  "docs/moon-v5-testnet-smoke.json",
+  "docs/moon-v6-testnet-smoke.json",
   JSON.stringify(
     {
       contractId: cfg.contractId,

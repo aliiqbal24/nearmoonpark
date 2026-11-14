@@ -95,7 +95,7 @@ export function VendorWallets({ cfg, runId }: { cfg: Config; runId: string }) {
           </div>
           <p className="mp-fine">
             {economy.locked
-              ? "Assets are committed to this opening day until closing."
+              ? "Assets follow the signed vendor policy while this park operates."
               : "Opening-day assets are unlocked. Transfers use the multi-token contract."}{" "}
             Guest budgets share a passenger escrow. Multiple shops owned by the
             same vendor share that owner’s wallet. All amounts are testnet game

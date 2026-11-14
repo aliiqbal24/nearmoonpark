@@ -8,7 +8,7 @@ export type Config = {
   fallbackRpcUrl: string;
   network: string;
   codeHash: string;
-  archivedVersion?: "v4";
+  archivedVersion?: "v4" | "v5";
   vendors?: { omar: string; mina: string; logistics: string };
 };
 export type Credentials = {
@@ -257,7 +257,7 @@ export async function settle(
     // NEAR reserves the full prepaid gas before execution. As the finite key
     // budget falls, fit that reservation to the remaining allowance with margin.
     const gas = (call.gas * error.allowance * 9n) / (error.cost * 10n);
-    if (gas <= 0n) throw error;
+    if (gas < 110000000000000n) throw error;
     raw = await within(a.callFunctionRaw({ ...call, gas }));
   }
   const status = raw.status;

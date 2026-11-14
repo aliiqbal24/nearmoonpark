@@ -32,6 +32,7 @@ import {
 } from "./resort-props";
 
 export type RideRig = {
+  train?: T.Group;
   curve?: T.CatmullRomCurve3;
   upAt?: (u: number) => T.Vector3;
   animate: (time: number, b: Building, progress: number) => void;
@@ -122,36 +123,46 @@ export function massDriver(
 ): RideRig {
   const style = b.design.style;
   const coordinates =
-    b.variant === 1
-      ? [
-          [-0.33, 1.1, 0.32],
-          [0.34, 1.1, 0.32],
-          [0.39, 3.0, -0.02],
-          [0.28, 9.9, -0.35],
-          [-0.08, 10.7, -0.32],
-          [-0.4, 4.4, -0.17],
-          [-0.23, 1.15, 0.1],
-          [0.18, 3.0, 0.02],
-          [-0.08, 4.0, -0.09],
-          [-0.37, 1.25, 0.13],
-        ]
-      : [
-          [-0.34, 1.12, 0.34],
-          [0.3, 1.12, 0.34],
-          [0.4, 3.6, 0.05],
-          [0.27, 10.5, -0.32],
-          [-0.1, 10.9, -0.35],
-          [-0.39, 2.0, -0.17],
-          [-0.21, 3.8, 0.1],
-          [0.16, 2.8, -0.035],
-          [-0.12, 1.25, 0.22],
-        ];
+    b.design.track?.length === 8
+      ? b.design.track.map((p) => [p.x / 100, p.y / 10, p.z / 100])
+      : b.variant === 1
+        ? [
+            [-0.33, 1.1, 0.32],
+            [0.34, 1.1, 0.32],
+            [0.39, 3.0, -0.02],
+            [0.28, 9.9, -0.35],
+            [-0.08, 10.7, -0.32],
+            [-0.4, 4.4, -0.17],
+            [-0.23, 1.15, 0.1],
+            [0.18, 3.0, 0.02],
+            [-0.08, 4.0, -0.09],
+            [-0.37, 1.25, 0.13],
+          ]
+        : [
+            [-0.34, 1.12, 0.34],
+            [0.3, 1.12, 0.34],
+            [0.4, 3.6, 0.05],
+            [0.27, 10.5, -0.32],
+            [-0.1, 10.9, -0.35],
+            [-0.39, 2.0, -0.17],
+            [-0.21, 3.8, 0.1],
+            [0.16, 2.8, -0.035],
+            [-0.12, 1.25, 0.22],
+          ];
   const curve = new T.CatmullRomCurve3(
     coordinates.map(([x, y, z]) => new T.Vector3(x * w, y, z * h)),
     true,
-    "catmullrom",
+    b.design.track?.length ? "centripetal" : "catmullrom",
     0.36,
   );
+  if (b.design.track?.length) {
+    const evaluate = curve.getPoint.bind(curve);
+    curve.getPoint = (t, target) => {
+      const p = evaluate(t, target);
+      p.y = Math.max(1.05, p.y);
+      return p;
+    };
+  }
   // Smooth the roll through near-vertical track, where a world-up frame is ambiguous.
   const segments = 512;
   const frames = curve.computeFrenetFrames(segments, true);
@@ -483,6 +494,7 @@ export function massDriver(
   for (let i = 0; i < 6; i++) cars.push(capsule(moving, c, i, people));
   const spacing = 0.91 / curve.getLength();
   return {
+    train: moving,
     curve,
     upAt,
     animate: (_time, state, progress) => {

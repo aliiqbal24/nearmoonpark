@@ -1,0 +1,62 @@
+{
+  "duration": 40,
+  "segments": [
+    {
+      "start": 0.25,
+      "end": 1.999,
+      "text": "Mass driver online.",
+      "voice": "am_michael",
+      "speed": 1.0
+    },
+    {
+      "start": 4.6,
+      "end": 7.651,
+      "text": "Generations dreamed of life on the Moon.",
+      "voice": "bm_fable",
+      "speed": 0.99
+    },
+    {
+      "start": 9.6,
+      "end": 12.011,
+      "text": "Nobody planned the weekend.",
+      "voice": "bm_fable",
+      "speed": 0.98
+    },
+    {
+      "start": 16.3,
+      "end": 19.223,
+      "text": "Your first visitors have come a long way.",
+      "voice": "bm_fable",
+      "speed": 0.99
+    },
+    {
+      "start": 23.0,
+      "end": 25.731,
+      "text": "Build them a story worth bringing home.",
+      "voice": "bm_fable",
+      "speed": 0.98
+    },
+    {
+      "start": 29.4,
+      "end": 31.768,
+      "text": "And yes. We brought the pie.",
+      "voice": "bm_fable",
+      "speed": 0.98
+    },
+    {
+      "start": 34.1,
+      "end": 36.98,
+      "text": "The gates are yours. Make it worth the trip.",
+      "voice": "bm_fable",
+      "speed": 0.98
+    }
+  ],
+  "music": {
+    "title": "Helios",
+    "artist": "Scott Buckley",
+    "source": "https://www.scottbuckley.com.au/library/helios/",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "edit": "40-second excerpt beginning at 03:23, with dynamic ducking and synchronized original sound effects"
+  }
+}

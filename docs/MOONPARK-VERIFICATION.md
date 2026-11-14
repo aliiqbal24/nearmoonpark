@@ -1,4 +1,28 @@
-# Moonpark v5 verification
+# Moonpark v6 verification
+
+The current immutable contract is `game.moonpark-mwgb9j6a.testnet`. The browser and contract share the persistent Rust simulation. Parks have 48×48 plots, custom eight-point coasters, continuing trade after scoring and independently published visitor snapshots. The first 96 visitors seal the opening score. Later paying arrivals fund further building. Earlier v5 and v4 contracts, saved engines and public pages remain accessible.
+
+## Simulation and NEAR
+
+All 19 simulation tests and 37 contract tests pass. Five strategies produce 363 exact native/WASM state matches. Gold and balanced score 7,271, while family scores 7,384. Continued arrivals, explicit credit and stock issuance, long-running ticks, operator handoff, immutable snapshots, score sealing and committed vendor balances are covered.
+
+The NEAR Sandbox proof checks 39 batches, ownership claiming, paid licenses, creator collection, private callback guards and prize allocation. Its heaviest batch uses 67.82 TGas. The public testnet replay checks 75 canonical checkpoints and all five wallet holdings. Its heaviest batch uses 59.38 TGas. Deployment verifies the code hash, zero contract access keys and independently signed NPC policies. Free testnet funds cover gas and storage.
+
+The sponsored browser flow creates a park through the real provisioning API, edits its coaster, serves guests, publishes its park while the opening is ongoing and publishes an immutable authored blueprint. A second browser flow licenses that eight-point design, credits its creator 0.0045 tNEAR and verifies exact construction geometry onchain. Public visitors see the published snapshot without modifying their local save. Private backup validation rejects an invalid signing key and restores valid account control. Queued edits recover after a sealed opening without changing its score.
+
+Evidence is recorded in [the canonical replay](moon-v6-testnet-smoke.json), [Sandbox settlement](moon-v6-sandbox-smoke.json), [the sponsored authored park](moon-v6-browser-smoke.json) and [browser licensing](moon-v6-license-ui-proof.json). The retired v5 contract had zero eligible prize entries immediately before the transition. Public test fixtures are guest exhibitions.
+
+## Presentation and browser coverage
+
+All 25 game browser cases and both camera-preview cases were verified across the release runs. Routine browser coverage includes complete opening-day scoring, continuing play, construction, overlap rejection, refresh recovery, the coaster editor, mobile layout, first-landing timing, NEAR explanations, public snapshots, archived v4/v5 engines, movie decoding and fallback. The transaction-spending tests separately exercise sponsorship, publication, licensing, private account backup and queued journal recovery. Targeted ESLint reports no errors in the changed game components and libraries. Repository-wide lint still reports 19 errors in the earlier Mars prototype and its components.
+
+The rebuilt opening has 2,400 frames at 60 fps in both landscape and separately composed portrait delivery. Both complete files decode successfully. Exported shots were visually reviewed, including the front-seat correction. The encoded soundtrack measures −15.75 LUFS, −1.67 dBTP and 4.5 LU loudness range. This environment cannot audition audio, so perceptual listening remains a human review item. Editable production and music attribution are recorded in [the cinematic production record](MOONPARK-CINEMA.md).
+
+External personal-wallet approval remains a human handoff. Google sign-in was verified during the earlier hosting migration. This release verifies NEAR ownership and payments with separately controlled signing accounts.
+
+---
+
+# Earlier v5 verification record
 
 V5 adds separately keyed vendor accounts, a signed deterministic policy and finite NEP-245 credits and stock. Two merchants manage pricing, deliveries and a fixed 10% park share automatically. Park staff handle maintenance. Eight building types permit repeat placement. The new immutable testnet contract is `game.moonpark-mwam94si.testnet`. Saved v4 days retain their original engine and contract, and `/archive/v4` exposes earlier parks and earnings.
 

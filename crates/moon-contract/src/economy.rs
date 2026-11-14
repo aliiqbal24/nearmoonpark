@@ -6,7 +6,7 @@ use near_sdk::{assert_one_yocto, json_types::U128, Gas, NearToken, Promise};
 
 pub const VENDORS: [&str; 3] = ["omar", "mina", "logistics"];
 pub const ASSETS: [&str; 4] = ["credits", "food", "drink", "parts"];
-const POLICY: &str = "moonpark-v5-fixed-vendors-1";
+const POLICY: &str = "moonpark-v6-persistent-vendors-1";
 const SLOT_BYTES: u128 = 240;
 type Holdings = [[u128; 4]; 5];
 
@@ -59,7 +59,7 @@ fn holdings(run: &Run) -> Holdings {
     for asset in 1..4 {
         assert_eq!(
             h.iter().map(|row| row[asset]).sum::<u128>() + run.consumed[asset - 1] as u128,
-            2048,
+            run.issued_goods[asset - 1] as u128,
             "Inventory conservation"
         );
     }
@@ -67,6 +67,31 @@ fn holdings(run: &Run) -> Holdings {
 }
 
 impl Moonpark {
+    pub(crate) fn rebind_economy(&mut self, run_id: &str, previous: &AccountId, next: &AccountId) {
+        if previous == next {
+            return;
+        }
+        for asset in 0..4 {
+            let token = asset_id(run_id, asset);
+            let from = balance_key(previous, &token);
+            let to = balance_key(next, &token);
+            assert_eq!(
+                self.asset_balances.get(&to).unwrap_or(0),
+                0,
+                "New operator already holds these assets"
+            );
+            let amount = self.asset_balances.remove(&from).unwrap_or(0);
+            self.asset_balances.insert(&to, &amount);
+            if amount > 0 {
+                mt_event(
+                    "mt_transfer",
+                    vec![
+                        serde_json::json!({"old_owner_id":previous,"new_owner_id":next,"token_ids":[token],"amounts":[amount.to_string()],"memo":"Park owner authorized operator handoff"}),
+                    ],
+                );
+            }
+        }
+    }
     pub(crate) fn vendor_id(&self, vendor: &str) -> AccountId {
         format!("{vendor}.{}", self.sponsor)
             .parse()
@@ -122,13 +147,22 @@ impl Moonpark {
         before: &Run,
         after: &Run,
     ) {
-        // Closing-day assets can subsequently move independently. Cosmetic edits
-        // never reset those holdings to the closing simulation snapshot.
-        if before.finished {
-            return;
-        }
         let accounts = self.economy_accounts(owner);
         let old = holdings(before);
+        let mut funded = old;
+        let mut mints = vec![];
+        for asset in 0..4 {
+            let issued = if asset == 0 {
+                units(after.money_supply - before.money_supply)
+            } else {
+                (after.issued_goods[asset - 1] - before.issued_goods[asset - 1]) as u128
+            };
+            let owner = if asset == 0 { 1 } else { 4 };
+            funded[owner][asset] += issued;
+            if issued > 0 {
+                mints.push(serde_json::json!({"owner_id":accounts[owner],"token_ids":[asset_id(run_id, asset)],"amounts":[issued.to_string()],"memo":"Scheduled returning-tourist credits and logistics shipment. No cash value."}));
+            }
+        }
         let next = holdings(after);
         let mut transfers = vec![];
         let mut burns = vec![];
@@ -142,8 +176,8 @@ impl Moonpark {
                     old[i][asset],
                     "Asset ledger disagrees with game state"
                 );
-                debit[i] = old[i][asset].saturating_sub(next[i][asset]);
-                credit[i] = next[i][asset].saturating_sub(old[i][asset]);
+                debit[i] = funded[i][asset].saturating_sub(next[i][asset]);
+                credit[i] = next[i][asset].saturating_sub(funded[i][asset]);
             }
             // A batch clears its net obligations. Individual purchases remain in
             // the canonical game's readable trade journal.
@@ -165,7 +199,7 @@ impl Moonpark {
             assert!(credit.iter().all(|n| *n == 0), "Unfunded asset credit");
             let supply: u128 = next.iter().map(|r| r[asset]).sum();
             assert!(
-                supply <= self.asset_supplies.get(&token_id).expect("Asset not found"),
+                supply <= funded.iter().map(|r| r[asset]).sum(),
                 "Unexpected mint"
             );
             self.asset_supplies.insert(&token_id, &supply);
@@ -174,6 +208,7 @@ impl Moonpark {
                     .insert(&balance_key(&accounts[i], &token_id), &next[i][asset]);
             }
         }
+        mt_event("mt_mint", mints);
         mt_event("mt_transfer", transfers);
         mt_event("mt_burn", burns);
     }
@@ -183,10 +218,9 @@ impl Moonpark {
             "Unknown asset"
         );
         let run_id = token_id.split_once(':').expect("Invalid asset").0;
-        assert_eq!(
-            self.get_run(run_id.into())["run"]["finished"],
-            true,
-            "Opening-day assets are committed to the game until closing"
+        let _ = run_id;
+        env::panic_str(
+            "Park assets are committed to the operating park and its signed vendor policy",
         );
     }
     fn move_assets(
@@ -298,7 +332,7 @@ impl Moonpark {
         ));
     }
     pub fn get_vendor_policy(&self) -> serde_json::Value {
-        serde_json::json!({"policy_id":POLICY,"ruleset":VERSION,"network":"testnet","rent_percent":moonpark_sim::catalog::VENDOR_RENT,"automatic_pricing":true,"automatic_restocking":true,"idle_overhead_cents":0,"sale_overhead_cents":moonpark_sim::catalog::SHOP_OVERHEAD,"repair_fee_cents":moonpark_sim::catalog::REPAIR_FEE,"settlement":"atomic_net_clearing","guest_wallet":"passenger_escrow","cash_value":false,"vendors":VENDORS.iter().map(|v|serde_json::json!({"role":v,"account_id":self.vendor_id(v),"accepted":self.vendor_consents.get(&self.vendor_id(v)).unwrap_or(false)})).collect::<Vec<_>>()})
+        serde_json::json!({"policy_id":POLICY,"ruleset":VERSION,"network":"testnet","rent_percent":moonpark_sim::catalog::VENDOR_RENT,"automatic_pricing":true,"automatic_restocking":true,"idle_overhead_cents":0,"sale_overhead_cents":moonpark_sim::catalog::SHOP_OVERHEAD,"repair_fee_cents":moonpark_sim::catalog::REPAIR_FEE,"settlement":"atomic_net_clearing","guest_wallet":"passenger_escrow","cash_value":false,"tourist_issuance":"fixed_wallet_per_returning_guest_after_scoring","supply_shipments":"1024_units_when_stock_below_128","vendors":VENDORS.iter().map(|v|serde_json::json!({"role":v,"account_id":self.vendor_id(v),"accepted":self.vendor_consents.get(&self.vendor_id(v)).unwrap_or(false)})).collect::<Vec<_>>()})
     }
     pub fn get_run_economy(&self, run_id: String) -> serde_json::Value {
         let record = self.get_run(run_id.clone());
@@ -306,7 +340,7 @@ impl Moonpark {
         let owner: AccountId = record["owner"].as_str().unwrap().parse().unwrap();
         let token_ids: Vec<_> = (0..4).map(|a| asset_id(&run_id, a)).collect();
         let accounts = self.economy_accounts(&owner);
-        serde_json::json!({"run_id":run_id,"revision":run.revision,"tick":run.tick,"policy_id":POLICY,"token_ids":token_ids,"supplies":self.mt_batch_supply(token_ids.clone()),"locked":!run.finished,"cash_value":false,"wallets":accounts.iter().enumerate().map(|(i,a)|serde_json::json!({"role":(["park","passengers","omar","mina","logistics"][i]),"account_id":a,"balances":self.mt_batch_balance_of(a.clone(),token_ids.clone())})).collect::<Vec<_>>()})
+        serde_json::json!({"run_id":run_id,"revision":run.revision,"tick":run.tick,"policy_id":POLICY,"token_ids":token_ids,"supplies":self.mt_batch_supply(token_ids.clone()),"locked":true,"cash_value":false,"wallets":accounts.iter().enumerate().map(|(i,a)|serde_json::json!({"role":(["park","passengers","omar","mina","logistics"][i]),"account_id":a,"balances":self.mt_batch_balance_of(a.clone(),token_ids.clone())})).collect::<Vec<_>>()})
     }
     pub fn mt_balance_of(&self, account_id: AccountId, token_id: String) -> U128 {
         U128(

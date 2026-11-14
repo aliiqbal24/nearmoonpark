@@ -1,4 +1,6 @@
+import type { Run } from "./model";
 import { config, view, type Config, type Credentials } from "./near";
+import archivedV5 from "@/public/moon-v5-config.json";
 import archivedV4 from "@/public/moon-v4-config.json";
 import { failoverRpc } from "./rpc";
 import type { Design, Kind, RecordState } from "./model";
@@ -211,7 +213,8 @@ export async function parkAction(
   return { value, tx: raw.transaction.hash };
 }
 let connector:
-  Promise<import("@hot-labs/near-connect").NearConnector> | undefined;
+  | Promise<import("@hot-labs/near-connect").NearConnector>
+  | undefined;
 export function walletConnector(cfg: Config) {
   return (connector ??= import("@hot-labs/near-connect").then(
     ({ NearConnector }) =>
@@ -269,17 +272,30 @@ export async function walletAction(
 }
 export async function parkSnapshot(cfg: Config, park: Park) {
   if (!park.run_id) return null;
-  return view<RecordState>(cfg, "get_run", { run_id: park.run_id });
+  const record = await view<RecordState>(cfg, "get_run", {
+    run_id: park.run_id,
+  });
+  if (!cfg.archivedVersion) {
+    const snapshot = await view<Run | null>(cfg, "get_park_snapshot", {
+      park_id: park.id,
+    });
+    if (snapshot) record.run = snapshot;
+  }
+  return record;
 }
-export async function publicPark(accountId: string, version?: "v4" | "v5") {
-  const current = version === "v4" ? null : await config();
-  // Unversioned links existed before v5. New links explicitly select their registry.
+export async function publicPark(
+  accountId: string,
+  version?: "v4" | "v5" | "v6",
+) {
+  const current = await config();
   const candidates =
     version === "v4"
       ? [archivedV4 as Config]
       : version === "v5"
-        ? [current]
-        : [archivedV4 as Config, current];
+        ? [archivedV5 as Config]
+        : version === "v6"
+          ? [current]
+          : [archivedV4 as Config, archivedV5 as Config, current];
   for (const cfg of candidates) {
     if (!cfg) continue;
     const park = /^p-\d+$/.test(accountId)

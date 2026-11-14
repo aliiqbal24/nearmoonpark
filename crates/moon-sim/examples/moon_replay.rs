@@ -4,8 +4,8 @@ fn build(k: &str, x: u8, z: u8) -> Command {
     Command {
         kind: "build".into(),
         item: k.into(),
-        x,
-        z,
+        x: x + 8,
+        z: z + 24,
         ..Default::default()
     }
 }
