@@ -9,7 +9,6 @@ import {
   VolumeX,
   Home,
   BookOpen,
-  ReceiptText,
   X,
   RotateCw,
   ArrowUpRight,
@@ -28,13 +27,19 @@ import {
 import MoonWorld from "./components/moon-world";
 import { ParkHub, type ParkIdentity } from "./components/park-hub";
 import { NearMark } from "./components/near-economy";
+import { VendorWallets } from "./components/vendor-wallets";
+import {
+  STAFF,
+  StaffPortraits,
+  StaffStatus,
+  type StaffRole,
+} from "./components/staff-status";
 import {
   Dialog,
   Inspector,
   Leaderboard,
   ScoreBreakdown,
   Results,
-  Ledger,
 } from "./components/moon-panels";
 import { restoreCloudPark, saveCloudRecovery } from "@/lib/moon/cloud";
 import { dreamPark } from "@/lib/moon/dream";
@@ -53,6 +58,7 @@ import {
   VERSION,
   isPersistent,
   parkClosed,
+  parkWidth,
   type Building,
   type Kind,
   type Design,
@@ -83,7 +89,7 @@ import "./moonpark.css";
 
 type Player = { player_id: string; display_name: string };
 type Screen = "title" | "intro" | "playing" | "results";
-type Panel = "leaderboard" | "ledger" | "help" | "score" | "near" | null;
+type Panel = "leaderboard" | "help" | "score" | "near" | "staff" | null;
 function download(value: unknown, name: string) {
   const u = URL.createObjectURL(
     new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
@@ -104,9 +110,15 @@ export default function Game() {
     >("local"),
     [cloudRetry, setCloudRetry] = useState(0),
     [placement, setPlacement] = useState<Placement | null>(null),
+    [pathPreview, setPathPreview] = useState<{
+      cells: number;
+      cost: number;
+      valid: boolean;
+    } | null>(null),
     [selection, setSelection] = useState<Detail | null>(null),
     [hover, setHover] = useState<Detail | null>(null),
     [panel, setPanel] = useState<Panel>(null),
+    [staffRole, setStaffRole] = useState<StaffRole>("omar"),
     [toast, setToast] = useState<React.ReactNode>(""),
     [muted, setMuted] = useState(true),
     [introTime, setIntroTime] = useState(0),
@@ -652,6 +664,26 @@ export default function Game() {
           },
     );
   };
+  const drawPaths = async (cells: number[], erase: boolean) => {
+    const s = session.current;
+    if (!s || screen !== "playing") return;
+    const width = parkWidth(s.state.run);
+    try {
+      await s.actions(
+        cells.map((cell) => ({
+          kind: erase ? "erase_path" : "path",
+          x: cell % width,
+          z: Math.floor(cell / width),
+        })),
+      );
+      audio.current?.effect("build");
+    } catch (error) {
+      setToast(
+        error instanceof Error ? error.message : "That path cannot be built.",
+      );
+      audio.current?.effect("error");
+    }
+  };
   const pick = (d: Detail | null) => {
     if (screen === "playing" || screen === "results") {
       setSelection(d);
@@ -778,6 +810,16 @@ export default function Game() {
             : 0.4
         }
         placement={screen === "playing" ? placement : null}
+        onPathStroke={(cells, erase) => void drawPaths(cells, erase)}
+        onPathPreview={(preview) =>
+          setPathPreview((previous) =>
+            previous?.cells === preview?.cells &&
+            previous?.cost === preview?.cost &&
+            previous?.valid === preview?.valid
+              ? previous
+              : preview,
+          )
+        }
         selected={selectedBuilding?.id ?? null}
         cinematic={screen === "intro" && videoFailed ? introTime : null}
         paused={screen === "title" || (screen === "intro" && !videoFailed)}
@@ -1227,8 +1269,8 @@ export default function Game() {
                       : "These wallet transfers are confirmed on NEAR testnet."
                     : "Practice simulates the same economy. NEAR play settles its vendor wallets on testnet."}
                 </p>
-                <button onClick={() => setPanel("ledger")}>
-                  See the receipt
+                <button onClick={() => setPanel("near")}>
+                  View NEAR wallets
                 </button>
                 <button
                   onClick={() => {
@@ -1261,12 +1303,6 @@ export default function Game() {
               onClick={() => setPanel("leaderboard")}
             >
               <Trophy size={20} />
-            </button>
-            <button
-              aria-label="Economy ledger"
-              onClick={() => setPanel("ledger")}
-            >
-              <ReceiptText size={20} />
             </button>
             <button aria-label="How to play" onClick={() => setPanel("help")}>
               <BookOpen size={20} />
@@ -1421,6 +1457,18 @@ export default function Game() {
               }}
             />
           )}
+          {openingStage >= 2 &&
+            !rideId &&
+            !editingCoaster &&
+            !designingKind && (
+              <StaffPortraits
+                run={run}
+                onSelect={(role) => {
+                  setStaffRole(role);
+                  setPanel("staff");
+                }}
+              />
+            )}
           {screen === "playing" &&
             worldReady &&
             !rideId &&
@@ -1440,15 +1488,36 @@ export default function Game() {
                   </span>
                   {placement && (
                     <div className="mp-placement-tools">
-                      <button
-                        onClick={() =>
-                          setPlacement((p) =>
-                            p ? { ...p, rotation: (p.rotation + 1) % 4 } : p,
-                          )
-                        }
-                      >
-                        <RotateCw size={15} /> Rotate [R]
-                      </button>
+                      {pathPreview && (
+                        <span
+                          className={
+                            pathPreview.valid
+                              ? "mp-path-preview"
+                              : "mp-path-preview invalid"
+                          }
+                        >
+                          {pathPreview.cells} tiles · {money(pathPreview.cost)}{" "}
+                          credits
+                        </span>
+                      )}
+                      {(placement.kind === "path" ||
+                        placement.kind === "erase") && (
+                        <small>Drag to paint · Space-drag to pan</small>
+                      )}
+                      {placement.kind !== "path" &&
+                        placement.kind !== "erase" && (
+                          <button
+                            onClick={() =>
+                              setPlacement((p) =>
+                                p
+                                  ? { ...p, rotation: (p.rotation + 1) % 4 }
+                                  : p,
+                              )
+                            }
+                          >
+                            <RotateCw size={15} /> Rotate [R]
+                          </button>
+                        )}
                       {(placement.kind === "path" ||
                         placement.kind === "erase") && (
                         <button
@@ -1601,10 +1670,10 @@ export default function Game() {
           title={
             panel === "near"
               ? "Your economy. Secured by NEAR."
-              : panel === "leaderboard"
-                ? "The Moon's finest five"
-                : panel === "ledger"
-                  ? "Follow the lunar credits"
+              : panel === "staff"
+                ? STAFF[staffRole].name
+                : panel === "leaderboard"
+                  ? "The Moon's finest five"
                   : panel === "score"
                     ? "A great park earns its stars"
                     : "Your first day on the Moon"
@@ -1654,6 +1723,15 @@ export default function Game() {
                   );
                 }}
               />
+              {snapshot?.mode === "near" &&
+                activeConfig?.vendors &&
+                snapshot.record && (
+                  <VendorWallets
+                    key={snapshot.record.run_id}
+                    cfg={activeConfig}
+                    runId={snapshot.record.run_id}
+                  />
+                )}
               <div className="mp-hub-footer">
                 <button
                   className="mp-secondary"
@@ -1715,15 +1793,12 @@ export default function Game() {
                   .catch((e) => setToast(String(e)));
               }}
             />
-          ) : panel === "ledger" && run ? (
-            <Ledger
+          ) : panel === "staff" && run ? (
+            <StaffStatus
+              role={staffRole}
               run={run}
-              txs={snapshot?.txs ?? []}
               config={snapshot?.mode === "near" ? activeConfig : null}
               runId={snapshot?.record?.run_id}
-              contractId={
-                snapshot?.mode === "near" ? activeConfig?.contractId : undefined
-              }
             />
           ) : panel === "score" && run ? (
             <>

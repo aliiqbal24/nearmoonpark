@@ -1,4 +1,5 @@
 import { resortDistrict } from "./resort-district";
+import { GuestThoughts } from "./guest-thoughts";
 import { configureArt } from "./art-kit";
 import { createSky, lunarEnvironment, SUN_DIRECTION } from "./sky";
 import { PALETTES } from "./parks";
@@ -44,6 +45,8 @@ import {
   footprint,
   entrance,
   walkingRoute,
+  tileLine,
+  buildingCells,
   isTenant,
   type Run,
   type Placement,
@@ -57,6 +60,10 @@ type Options = {
   onPick: (d: Detail | null) => void;
   onHover: (d: Detail | null) => void;
   onPlace: (x: number, z: number) => void;
+  onPathStroke?: (cells: number[], erase: boolean) => void;
+  onPathPreview?: (
+    preview: { cells: number; cost: number; valid: boolean } | null,
+  ) => void;
   onReady: () => void;
 };
 export class MoonWorld {
@@ -99,6 +106,7 @@ export class MoonWorld {
   private resize: ResizeObserver;
   private models = new Map<number, AnimatedModel>();
   private people = new Map<number, T.Group>();
+  private thoughts: GuestThoughts;
   private deliveries = new Map<number, T.Group>();
   private run: Run | null = null;
   private placement: Placement | null = null;
@@ -114,6 +122,11 @@ export class MoonWorld {
   private plane = new T.Plane(new T.Vector3(0, 1, 0), 0);
   private pointer = new T.Vector3();
   private down = { x: 0, y: 0 };
+  private painting = false;
+  private spacePan = false;
+  private strokeCells: number[] = [];
+  private strokeLast = { x: 0, z: 0 };
+  private strokePreview: T.InstancedMesh;
   private cell = { x: 0, z: 0 };
   private hovered: Detail | null = null;
   private selected: number | null = null;
@@ -190,7 +203,7 @@ export class MoonWorld {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.09;
     this.controls.minDistance = 10;
-    this.controls.maxDistance = 320;
+    this.controls.maxDistance = 95;
     this.controls.minPolarAngle = Math.PI * 0.12;
     this.controls.maxPolarAngle = Math.PI * 0.46;
     this.controls.mouseButtons = {
@@ -268,6 +281,18 @@ export class MoonWorld {
     this.paths.count = 0;
     this.paths.receiveShadow = true;
     this.scene.add(this.paths, this.amenities);
+    this.strokePreview = new T.InstancedMesh(
+      new T.BoxGeometry(1.19, 0.11, 1.19),
+      new T.MeshBasicMaterial({
+        color: "#ffffff",
+        transparent: true,
+        opacity: 0.65,
+        depthWrite: false,
+      }),
+      WIDTH * HEIGHT,
+    );
+    this.strokePreview.count = 0;
+    this.scene.add(this.strokePreview);
     this.grid = new T.GridHelper(
       this.width * SCALE,
       this.width,
@@ -328,6 +353,7 @@ export class MoonWorld {
     this.founder = astronaut("#a9e4d3", 1.5, 4);
     this.founder.position.set(2, 0.19, 15.7);
     this.scene.add(this.founder);
+    this.thoughts = new GuestThoughts(this.scene);
     // Single-sample targets avoid ANGLE's resolve failure during bloom composition.
     // SMAA smooths geometry edges after tone mapping.
     this.post = new EffectComposer(
@@ -391,8 +417,10 @@ export class MoonWorld {
     el.addEventListener("pointermove", this.pointerMove);
     el.addEventListener("pointerup", this.pointerUp);
     el.addEventListener("pointerleave", this.pointerLeave);
+    el.addEventListener("pointercancel", this.cancelStroke);
     el.addEventListener("contextmenu", this.contextMenu);
     window.addEventListener("keydown", this.keyDown);
+    window.addEventListener("keyup", this.keyUp);
     if (!this.manual) this.frame = requestAnimationFrame(this.animate);
     opts.onReady();
   }
@@ -478,7 +506,9 @@ export class MoonWorld {
       );
     }
     if (JSON.stringify(placement) !== JSON.stringify(this.placement)) {
+      this.cancelStroke();
       this.placement = placement;
+      this.configureDrawingControls();
       this.previewPeak = placement?.design?.track_w
         ? Math.max(0, ...(placement.design.track ?? []).map((p) => p.y / 10))
         : 0;
@@ -702,8 +732,87 @@ export class MoonWorld {
       T.Mesh<T.BoxGeometry, T.MeshBasicMaterial> | undefined;
     mesh?.material.color.set(valid ? "#a5f6dd" : "#ed9b91");
   }
+  private configureDrawingControls() {
+    const drawing =
+      this.placement?.kind === "path" || this.placement?.kind === "erase";
+    this.controls.mouseButtons.LEFT =
+      drawing && !this.spacePan ? undefined : T.MOUSE.PAN;
+    this.controls.mouseButtons.MIDDLE = drawing ? T.MOUSE.PAN : T.MOUSE.DOLLY;
+    this.controls.touches.ONE = drawing ? undefined : T.TOUCH.PAN;
+  }
+  private cancelStroke = () => {
+    this.painting = false;
+    this.strokeCells = [];
+    if (this.strokePreview) this.strokePreview.count = 0;
+    this.opts.onPathPreview?.(null);
+  };
+  private extendStroke() {
+    if (
+      this.cell.x < 0 ||
+      this.cell.z < 0 ||
+      this.cell.x >= this.width ||
+      this.cell.z >= this.height
+    )
+      return;
+    for (const cell of tileLine(this.strokeLast, this.cell)) {
+      const id = cell.z * this.width + cell.x;
+      if (!this.strokeCells.includes(id)) this.strokeCells.push(id);
+    }
+    this.strokeLast = { ...this.cell };
+    const occupied = new Set(
+      this.run?.buildings
+        .filter((b) => !b.sold)
+        .flatMap((b) => buildingCells(b, this.width)),
+    );
+    const existing = new Set(this.run?.paths);
+    const erase = this.placement?.kind === "erase";
+    const valid = this.strokeCells.every((c) =>
+      erase ? c !== parkGate(this.run!) : !occupied.has(c),
+    );
+    const cost = erase
+      ? 0
+      : this.strokeCells.filter((c) => !existing.has(c)).length * 200;
+    const affordable = cost <= (this.run?.cash ?? 0);
+    const matrix = new T.Matrix4();
+    this.strokeCells.forEach((cell, i) => {
+      matrix.makeTranslation(
+        ((cell % this.width) + 0.5 - this.width / 2) * SCALE,
+        0.29,
+        (Math.floor(cell / this.width) + 0.5 - this.originZ) * SCALE,
+      );
+      this.strokePreview.setMatrixAt(i, matrix);
+      this.strokePreview.setColorAt(
+        i,
+        new T.Color(
+          valid && affordable ? (erase ? "#e2b27c" : "#84e1ca") : "#e58a83",
+        ),
+      );
+    });
+    this.strokePreview.count = this.strokeCells.length;
+    this.strokePreview.instanceMatrix.needsUpdate = true;
+    if (this.strokePreview.instanceColor)
+      this.strokePreview.instanceColor.needsUpdate = true;
+    this.strokePreview.computeBoundingSphere();
+    this.opts.onPathPreview?.({
+      cells: this.strokeCells.length,
+      cost,
+      valid: valid && affordable,
+    });
+  }
   private pointerDown = (e: PointerEvent) => {
     this.down = { x: e.clientX, y: e.clientY };
+    if (
+      e.button !== 0 ||
+      this.spacePan ||
+      !["path", "erase"].includes(this.placement?.kind ?? "")
+    )
+      return;
+    this.pointerMove(e);
+    this.painting = true;
+    this.strokeLast = { ...this.cell };
+    this.strokeCells = [];
+    this.extendStroke();
+    this.renderer.domElement.setPointerCapture(e.pointerId);
   };
   private pointerMove = (e: PointerEvent) => {
     const r = this.renderer.domElement.getBoundingClientRect();
@@ -718,6 +827,7 @@ export class MoonWorld {
         z: Math.floor(this.pointer.z / SCALE + this.originZ),
       };
       this.moveGhost();
+      if (this.painting) this.extendStroke();
     }
     if (this.placement) {
       this.opts.onHover(null);
@@ -745,6 +855,14 @@ export class MoonWorld {
     this.renderer.domElement.style.cursor = detail ? "pointer" : "grab";
   };
   private pointerUp = (e: PointerEvent) => {
+    if (this.painting && e.button === 0) {
+      this.pointerMove(e);
+      const cells = [...this.strokeCells];
+      const erase = this.placement?.kind === "erase";
+      this.cancelStroke();
+      if (cells.length) this.opts.onPathStroke?.(cells, erase);
+      return;
+    }
     if (
       Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y) > 7 ||
       e.button !== 0
@@ -755,6 +873,7 @@ export class MoonWorld {
     else this.opts.onPick(this.hovered);
   };
   private pointerLeave = () => {
+    if (this.painting) return;
     this.opts.onHover(null);
     this.ghost.visible = false;
   };
@@ -766,6 +885,15 @@ export class MoonWorld {
       (e.target as HTMLElement)?.matches("input,textarea,select")
     )
       return;
+    if (
+      e.code === "Space" &&
+      this.placement &&
+      ["path", "erase"].includes(this.placement.kind)
+    ) {
+      e.preventDefault();
+      this.spacePan = true;
+      this.configureDrawingControls();
+    }
     const step = 1.5;
     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
       e.preventDefault();
@@ -779,6 +907,11 @@ export class MoonWorld {
       this.clampPan();
     }
     if (e.key === "Home") this.home();
+  };
+  private keyUp = (e: KeyboardEvent) => {
+    if (e.code !== "Space") return;
+    this.spacePan = false;
+    this.configureDrawingControls();
   };
   private clampPan() {
     if (this.manual || this.attractMode) return;
@@ -832,6 +965,10 @@ export class MoonWorld {
       this.camera.position.set(31, 38, 57);
       this.controls.target.set(0, 0, -5);
     }
+    this.controls.maxDistance = Math.min(
+      320,
+      Math.max(75, this.camera.position.distanceTo(this.controls.target) * 1.1),
+    );
     this.controls.update();
   }
   setIsometric(enabled: boolean) {
@@ -979,6 +1116,18 @@ export class MoonWorld {
           );
       }
       this.animateGuests(run, dt, visual);
+      this.thoughts.update(
+        run,
+        this.people,
+        this.camera,
+        this.host.clientHeight,
+        this.time,
+        this.speed > 0 &&
+          this.cinematic === null &&
+          this.rideId === null &&
+          !this.placement &&
+          !this.isometric,
+      );
       this.animateDeliveries(run, visual);
       const shuttleTime =
         cinematic !== null
@@ -1405,6 +1554,7 @@ export class MoonWorld {
     this.animate(t * 1000);
   }
   dispose() {
+    this.thoughts.dispose();
     cancelAnimationFrame(this.frame);
     this.resize.disconnect();
     this.controls.dispose();
@@ -1413,8 +1563,10 @@ export class MoonWorld {
     el.removeEventListener("pointermove", this.pointerMove);
     el.removeEventListener("pointerup", this.pointerUp);
     el.removeEventListener("pointerleave", this.pointerLeave);
+    el.removeEventListener("pointercancel", this.cancelStroke);
     el.removeEventListener("contextmenu", this.contextMenu);
     window.removeEventListener("keydown", this.keyDown);
+    window.removeEventListener("keyup", this.keyUp);
     disposeObject(this.scene);
     disposeObject(this.sky);
     this.environmentTarget?.dispose();

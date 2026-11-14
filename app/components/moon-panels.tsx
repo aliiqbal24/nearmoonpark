@@ -1,5 +1,4 @@
 "use client";
-import { VendorWallets } from "./vendor-wallets";
 import type { Config } from "@/lib/moon/near";
 import { AttractionDesign } from "./attraction-design";
 import { useEffect, useRef, useState } from "react";
@@ -26,7 +25,6 @@ import {
   isRide,
   isTenant,
   money,
-  clock,
   guestName,
   connectionCost,
   GOLD_SCORE,
@@ -709,93 +707,5 @@ export function Results({
         <button onClick={onExport}>Export run</button>
       </div>
     </div>
-  );
-}
-
-export function Ledger({
-  run,
-  txs,
-  contractId,
-  config,
-  runId,
-}: {
-  run: Run;
-  txs: string[];
-  contractId?: string;
-  config?: Config | null;
-  runId?: string;
-}) {
-  const actor = (s: string) =>
-    s.startsWith("guest:")
-      ? guestName(Number(s.split(":")[1]))
-      : s.startsWith("business:")
-        ? blueprint(
-            run.buildings.find((b) => b.id === Number(s.split(":")[1]))?.kind ||
-              "food",
-          ).name
-        : s;
-  return (
-    <>
-      <p className="mp-subtle">
-        Visitors spend finite budgets. Businesses pay for stock, maintenance and
-        a fixed park share. Pricing and deliveries are automatic.
-        {contractId
-          ? config?.vendors
-            ? " NEAR confirms the game and clears its token balances together."
-            : " NEAR confirms this archived simulation under its original rules."
-          : " Practice uses the same rules locally."}
-      </p>
-      {config?.vendors && runId && (
-        <VendorWallets key={runId} cfg={config} runId={runId} />
-      )}
-      <div className="mp-ledger">
-        {run.trades
-          .slice(-22)
-          .reverse()
-          .map((t, i) => (
-            <div key={i}>
-              <small>{clock(t.tick)}</small>
-              <span>
-                <strong>{actor(t.from)}</strong> → {actor(t.to)}
-                <em>
-                  {t.good} · {t.qty} unit{t.qty === 1 ? "" : "s"}
-                </em>
-              </span>
-              <b>{money(t.amount)}</b>
-            </div>
-          ))}
-      </div>
-      {contractId && (
-        <a
-          target="_blank"
-          rel="noreferrer"
-          href={`https://testnet.nearblocks.io/address/${contractId}`}
-        >
-          Inspect the NEAR contract <ExternalLink size={13} />
-        </a>
-      )}
-      {txs
-        .slice(-3)
-        .reverse()
-        .map((tx) => (
-          <a
-            className="mp-tx"
-            key={tx}
-            href={`https://testnet.nearblocks.io/txns/${tx}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Confirmed transaction {tx.slice(0, 12)}… <ExternalLink size={12} />
-          </a>
-        ))}
-      <p className="mp-fine">
-        Lunar credits and stock are opening-day game assets with no cash value.
-        {contractId
-          ? config?.vendors
-            ? " The vendor accounts authorize fixed rules in the immutable contract. Testnet gas is sponsored."
-            : " This earlier version uses contract-managed merchant treasuries."
-          : " Offline practice has no blockchain transactions."}
-      </p>
-    </>
   );
 }

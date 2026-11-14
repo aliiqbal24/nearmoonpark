@@ -317,6 +317,43 @@ test("ride fares are fixed and selling returns half without an open-close contro
   expect((await savedRun(page)).buildings[0].sold).toBe(true);
 });
 
+test("paths paint a continuous drag before purchase and staff portraits expose business status", async ({
+  page,
+}) => {
+  await opening(page);
+  await expect(
+    page.getByRole("button", { name: "Economy ledger", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Build path", exact: true }).click();
+  const before = await savedRun(page);
+  const start = project(page, 33.3, 37.3),
+    finish = project(page, 39.3, 37.3);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(finish.x, finish.y, { steps: 12 });
+  await expect(page.locator(".mp-path-preview")).toContainText("7 tiles");
+  expect((await savedRun(page)).paths).toEqual(before.paths);
+  await page.mouse.up();
+  await expect
+    .poll(
+      async () =>
+        (await savedRun(page)).paths.filter(
+          (c) => c >= 37 * 48 + 33 && c <= 37 * 48 + 39,
+        ).length,
+    )
+    .toBe(7);
+  await page
+    .getByRole("button", { name: "View Omar’s status", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Moon Pie Kitchen");
+  await expect(page.getByRole("dialog")).toContainText("Business cash");
+  await page.getByRole("button", { name: "Close panel", exact: true }).click();
+  await page
+    .getByRole("button", { name: "View Nia’s status", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Repairs completed");
+});
+
 test("new park progress and designs survive refresh during onboarding", async ({
   page,
 }) => {

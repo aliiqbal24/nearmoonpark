@@ -248,6 +248,29 @@ export class ParkSession {
       void this.flush();
     });
   }
+  async actions(commands: Command[]) {
+    return this.enqueue(async () => {
+      if (!commands.length) return;
+      if (
+        Date.now() > this.state.deadline &&
+        commands.some((c) => !isCosmeticCommand(this.state.run, c))
+      )
+        throw Error("Opening day has ended.");
+      const chunks: Command[][] = [];
+      let run = this.state.run;
+      for (let i = 0; i < commands.length; i += 16) {
+        const batch = commands.slice(i, i + 16);
+        run = await simulate({ op: "step", run, commands: batch, ticks: 0 });
+        chunks.push(batch);
+      }
+      this.state.run = run;
+      if (this.state.mode === "near")
+        for (const batch of chunks)
+          this.ops.push({ commands: batch, ticks: 0, id: crypto.randomUUID() });
+      this.emit();
+      void this.flush();
+    });
+  }
   async update(dt: number, speed: number) {
     if (
       this.disposed ||

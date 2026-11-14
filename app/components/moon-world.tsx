@@ -17,6 +17,10 @@ type Props = {
   onPick: (d: Detail | null) => void;
   onHover: (d: Detail | null) => void;
   onPlace: (x: number, z: number) => void;
+  onPathStroke?: (cells: number[], erase: boolean) => void;
+  onPathPreview?: (
+    preview: { cells: number; cost: number; valid: boolean } | null,
+  ) => void;
   worldRef: React.MutableRefObject<World | null>;
 };
 export default function MoonWorld(props: Props) {
@@ -37,6 +41,9 @@ export default function MoonWorld(props: Props) {
           onPick: (d) => latest.current.onPick(d),
           onHover: (d) => latest.current.onHover(d),
           onPlace: (x, z) => latest.current.onPlace(x, z),
+          onPathStroke: (cells, erase) =>
+            latest.current.onPathStroke?.(cells, erase),
+          onPathPreview: (preview) => latest.current.onPathPreview?.(preview),
           onReady: () => latest.current.onReady?.(),
         });
         latest.current.worldRef.current = world;

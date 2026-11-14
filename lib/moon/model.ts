@@ -162,6 +162,36 @@ export const resaleValue = (b: Building, version = VERSION) =>
           10000,
       );
 export type TrackPoint = { x: number; y: number; z: number };
+export type Tile = { x: number; z: number };
+export function tileLine(from: Tile, to: Tile): Tile[] {
+  const cells = [{ ...from }];
+  const nx = Math.abs(to.x - from.x),
+    nz = Math.abs(to.z - from.z);
+  const sx = Math.sign(to.x - from.x),
+    sz = Math.sign(to.z - from.z);
+  let x = from.x,
+    z = from.z,
+    ix = 0,
+    iz = 0;
+  while (ix < nx || iz < nz) {
+    if ((2 * ix + 1) * nz < (2 * iz + 1) * nx) {
+      x += sx;
+      ix++;
+    } else {
+      z += sz;
+      iz++;
+    }
+    cells.push({ x, z });
+  }
+  return cells;
+}
+export function buildingCells(b: Building, width = WIDTH): number[] {
+  const f = footprint(b),
+    cells: number[] = [];
+  for (let z = b.z; z < b.z + f.h; z++)
+    for (let x = b.x; x < b.x + f.w; x++) cells.push(z * width + x);
+  return cells;
+}
 export const isPersistent = (run: Run) =>
   [VERSION, "moonpark-v7", "moonpark-v6"].includes(run.version);
 export const parkWidth = (run: Run) => (isPersistent(run) ? WIDTH : 32);

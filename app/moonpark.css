@@ -4168,3 +4168,118 @@ button.mp-chain .mp-near-mark svg {
     justify-content: space-between;
   }
 }
+
+.mp-path-preview {
+  padding: 6px 9px;
+  color: #183d39;
+  background: #d6eee0;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mp-path-preview.invalid {
+  color: #733f33;
+  background: #f4d8c9;
+}
+.mp-staff-portraits {
+  position: absolute;
+  right: 16px;
+  top: 32%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 12;
+}
+.mp-staff-portraits button {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #e9e5d8;
+  font-size: 10px;
+  font-weight: 650;
+  text-shadow: 0 1px 4px #14262e;
+  cursor: pointer;
+}
+.mp-staff-face {
+  width: 49px;
+  height: 49px;
+  display: block;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #f0ecd9;
+  border: 2px solid #a8b7ac;
+  box-shadow: 0 3px 15px #071e2733;
+}
+.mp-staff-face.active {
+  border-color: #6fc4ad;
+}
+.mp-staff-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 10%;
+  transform: scale(1.32);
+}
+.mp-staff-intro {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 0 0 20px;
+}
+.mp-staff-intro img {
+  width: 85px;
+  height: 100px;
+  object-fit: contain;
+}
+.mp-staff-intro strong {
+  font-size: 19px;
+}
+.mp-staff-intro p {
+  margin: 6px 0 0;
+  color: #49746d;
+}
+.mp-staff-status > p {
+  color: #617279;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.mp-staff-status dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 20px 0;
+}
+.mp-staff-status dl > div {
+  padding: 15px;
+  border-radius: 10px;
+  background: #e6e9db;
+}
+.mp-staff-status dt {
+  font-size: 11px;
+  color: #647a7c;
+}
+.mp-staff-status dd {
+  margin: 5px 0 0;
+  font-size: 24px;
+  font-weight: 650;
+  color: #263e47;
+}
+@media (max-width: 600px) {
+  .mp-staff-portraits {
+    right: 9px;
+    gap: 9px;
+    top: 35%;
+  }
+  .mp-staff-face {
+    width: 40px;
+    height: 40px;
+  }
+  .mp-placement-tools > small {
+    font-size: 10px;
+    max-width: 140px;
+  }
+}

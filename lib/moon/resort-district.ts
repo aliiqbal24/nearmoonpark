@@ -191,6 +191,19 @@ function resortHotel(district: T.Group) {
       0.06,
     );
   hotel.add(lobby);
+  const brand = new T.Group();
+  brand.name = "resort-near-rooftop-sign";
+  brand.position.set(0, 0, 28.9);
+  for (const x of [-5.6, 5.6])
+    shapedBox(brand, bronze, x, 8.3, -0.3, 0.16, 2.1, 0.35, 0.03);
+  shapedBox(brand, ink, 0, 11.0, 0, 14.5, 4.1, 0.42, 0.24);
+  shapedBox(brand, teal, 0, 11.0, 0.24, 14.1, 3.75, 0.08, 0.15);
+  const emblem = nearMark(brand, "#e8f3dc", 3.0);
+  emblem.position.set(-4.9, 11.0, 0.34);
+  const wordmark = label("NEAR", "#e8f3dc", 8.4);
+  wordmark.position.set(1.7, 11.0, 0.36);
+  brand.add(wordmark);
+  hotel.add(brand);
   // Roof equipment has deliberate spacing, access lanes and screened service faces.
   for (const side of [-1, 1]) {
     const roof = new T.Group();

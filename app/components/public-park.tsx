@@ -47,6 +47,8 @@ function visitorPreview(source: Run) {
     const b = rides[g.id % rides.length],
       e = entrance(b);
     g.status = "walking";
+    g.hunger = 20;
+    g.thirst = 20;
     g.cell = parkGate(run);
     g.target = b.id;
     g.route = walkingRoute(run, g.cell, e.z * parkWidth(run) + e.x);

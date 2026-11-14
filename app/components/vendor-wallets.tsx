@@ -19,8 +19,18 @@ const names: Record<string, string> = {
   logistics: "Lunar Logistics",
 };
 
-export function VendorWallets({ cfg, runId }: { cfg: Config; runId: string }) {
-  const [open, setOpen] = useState(false);
+export function VendorWallets({
+  cfg,
+  runId,
+  role,
+  initiallyOpen = false,
+}: {
+  cfg: Config;
+  runId: string;
+  role?: string;
+  initiallyOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(initiallyOpen);
   const [economy, setEconomy] = useState<Economy | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -49,10 +59,11 @@ export function VendorWallets({ cfg, runId }: { cfg: Config; runId: string }) {
   return (
     <details
       className="mp-vendor-wallets"
+      open={open}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary>
-        <NearMark /> View testnet wallets
+        <NearMark /> {role ? "NEAR business wallet" : "View testnet wallets"}
       </summary>
       <p className="mp-fine">
         Omar and Mina receive payments, buy stock and pay your park a fixed 10%
@@ -73,25 +84,27 @@ export function VendorWallets({ cfg, runId }: { cfg: Config; runId: string }) {
             Confirmed at {economy.tick}s · revision {economy.revision}
           </p>
           <div className="mp-wallet-list">
-            {economy.wallets.map((wallet) => (
-              <div key={wallet.role}>
-                <a
-                  href={`https://testnet.nearblocks.io/address/${wallet.account_id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Wallet size={15} /> {names[wallet.role]}{" "}
-                  <ExternalLink size={12} />
-                </a>
-                <strong>{money(Number(wallet.balances[0]))} credits</strong>
-                {(wallet.role === "omar" || wallet.role === "mina") && (
-                  <small>
-                    {wallet.balances[wallet.role === "omar" ? 1 : 2]} units
-                    owned, including paid deliveries
-                  </small>
-                )}
-              </div>
-            ))}
+            {economy.wallets
+              .filter((wallet) => !role || wallet.role === role)
+              .map((wallet) => (
+                <div key={wallet.role}>
+                  <a
+                    href={`https://testnet.nearblocks.io/address/${wallet.account_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Wallet size={15} /> {names[wallet.role]}{" "}
+                    <ExternalLink size={12} />
+                  </a>
+                  <strong>{money(Number(wallet.balances[0]))} credits</strong>
+                  {(wallet.role === "omar" || wallet.role === "mina") && (
+                    <small>
+                      {wallet.balances[wallet.role === "omar" ? 1 : 2]} units
+                      owned, including paid deliveries
+                    </small>
+                  )}
+                </div>
+              ))}
           </div>
           <p className="mp-fine">
             {economy.locked
