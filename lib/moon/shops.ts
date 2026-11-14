@@ -3,6 +3,7 @@ import {
   palette,
   material,
   metal,
+  nearMark,
   glass,
   glow,
   box,
@@ -188,6 +189,58 @@ function serviceShell(
   menu.position.set(0, 0.7, 1.183);
   menu.scale.y *= 0.38;
   g.add(menu);
+  // Ceramic counter panels and a recessed checkout keep these small kiosks legible.
+  for (let panel = 0; panel < 7; panel++) {
+    const x = (panel - 3) * 0.27;
+    shapedBox(
+      g,
+      panel % 3 === 0 ? c.primary : c.light,
+      x,
+      0.72,
+      1.135,
+      0.25,
+      0.27,
+      0.055,
+      0.018,
+    );
+    box(g, c.accent, x, 0.565, 1.17, 0.23, 0.025, 0.025).material = metal(
+      c.accent,
+    );
+  }
+  const checkout = new T.Group();
+  checkout.position.set(-0.7, 1.2, 1.02);
+  checkout.rotation.x = -0.18;
+  shapedBox(checkout, c.dark, 0, 0.04, 0, 0.23, 0.27, 0.075, 0.025);
+  box(checkout, "#588e80", 0, 0.055, 0.043, 0.18, 0.17, 0.009).material =
+    glow("#507b6c");
+  nearMark(checkout, c.light, 0.085).position.set(0, 0.055, 0.054);
+  g.add(checkout);
+  if (style === 0) {
+    for (const side of [-1, 1]) {
+      const fin = shapedBox(
+        g,
+        c.primary,
+        side * 0.98,
+        1.95,
+        -0.36,
+        0.16,
+        0.72,
+        0.7,
+        0.075,
+      );
+      fin.rotation.z = -side * 0.14;
+      box(g, c.accent, side * 1.08, 2.07, -0.36, 0.03, 0.4, 0.49).material =
+        metal(c.accent);
+    }
+  }
+  for (const side of [-1, 1]) {
+    const cladding = new T.Group();
+    cladding.position.set(side * 1.07, 0.75, -0.15);
+    cladding.rotation.y = (side * Math.PI) / 2;
+    for (const y of [-0.19, -0.07, 0.05, 0.17])
+      box(cladding, c.primary, 0, y, 0.02, 0.82, 0.025, 0.035);
+    g.add(cladding);
+  }
 }
 
 export function kitchen(g: T.Group, b: StyledBuilding, c: ResortColors) {
@@ -395,6 +448,17 @@ export function maintenance(
       0.013,
       0.18,
     ).rotation.y = -0.38;
+  for (const side of [-1, 1]) {
+    const crate = new T.Group();
+    crate.position.set(side * 1.1, 0.52, -0.94);
+    shapedBox(crate, "#8a9a8a", 0, 0, 0, 0.46, 0.38, 0.43, 0.04);
+    for (const x of [-0.14, 0.14])
+      box(crate, c.dark, x, 0.02, 0.23, 0.045, 0.3, 0.025);
+    g.add(crate);
+    const heatSink = equipmentPanel(g, 0.5, 0.9);
+    heatSink.position.set(side * 0.75, 2.47, -0.2);
+    heatSink.rotation.x = -Math.PI / 2;
+  }
   return (t: number) => {
     robot.position.x = Math.sin(t * 0.4) * 0.4;
     for (const wheel of robot.userData.wheels as T.Object3D[])
@@ -494,6 +558,12 @@ export function solar(
     if (b.design.style === 1) ring(g, c.primary, 1.35, 0.045, 0, 0.9);
   }
   shapedBox(g, c.primary, 0, 0.64, h / 2 - 0.42, 0.65, 0.55, 0.46, 0.075);
+  shapedBox(g, c.dark, 0, 0.4, 0, 0.9, 0.18, 0.86, 0.075);
+  for (const side of [-1, 1]) {
+    const cooling = equipmentPanel(g, 0.55, 0.3);
+    cooling.position.set(side * 0.47, 0.6, 0);
+    cooling.rotation.y = (side * Math.PI) / 2;
+  }
   const inverter = equipmentPanel(g, 0.62, 0.42);
   inverter.position.set(0, 0.88, -h / 2 + 0.29);
   inverter.rotation.y = Math.PI;

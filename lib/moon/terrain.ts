@@ -47,6 +47,24 @@ const CRATERS = [
   [30, 26, 3.8, 1.1],
 ];
 
+// Permanent resort foundations and their graded edges also keep loose rocks clear.
+function resortPadBlend(x: number, z: number) {
+  return Math.min(
+    T.MathUtils.smoothstep(Math.hypot(x - 37, z + 30), 4.8, 9),
+    T.MathUtils.smoothstep(Math.hypot(x + 41, z + 5), 9.5, 14),
+    T.MathUtils.smoothstep(
+      Math.max(Math.abs(x - 42) - 8.5, Math.abs(z + 2) - 7, 0),
+      0,
+      5,
+    ),
+    T.MathUtils.smoothstep(
+      Math.max(Math.abs(x) - 24, Math.abs(z + 55) - 10, 0),
+      0,
+      6,
+    ),
+  );
+}
+
 export function lunarHeight(x: number, z: number) {
   const clearance = Math.max(Math.abs(x) - 32, -48 - z, z - 30, 0);
   const edge = T.MathUtils.smoothstep(clearance, 0, 8);
@@ -70,12 +88,7 @@ export function lunarHeight(x: number, z: number) {
   height +=
     mountains *
     (5 + Math.pow(1 - Math.abs(noise(x * 0.018, z * 0.018) * 2 - 1), 3) * 29);
-  const observatory = T.MathUtils.smoothstep(
-    Math.hypot(x - 29, z + 14),
-    4.5,
-    10,
-  );
-  return height * edge * observatory - 0.32;
+  return height * edge * resortPadBlend(x, z) - 0.32;
 }
 
 export function lunarTerrain(scene: T.Scene, compact = false) {
@@ -160,7 +173,8 @@ export function lunarTerrain(scene: T.Scene, compact = false) {
     const distance = 29 + random() ** 1.7 * 120;
     const x = Math.cos(angle) * distance * 1.15,
       z = Math.sin(angle) * distance;
-    if (Math.abs(x) < 25 && z > -21 && z < 32) continue;
+    if ((Math.abs(x) < 32 && z > -48 && z < 32) || resortPadBlend(x, z) < 0.05)
+      continue;
     const radius = 0.07 + random() ** 2 * 0.65;
     const rockGeometry = new T.IcosahedronGeometry(radius, 1);
     const position = rockGeometry.attributes.position;
@@ -197,18 +211,18 @@ export function lunarTerrain(scene: T.Scene, compact = false) {
           return;
         }
         const sites = [
-          [-27, 10, 9],
-          [-30, 13, 14],
-          [-25, 15, 5],
-          [39, -25, 12],
-          [42, -28, 7],
-          [36, -28, 5],
+          [-45, 14, 9],
+          [-49, 18, 14],
+          [-42, 22, 5],
+          [46, -23, 12],
+          [46, -32, 7],
+          [44, -36, 5],
           [-40, -24, 10],
           [-44, -27, 17],
           [34, 24, 11],
           [30, 27, 5],
           [-36, 30, 16],
-          [39, -41, 22],
+          [46, -43, 22],
           [-47, -35, 21],
           [52, 14, 16],
           [-28, 21, 4],

@@ -35,9 +35,8 @@ try {
   );
   await page.evaluate(async () => {
     const T = await import("/node_modules/three/build/three.module.js");
-    const { lunarEnvironment, SUN_DIRECTION } = await import(
-      "/lib/moon/sky.ts"
-    );
+    const { lunarEnvironment, SUN_DIRECTION } =
+      await import("/lib/moon/sky.ts");
     const assets = await import("/lib/moon/assets.ts");
     const { simulate } = await import("/lib/moon/engine.ts");
     document.body.style.cssText = "margin:0;background:transparent";
@@ -63,12 +62,27 @@ try {
     const rim = new T.DirectionalLight("#83b9ed", 0.65);
     rim.position.set(20, 8, -25);
     scene.add(rim);
+    const { starterCoaster } = await import("/lib/moon/coaster.ts");
+    const prepared = await simulate({
+      op: "step",
+      run: await simulate({ op: "new" }),
+      commands: [
+        {
+          kind: "build",
+          item: "coaster",
+          x: 2,
+          z: 16,
+          design: starterCoaster(),
+        },
+      ],
+      ticks: 0,
+    });
     window.art = {
       T,
       renderer,
       scene,
       assets,
-      base: (await simulate({ op: "new" })).buildings[0],
+      base: prepared.buildings[0],
       model: null,
     };
   });
@@ -246,7 +260,7 @@ try {
       if (encode.status) throw Error(encode.stderr.toString());
       await rename(
         `outputs/moonpark-art/${asset}.webp`,
-        `public/art/${asset}-v3.webp`,
+        `public/art/${asset}-${portrait ? "v3" : "v4"}.webp`,
       );
       count++;
     }

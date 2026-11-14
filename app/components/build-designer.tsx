@@ -647,7 +647,7 @@ export function BuildDesigner({
                 aria-pressed={design.style === style}
                 onClick={() => change({ style })}
               >
-                <img src={`/art/${kind}-s${style}-v3.webp`} alt="" />
+                <img src={`/art/${kind}-s${style}-v4.webp`} alt="" />
                 <span>{name}</span>
               </button>
             ))}

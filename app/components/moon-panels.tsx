@@ -211,7 +211,7 @@ export function Inspector({
         </button>
       </div>
       <div className="mp-building-icon" style={{ color: a.color }}>
-        <img src={`/art/${b.kind}-s${b.design?.style ?? 0}-v3.webp`} alt="" />
+        <img src={`/art/${b.kind}-s${b.design?.style ?? 0}-v4.webp`} alt="" />
       </div>
       <h2>{b.design?.name || a.name}</h2>
       {!readOnly && (

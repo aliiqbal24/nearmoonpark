@@ -3,21 +3,17 @@ import { NEAR_MARK_PATH } from "../near-brand";
 import {
   SCALE,
   beam,
-  palette,
   nearMark,
   box,
   cylinder,
   ring,
-  material,
   metal,
   glow,
   label,
-  batch,
   batchStatic,
   shapedBox,
   ellipsoid,
   surface,
-  glass,
   line,
 } from "./art-kit";
 import {
@@ -27,7 +23,6 @@ import {
   safetyRail,
   resortBench,
   lantern,
-  marquee,
 } from "./resort-props";
 export { lunarTerrain } from "./terrain";
 import {
@@ -243,64 +238,79 @@ export function spaceport(scene: T.Scene) {
   port.add(gate);
   for (const side of [-1, 1]) {
     const wing = new T.Group();
-    wing.position.set(side * 6.3, 0, 16.95);
-    const canopy = new T.Mesh(
-      new T.CylinderGeometry(1.87, 1.87, 6.5, 48, 1, true, 0, Math.PI),
-      surface("#e1e6df"),
-    );
-    canopy.rotation.z = Math.PI / 2;
-    canopy.position.y = 3.07;
-    canopy.castShadow = canopy.receiveShadow = true;
-    wing.add(canopy);
-    for (const x of [-3.25, -1.62, 0, 1.62, 3.25]) {
-      const rib = new T.Mesh(
-        new T.TorusGeometry(1.91, 0.035, 8, 48, Math.PI),
-        metal("#bd9e6a"),
+    wing.name =
+      side < 0 ? "near-arrivals-pavilion" : "earthrise-transit-lounge";
+    wing.position.set(side * 6.9, 0, 17.5);
+    shapedBox(wing, "#1a3039", 0, 0.36, 0, 6.2, 0.5, 4.0, 0.24);
+    shapedBox(wing, "#d1d5c6", 0, 0.66, 0.15, 6.3, 0.16, 4.2, 0.13);
+    shapedBox(wing, "#286b69", 0, 1.97, -1.58, 5.9, 2.5, 0.6, 0.16);
+    for (const x of [-2.65, -1.3, 0, 1.3, 2.65]) {
+      const window = windowPanel(wing, 1.2, 2.25, side < 0 || x > 0);
+      window.position.set(x, 1.9, 1.64);
+      box(wing, "#b49462", x - 0.61, 1.98, 1.94, 0.045, 2.6, 0.4).material =
+        metal("#b49462");
+    }
+    for (const x of [-2.9, 2.9]) {
+      const window = windowPanel(wing, 2.7, 2.26, false);
+      window.position.set(x, 1.9, 0);
+      window.rotation.y = x > 0 ? Math.PI / 2 : -Math.PI / 2;
+      beam(
+        wing,
+        new T.Vector3(x * 1.08, 0.7, 1.65),
+        new T.Vector3(x * 1.12, 3.45, 0.6),
+        0.09,
+        "#d5d9cc",
       );
-      rib.rotation.y = Math.PI / 2;
-      rib.position.set(x, 3.07, 0);
-      wing.add(rib);
     }
-    for (const z of [-1.91, 1.91]) {
-      box(wing, "#b7ecda", 0, 3.07, z, 6.45, 0.035, 0.035).material =
-        glow("#b7ecda");
+    // Deep butterfly roofs, a copper fascia and coffered soffits replace the plain vaults.
+    for (const roofSide of [-1, 1]) {
+      const roof = new T.Group();
+      roof.position.set(roofSide * 1.64, 3.45, 0.05);
+      roof.rotation.z = roofSide * 0.1;
+      shapedBox(roof, "#dedfcf", 0, 0, 0, 3.65, 0.24, 5.0, 0.12);
+      box(roof, "#b69765", 0, -0.025, 2.48, 3.65, 0.16, 0.055).material =
+        metal("#b69765");
+      for (const x of [-1.25, -0.4, 0.4, 1.25])
+        box(roof, "#71867d", x, -0.14, 0, 0.08, 0.08, 4.7);
+      box(roof, "#b5c4a9", 0, -0.15, 1.85, 3.15, 0.025, 0.045).material =
+        glow("#9cba9f");
+      for (const x of [-0.9, 0.65]) {
+        const panel = equipmentPanel(roof, 1.15, 1.7);
+        panel.position.set(x, 0.2, -0.6);
+        panel.rotation.x = -Math.PI / 2;
+      }
+      wing.add(roof);
     }
-
-    shapedBox(wing, "#1a2a35", 0, 0.38, 0, 5.8, 0.45, 3.3, 0.1);
-    shapedBox(wing, "#405763", 0, 1.75, -1.25, 5.6, 2.5, 0.65, 0.13);
-    shapedBox(wing, "#b5c3c9", 0, 3.05, 0, 6.08, 0.22, 3.65, 0.12).material =
-      metal("#b5c3c9");
-    shapedBox(wing, "#243a48", 0, 3.2, 0, 5.6, 0.13, 3.25, 0.06);
-    box(wing, "#8bdad2", 0, 2.91, 1.78, 5.7, 0.025, 0.025).material =
-      glow("#8bdad2");
-    for (let i = 0; i < 6; i++) {
-      const x = (i - 2.5) * 0.91;
-      const pane = windowPanel(wing, 0.85, 2.08, i % 3 !== 1);
-      pane.position.set(x, 1.71, 1.54);
-      box(wing, "#c5cecf", x, 0.72, 1.61, 0.84, 0.12, 0.08).material =
-        metal("#c5cecf");
-    }
-    for (const x of [-2.8, 2.8]) {
-      const pane = windowPanel(wing, 2.6, 2.08, false);
-      pane.position.set(x, 1.71, 0);
-      pane.rotation.y = x > 0 ? Math.PI / 2 : -Math.PI / 2;
-    }
-    for (const x of [-1.65, 0, 1.65]) {
-      const unit = equipmentPanel(wing, 0.9, 0.45);
-      unit.position.set(x, 3.3, -0.15);
-      unit.rotation.x = -Math.PI / 2;
-      box(wing, "#647b87", x, 3.25, -0.7, 1.05, 0.12, 0.52).material =
-        metal("#647b87");
-      pressureGarden(wing, x, -0.05, 0.39, 1.1);
-    }
+    shapedBox(wing, "#d7d9c9", 0, 3.03, 0.2, 6.15, 0.16, 3.8, 0.1);
     const name = label(
       side < 0 ? "NEAR / ARRIVALS" : "EARTHRISE LOUNGE",
-      "#d9e7e8",
-      3.2,
+      "#d8dbc4",
+      4.0,
     );
-    name.position.set(0, 3.18, 1.84);
-    name.scale.y *= 0.55;
+    name.position.set(0, 3.16, 2.04);
+    name.scale.y *= 0.5;
     wing.add(name);
+    nearMark(wing, "#c9ab71", 0.55).position.set(side * 2.45, 0.89, 1.95);
+    if (side > 0) {
+      const tower = new T.Group();
+      tower.position.set(2.55, 0, -0.85);
+      shapedBox(tower, "#214b50", 0, 3.1, 0, 1.75, 5.6, 2.1, 0.25);
+      for (const y of [3.9, 5.35]) {
+        shapedBox(tower, "#d2d6c8", 0, y + 0.6, 0, 2.25, 0.18, 2.6, 0.1);
+        const pane = windowPanel(tower, 1.88, 1.0, false);
+        pane.position.set(0, y, 1.28);
+        for (const x of [-1.03, 1.03]) {
+          const sideWindow = windowPanel(tower, 2.2, 1.0, false);
+          sideWindow.position.set(x, y, 0);
+          sideWindow.rotation.y = x > 0 ? Math.PI / 2 : -Math.PI / 2;
+        }
+      }
+      cylinder(tower, "#9d8865", 0, 6.5, 0, 0.045, 1.2).material =
+        metal("#9d8865");
+      ellipsoid(tower, "#c6d7bf", 0, 7.13, 0, 0.12, 0.12, 0.12).material =
+        glow("#a2b38e");
+      wing.add(tower);
+    }
     port.add(wing);
     const rail = safetyRail(port, 3.0);
     rail.position.set(side * 8.1, 0.2, 19.8);
@@ -309,9 +319,9 @@ export function spaceport(scene: T.Scene) {
       side * 4.0,
       18.9,
       side < 0 ? Math.PI / 2 : -Math.PI / 2,
-      "#4b6b76",
+      "#9a7356",
     );
-    pressureGarden(port, side * 10.4, 18.4, 0.62, 1.55);
+    pressureGarden(port, side * 11.2, 18.4, 0.62, 1.55);
     lantern(port, side * 10.1, 20.0, 2.65);
   }
   const gantry = new T.Group();
@@ -381,81 +391,98 @@ export function spaceport(scene: T.Scene) {
 
 export function observatory(scene: T.Scene) {
   const g = new T.Group();
-  g.position.set(29, 0, -14);
-  cylinder(g, palette.navy, 0, 0.2, 0, 3.35, 0.5);
-  cylinder(g, palette.ivory, 0, 1.15, 0, 2.85, 1.75);
-  for (const y of [0.65, 1.9])
-    ring(g, palette.gold, 2.87, 0.04, 0, y).material = metal(palette.gold);
-  const dome = new T.Mesh(
-    new T.SphereGeometry(2.84, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2),
-    material("#4f8994"),
-  );
-  dome.position.y = 2.02;
-  dome.castShadow = true;
-  g.add(dome);
-  for (let i = 0; i < 8; i++) {
-    const a = (i * Math.PI) / 4;
-    const frame = new T.Group();
-    frame.rotation.y = a;
-    line(
-      frame,
-      [
-        new T.Vector3(2.84, 2.02, 0),
-        new T.Vector3(2.0, 4.03, 0),
-        new T.Vector3(0, 4.86, 0),
-      ],
-      0.028,
-      palette.gold,
-      "metal",
-    );
-    g.add(frame);
-    const pane = ellipsoid(
-      g,
-      "#a3d7db",
-      Math.sin(a) * 2.865,
-      1.33,
-      Math.cos(a) * 2.865,
-      0.39,
-      0.38,
-      0.035,
-    );
-    pane.rotation.y = a;
-    pane.material = glass;
+  g.name = "near-lunar-observatory";
+  g.position.set(37, 0, -30);
+  cylinder(g, "#1c303a", 0, 0.26, 0, 4.15, 0.52);
+  cylinder(g, "#a5afa6", 0, 0.64, 0, 3.72, 0.28);
+  cylinder(g, "#d3d7c9", 0, 1.85, 0, 3.12, 2.3);
+  for (const y of [0.83, 2.9])
+    ring(g, "#b99b69", 3.18, 0.075, 0, y).material = metal("#b99b69");
+  for (let i = 0; i < 12; i++) {
+    const a = (i * Math.PI) / 6;
+    const panel = new T.Group();
+    panel.rotation.y = a;
+    panel.position.set(Math.sin(a) * 3.13, 1.82, Math.cos(a) * 3.13);
+    const pane = windowPanel(panel, 1.32, 1.35, i % 3 === 0);
+    pane.position.z = 0.03;
+    box(panel, "#6f8a83", -0.75, 0, 0.05, 0.055, 1.82, 0.16);
+    g.add(panel);
   }
-  const slit = new T.Group();
-  slit.rotation.z = -0.25;
-  slit.position.set(0, 3.0, 0.7);
-  shapedBox(slit, palette.navy, 0, 0, 0, 0.68, 1.44, 3.0, 0.2);
-  g.add(slit);
-  const telescope = new T.Group();
-  telescope.position.set(0, 3.8, 0.65);
-  telescope.rotation.x = -0.55;
-  cylinder(telescope, palette.ivory, 0, 0, 0, 0.34, 1.55);
-  ring(telescope, palette.gold, 0.36, 0.04, 0, 0.73).material = metal(
-    palette.gold,
-  );
-  cylinder(telescope, palette.navy, 0, 0.8, 0, 0.28, 0.06);
-  g.add(telescope);
-  marquee(g, "A NEAR FUTURE", palette.ivory, 3.5, 2.03, 2.9);
-  for (let i = 0; i < 5; i++)
+  cylinder(g, "#233b43", 0, 3.05, 0, 3.24, 0.24);
+  for (const side of [0, 1]) {
+    const dome = new T.Mesh(
+      new T.SphereGeometry(
+        3.19,
+        48,
+        24,
+        Math.PI / 2 + 0.23 + side * Math.PI,
+        Math.PI - 0.46,
+        0,
+        Math.PI / 2,
+      ),
+      surface("#d9dbcd"),
+    );
+    dome.position.y = 3.17;
+    dome.castShadow = true;
+    g.add(dome);
+    const frame = new T.Group();
+    frame.rotation.y = side * Math.PI;
+    for (const x of [-0.71, 0.71])
+      line(
+        frame,
+        [
+          new T.Vector3(x, 3.18, 3.1),
+          new T.Vector3(x * 0.8, 5.2, 2.3),
+          new T.Vector3(x * 0.3, 6.28, 0),
+        ],
+        0.065,
+        "#b99b69",
+        "metal",
+      );
+    g.add(frame);
+  }
+  const mount = new T.Group();
+  mount.position.set(0, 4.7, 0.25);
+  cylinder(mount, "#254e57", 0, -0.7, 0, 0.6, 1.5);
+  for (const x of [-0.68, 0.68])
+    box(mount, "#aebbb2", x, 0.08, 0, 0.2, 1.2, 0.7);
+  const scope = new T.Group();
+  scope.rotation.x = 0.85;
+  cylinder(scope, "#1c303a", 0, 0.45, 0, 0.55, 2.4);
+  cylinder(scope, "#cbd3c5", 0, 0.55, 0, 0.59, 1.8);
+  for (const y of [-0.5, 0.1, 1.2, 1.7])
+    ring(scope, "#b19564", 0.6, 0.055, 0, y).material = metal("#b19564");
+  cylinder(scope, "#1a3845", 0, 1.76, 0, 0.53, 0.12).material =
+    metal("#244e60");
+  cylinder(scope, "#2f7189", 0, 1.83, 0, 0.43, 0.025).material =
+    metal("#2f7189");
+  mount.add(scope);
+  g.add(mount);
+  const name = label("NEAR / DEEP SPACE OBSERVATORY", "#e0cfaa", 4.4);
+  name.position.set(0, 3.05, 3.36);
+  name.scale.y *= 0.5;
+  g.add(name);
+  for (let i = 0; i < 6; i++)
     shapedBox(
       g,
-      palette.ivory,
+      "#bbc3b5",
       0,
-      0.12 + i * 0.08,
-      3.25 - i * 0.22,
-      1.35,
-      0.14,
-      0.4,
+      0.1 + i * 0.12,
+      4.55 - i * 0.25,
+      1.6,
+      0.16,
+      0.48,
       0.04,
     );
-  pressureGarden(g, -3.6, 2.2, 0.63, 0.85);
-  lantern(g, 2.2, 3.2, 1.35);
-  batch(g);
+  for (const x of [-2.8, 2.8]) {
+    const service = equipmentPanel(g, 0.95, 0.6);
+    service.position.set(x, 0.85, 2.7);
+    lantern(g, x, 3.3, 1.65);
+  }
+  batchStatic(g);
   scene.add(g);
 }
 
-/** Decorative amenities follow the existing path and leave build cells usable. */
 export function pathAmenities(run: Run) {
   const WIDTH = parkWidth(run),
     HEIGHT = parkHeight(run),

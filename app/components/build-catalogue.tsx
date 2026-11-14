@@ -137,7 +137,7 @@ export function BuildCatalogue({
             onBlur={() => setTip(null)}
           >
             <span className="mp-blueprint-art" style={{ color: a.color }}>
-              <img src={`/art/${a.kind}-s0-v3.webp`} alt="" draggable={false} />
+              <img src={`/art/${a.kind}-s0-v4.webp`} alt="" draggable={false} />
             </span>
             <strong>{a.name}</strong>
             <small>

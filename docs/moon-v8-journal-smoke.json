@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "origin": "http://localhost:5173",
+  "contractId": "game.moonpark-mwgh000n.testnet",
+  "runId": "4",
+  "ops": 7,
+  "startingTick": 27,
+  "confirmedTick": 127,
+  "predictionMatched": true,
+  "errors": []
+}

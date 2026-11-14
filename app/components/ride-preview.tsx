@@ -15,7 +15,7 @@ export function RidePreview({
   name: string;
 }) {
   if (kind !== "coaster" || !design?.track?.length)
-    return <img src={`/art/${kind}-s${design?.style ?? 0}-v3.webp`} alt="" />;
+    return <img src={`/art/${kind}-s${design?.style ?? 0}-v4.webp`} alt="" />;
   const colors = PALETTES[design.palette] ?? PALETTES[0];
   const width = (design.track_w ?? (variant ? 8 : 6)) * 1.25,
     depth = (design.track_h ?? (variant ? 6 : 8)) * 1.25;

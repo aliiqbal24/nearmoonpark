@@ -376,7 +376,9 @@ export function foundation(
       bolt(g, side * (w / 2 - 0.22), 0.38, z, 0.032);
   }
   for (const z of [-h / 2 + 0.12, h / 2 - 0.12]) {
-    box(g, c.light, 0, 0.32, z, w - 0.35, 0.025, 0.022).material = glow(c.light);
+    box(g, c.light, 0, 0.32, z, w - 0.35, 0.025, 0.022).material = glow(
+      c.light,
+    );
     box(g, "#263944", 0, 0.37, z, w - 0.48, 0.018, 0.06);
     for (let i = 0; i < Math.floor(w / 0.28); i++)
       box(g, "#c1c8c9", -w / 2 + 0.3 + i * 0.28, 0.385, z, 0.13, 0.006, 0.025);
@@ -437,42 +439,88 @@ export function windowPanel(
   warm = true,
 ) {
   const group = new T.Group();
-  shapedBox(group, "#1b2b35", 0, 0, 0, width, height, 0.09, 0.025);
+  // Layered frames and recessed furniture give the glazing real parallax.
+  shapedBox(group, "#a7b3ad", 0, 0, 0, width, height, 0.18, 0.035);
+  shapedBox(
+    group,
+    "#1b3037",
+    0,
+    0,
+    0.085,
+    width - 0.07,
+    height - 0.07,
+    0.045,
+    0.02,
+  );
+  box(
+    group,
+    warm ? "#705c46" : "#3f5f6a",
+    width * 0.19,
+    0,
+    0.115,
+    width * 0.42,
+    height - 0.13,
+    0.018,
+  );
+  for (let slat = 0; slat < 4; slat++)
+    box(
+      group,
+      warm ? "#a18a65" : "#607f84",
+      width * (0.04 + slat * 0.1),
+      0,
+      0.13,
+      0.014,
+      height - 0.15,
+      0.018,
+    );
+  box(group, "#8b927f", 0, -height * 0.42, 0.15, width - 0.14, 0.045, 0.14);
+  shapedBox(
+    group,
+    warm ? "#aa7658" : "#598c8a",
+    -width * 0.2,
+    -height * 0.24,
+    0.145,
+    width * 0.38,
+    height * 0.18,
+    0.085,
+    0.025,
+  );
+  box(
+    group,
+    warm ? "#be8f57" : "#609fa5",
+    -width * 0.28,
+    height * 0.31,
+    0.145,
+    width * 0.26,
+    0.025,
+    0.025,
+  ).material = glow(warm ? "#9e774b" : "#4f878d");
   const pane = shapedBox(
     group,
-    "#608894",
+    "#547d87",
     0,
     0,
-    0.055,
-    width - 0.08,
-    height - 0.08,
+    0.2,
+    width - 0.1,
+    height - 0.1,
     0.025,
     0.015,
   );
   pane.material = glass;
   pane.castShadow = false;
+  box(group, "#657b7f", 0, 0, 0.225, 0.027, height - 0.08, 0.04).material =
+    metal("#657b7f");
+  box(group, "#bcc3b8", 0, height * 0.31, 0.23, width - 0.08, 0.032, 0.045);
   box(
     group,
-    warm ? "#d4a16e" : "#6497b3",
+    "#b89c6d",
     0,
-    -height * 0.22,
+    -height / 2 + 0.025,
+    0.235,
+    width - 0.05,
     0.035,
-    width * 0.83,
-    height * 0.32,
-    0.015,
-  ).material = glow(warm ? "#d4a16e" : "#6497b3");
-  box(group, "#bbc9cc", 0, 0, 0.075, 0.022, height - 0.08, 0.018).material =
-    metal("#bbc9cc");
-  box(
-    group,
-    "#627a87",
-    0,
-    height * 0.17,
-    0.078,
-    width - 0.08,
-    0.018,
-    0.018,
-  ).material = metal("#627a87");
+    0.09,
+  ).material = metal("#b89c6d");
   parent.add(group);
   return group;
 }

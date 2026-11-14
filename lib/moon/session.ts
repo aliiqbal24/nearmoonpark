@@ -393,12 +393,25 @@ export class ParkSession {
         }
       }
       await this.enqueue(async () => {
+        const predicted = await simulate({
+          op: "step",
+          run: this.state.record!.run,
+          commands: this.active!.commands,
+          ticks: this.active!.ticks,
+        });
+        const predictionConfirmed =
+          this.state.run.revision ===
+            result.record.run.revision + this.ops.length &&
+          JSON.stringify(predicted) === JSON.stringify(result.record.run);
         this.state.record = result.record;
         if (result.tx)
           this.state.txs = [...this.state.txs, result.tx].slice(-120);
         this.state.error = null;
         this.active = null;
-        await this.rebase();
+        // The pending prediction already includes this confirmed prefix.
+        // Replaying a long offline journal on every receipt can stall the UI.
+        if (!predictionConfirmed) await this.rebase();
+        else if (!this.ops.length) this.state.run = result.record.run;
         this.emit();
       });
     } catch (e) {

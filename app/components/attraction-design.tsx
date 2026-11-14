@@ -124,7 +124,7 @@ export function AttractionDesign({
               aria-pressed={design.style === style}
               onClick={() => change({ style })}
             >
-              <img src={`/art/${building.kind}-s${style}-v3.webp`} alt="" />
+              <img src={`/art/${building.kind}-s${style}-v4.webp`} alt="" />
               <span>{name}</span>
             </button>
           ))}
