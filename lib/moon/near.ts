@@ -1,6 +1,7 @@
 import type { Command, RecordState, Entry } from "./model";
 import { VERSION } from "./model";
 import { failoverRpc } from "./rpc";
+import { renewalMessage, type RenewalProof } from "./sponsorship";
 import { AccessKeyNotEnoughAllowanceActionError } from "near-api-js/rpc-errors";
 export type Config = {
   contractId: string;
@@ -57,7 +58,10 @@ export async function view<T>(
   for (const url of [c.rpcUrl, c.fallbackRpcUrl])
     try {
       return (await within(
-        new m.JsonRpcProvider({ url }).callFunction({
+        new m.JsonRpcProvider(
+          { url },
+          { retries: 2, wait: 300, backoff: 1.5 },
+        ).callFunction({
           contractId: c.contractId,
           method,
           args,
@@ -135,19 +139,50 @@ export async function provision(
   if (previousAccount) pending.previousAccount = previousAccount;
   else previousAccount = pending.previousAccount ?? "";
   localStorage.setItem(pendingKey, JSON.stringify(pending));
+  const recoveryPublicKey = m.KeyPair.fromString(pending.recovery)
+    .getPublicKey()
+    .toString();
+  const sessionPublicKey = m.KeyPair.fromString(pending.session)
+    .getPublicKey()
+    .toString();
+  let renewal: RenewalProof | undefined;
+  if (previousAccount) {
+    const previous = JSON.parse(
+      localStorage.getItem(`moonpark-retired-keys:${previousAccount}`) ||
+        "null",
+    ) as Credentials | null;
+    if (previous) {
+      const signer = m.KeyPair.fromString(
+        previous.recoveryKey as `ed25519:${string}`,
+      );
+      const issuedAt = Date.now();
+      const signed = signer.sign(
+        renewalMessage(
+          c.contractId,
+          previousAccount,
+          recoveryPublicKey,
+          sessionPublicKey,
+          issuedAt,
+        ),
+      );
+      renewal = {
+        accountId: previousAccount,
+        publicKey: signer.getPublicKey().toString(),
+        issuedAt,
+        signature: btoa(String.fromCharCode(...signed.signature)),
+      };
+    }
+  }
   const r = await fetch("/api/moon/provision", {
     method: "POST",
     headers: { "content-type": "application/json" },
     signal: AbortSignal.timeout(45000),
     body: JSON.stringify({
-      recoveryPublicKey: m.KeyPair.fromString(pending.recovery)
-        .getPublicKey()
-        .toString(),
-      sessionPublicKey: m.KeyPair.fromString(pending.session)
-        .getPublicKey()
-        .toString(),
+      recoveryPublicKey,
+      sessionPublicKey,
       contractId: c.contractId,
       ranked,
+      renewal,
     }),
   });
   const data = (await r.json()) as { accountId: string; error?: string };

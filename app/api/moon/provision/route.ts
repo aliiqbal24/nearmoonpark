@@ -9,6 +9,7 @@ import {
 } from "near-api-js";
 import { identity } from "@/lib/moon/auth";
 import { failoverRpc } from "@/lib/moon/rpc";
+import { renewalMessage, type RenewalProof } from "@/lib/moon/sponsorship";
 import archivedV7 from "@/public/moon-v7-config.json";
 import archivedV6 from "@/public/moon-v6-config.json";
 export const dynamic = "force-dynamic";
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
     sessionPublicKey: string;
     ranked?: boolean;
     contractId?: string;
+    renewal?: RenewalProof;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -118,6 +120,10 @@ export async function POST(request: Request) {
       request.headers.get("x-vercel-forwarded-for")?.split(",")[0].trim() ||
       "local";
   const work = async () => {
+    const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
+      "https://test.rpc.fastnear.com",
+      "https://rpc.testnet.near.org",
+    ]);
     const [old] = await db`SELECT * FROM moon_provisioning WHERE id=${id}`;
     if (old) {
       if (
@@ -131,12 +137,79 @@ export async function POST(request: Request) {
       playerId = old.player_id;
       if (old.status === "ready") return Response.json({ accountId });
     } else {
+      let budget = ip;
+      if (body.renewal) {
+        const proof = body.renewal;
+        try {
+          if (
+            !proof.accountId.endsWith(`.${e.MOON_SPONSOR_ID}`) ||
+            !Number.isSafeInteger(proof.issuedAt) ||
+            Math.abs(Date.now() - proof.issuedAt) > 300000
+          )
+            throw Error();
+          const key = PublicKey.fromString(proof.publicKey);
+          if (!proof.publicKey.startsWith("ed25519:")) throw Error();
+          const signature = Buffer.from(proof.signature, "base64");
+          const verifyKey = await crypto.subtle.importKey(
+            "raw",
+            new Uint8Array(key.data),
+            "Ed25519",
+            false,
+            ["verify"],
+          );
+          if (
+            signature.length !== 64 ||
+            !(await crypto.subtle.verify(
+              "Ed25519",
+              verifyKey,
+              signature,
+              renewalMessage(
+                contractId,
+                proof.accountId,
+                body.recoveryPublicKey,
+                body.sessionPublicKey,
+                proof.issuedAt,
+              ),
+            ))
+          )
+            throw Error();
+          const [previous] =
+            await db`SELECT player_id FROM moon_provisioning WHERE account_id=${proof.accountId} AND status='ready' LIMIT 1`;
+          if (!previous || (body.ranked && previous.player_id !== playerId))
+            throw Error();
+          const [access, park] = await Promise.all([
+            p.viewAccessKey({ accountId: proof.accountId, publicKey: key }),
+            p.callFunction<{ id: string; operator: string }>({
+              contractId,
+              method: "get_park_by_operator",
+              args: { account_id: proof.accountId },
+            }),
+          ]);
+          if (
+            access.permission !== "FullAccess" ||
+            !park ||
+            park.operator !== proof.accountId
+          )
+            throw Error();
+          playerId = previous.player_id;
+          budget = `renewal:${contractId}:${park.id}`;
+        } catch {
+          return Response.json(
+            {
+              error:
+                "Park renewal proof could not be verified. Retry from the park’s saved browser or account.",
+            },
+            { status: 403 },
+          );
+        }
+      }
       const reserved = await reserveSponsorship({
         id,
         accountId,
         sessionKey: body.sessionPublicKey,
         playerId,
-        ip,
+        ip: budget,
+        renewal: !!body.renewal,
       });
       if (!reserved)
         return Response.json(
@@ -147,10 +220,6 @@ export async function POST(request: Request) {
           { status: 429 },
         );
     }
-    const p = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
-      "https://test.rpc.fastnear.com",
-      "https://rpc.testnet.near.org",
-    ]);
     const root = new Account(
       e.MOON_SPONSOR_ID!,
       p,

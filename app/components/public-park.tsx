@@ -104,7 +104,7 @@ export default function PublicPark({
         placement={null}
         selected={selected?.id ?? null}
         cinematic={null}
-        attractMode
+        preview
         rideId={ride}
         onPick={setSelection}
         onHover={() => {}}

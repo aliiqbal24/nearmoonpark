@@ -445,6 +445,10 @@ export class MoonWorld {
       this.renderer.toneMappingExposure = 1.42;
     }
     if (this.run !== run) {
+      const firstBuildings =
+        !this.run ||
+        (this.run.buildings.every((b) => b.sold) &&
+          run.buildings.some((b) => !b.sold));
       this.run = run;
       this.parkPeak = Math.max(
         0,
@@ -458,6 +462,8 @@ export class MoonWorld {
         this.lastTick = run.tick;
       }
       this.sync();
+      if (firstBuildings && cinematic === null && !this.attractMode)
+        this.home();
     }
     this.selected = selected;
     const b = run.buildings.find((b) => b.id === selected && !b.sold);
@@ -693,8 +699,7 @@ export class MoonWorld {
     )
       valid = false;
     const mesh = this.ghost.children[0] as
-      | T.Mesh<T.BoxGeometry, T.MeshBasicMaterial>
-      | undefined;
+      T.Mesh<T.BoxGeometry, T.MeshBasicMaterial> | undefined;
     mesh?.material.color.set(valid ? "#a5f6dd" : "#ed9b91");
   }
   private pointerDown = (e: PointerEvent) => {

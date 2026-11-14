@@ -6,6 +6,80 @@ import {
   NotEnoughBalanceError,
 } from "near-api-js/rpc-errors";
 import { failoverRpc } from "../lib/moon/rpc";
+import { renewalMessage } from "../lib/moon/sponsorship";
+
+test("renewal signatures bind the park contract and both replacement keys", async () => {
+  const signer = near.KeyPair.fromRandom("ed25519");
+  const issuedAt = Date.now();
+  const message = renewalMessage(
+    "park.testnet",
+    "operator.testnet",
+    "recovery",
+    "session",
+    issuedAt,
+  );
+  const signature = signer.sign(message).signature;
+  const publicKey = await crypto.subtle.importKey(
+    "raw",
+    new Uint8Array(signer.getPublicKey().data),
+    "Ed25519",
+    false,
+    ["verify"],
+  );
+  expect(
+    await crypto.subtle.verify(
+      "Ed25519",
+      publicKey,
+      new Uint8Array(signature),
+      message,
+    ),
+  ).toBe(true);
+  for (const changed of [
+    renewalMessage(
+      "other.testnet",
+      "operator.testnet",
+      "recovery",
+      "session",
+      issuedAt,
+    ),
+    renewalMessage(
+      "park.testnet",
+      "other.testnet",
+      "recovery",
+      "session",
+      issuedAt,
+    ),
+    renewalMessage(
+      "park.testnet",
+      "operator.testnet",
+      "different",
+      "session",
+      issuedAt,
+    ),
+    renewalMessage(
+      "park.testnet",
+      "operator.testnet",
+      "recovery",
+      "different",
+      issuedAt,
+    ),
+    renewalMessage(
+      "park.testnet",
+      "operator.testnet",
+      "recovery",
+      "session",
+      issuedAt + 1,
+    ),
+  ])
+    expect(
+      await crypto.subtle.verify(
+        "Ed25519",
+        publicKey,
+        new Uint8Array(signature),
+        changed,
+      ),
+    ).toBe(false);
+});
 
 test("transaction nonce and gas failures reach recovery without network failover", async () => {
   const publicKey = near.KeyPair.fromRandom("ed25519").getPublicKey();

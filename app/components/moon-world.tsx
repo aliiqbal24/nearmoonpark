@@ -12,6 +12,7 @@ type Props = {
   cinematic: number | null;
   paused?: boolean;
   attractMode?: boolean;
+  preview?: boolean;
   rideId: number | null;
   onPick: (d: Detail | null) => void;
   onHover: (d: Detail | null) => void;
@@ -32,6 +33,7 @@ export default function MoonWorld(props: Props) {
       if (!active || !host.current) return;
       try {
         world = new MoonWorld(host.current, {
+          preview: latest.current.preview,
           onPick: (d) => latest.current.onPick(d),
           onHover: (d) => latest.current.onHover(d),
           onPlace: (x, z) => latest.current.onPlace(x, z),

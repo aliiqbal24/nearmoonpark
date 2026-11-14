@@ -35,5 +35,13 @@ export function failoverRpc(
       throw last;
     }
   }
-  return new Provider(urls.map((url) => new api.JsonRpcProvider({ url })));
+  return new Provider(
+    urls.map(
+      (url) =>
+        new api.JsonRpcProvider(
+          { url },
+          { retries: 2, wait: 300, backoff: 1.5 },
+        ),
+    ),
+  );
 }
