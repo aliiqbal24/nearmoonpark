@@ -395,7 +395,7 @@ export class MoonWorld {
   }
   private async environment(compact: boolean) {
     const terrainReady = lunarTerrain(this.scene, compact);
-    const sky = createSky(this.sky);
+    const sky = createSky(this.sky, this.renderer);
     this.earth = sky.earth;
     observatory(this.scene);
     resortDistrict(this.scene);

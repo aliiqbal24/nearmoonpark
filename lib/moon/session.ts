@@ -114,7 +114,9 @@ export class ParkSession {
     } | null;
     if (!saved) return null;
     if (
-      ![VERSION, "moonpark-v5", "moonpark-v4"].includes(saved.state.run.version)
+      ![VERSION, "moonpark-v6", "moonpark-v5", "moonpark-v4"].includes(
+        saved.state.run.version,
+      )
     )
       throw Error(
         "This saved park uses the previous rules. Start a new opening day for the automatic vendor wallets. Earlier parks remain available in the archive.",

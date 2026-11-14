@@ -1,4 +1,13 @@
-# Moonpark lunar-resort artwork
+# Moonpark sky clarity upgrade
+
+The live sky separates a compressed 8192×4096 Milky Way background from 16,000 original deterministic point stars. Analytic screen-space cores replace the earlier soft 32-pixel star sprites and remain sized for the drawing buffer's pixel ratio. Camera orientation places the celestial background at infinity during panning. The sky bypasses cinematic depth blur.
+
+The background uses NASA's 2020 Milky Way layer with its bright foreground stars omitted. Linear EXR exposure is multiplied by 2 and converted to sRGB before KTX2 ETC1S encoding with full mip levels, quality 255 and compression level 3. The 6.3 MB delivery transcodes to the GPU's supported compressed format through Three.js KTX2Loader. A 4K fallback covers loading failures and smaller texture limits. The Basis Universal decoder files use Apache 2.0, with their license shipped alongside them. [NASA source and credits](https://svs.gsfc.nasa.gov/4851/).
+
+Source EXR, decoded study data, previous masters and before/after screenshots are preserved in ignored local outputs. Both opening films are re-rendered from the same sky. The v6 movie URLs redirect to the refreshed v7 delivery to keep the deployment within the free hosting upload size.
+
+## Previous environment production record
+
 
 ## November 11 cinematic environment release
 

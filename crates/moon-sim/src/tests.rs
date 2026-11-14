@@ -16,6 +16,24 @@ fn build(kind: &str, x: u8, z: u8) -> Command {
     }
 }
 #[test]
+fn starting_budget_funds_two_coasters_and_a_wheel_without_creating_score() {
+    let mut r = Run::new();
+    assert_eq!(r.cash, 320000);
+    assert_eq!(r.score.total, 0);
+    r.apply(
+        &[
+            build("coaster", 3, 8),
+            build("coaster", 11, 5),
+            build("wheel", 22, 5),
+        ],
+        0,
+    )
+    .unwrap();
+    assert_eq!(r.cash, 20000);
+    assert_eq!(r.total_money(), r.money_supply);
+    assert_eq!(r.score.total, 0);
+}
+#[test]
 fn money_is_conserved_for_a_complete_park() {
     let mut r = Run::new();
     r.apply(&[build("coaster", 3, 8), cmd("connect", 3)], 0)

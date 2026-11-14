@@ -64,7 +64,7 @@ try {
     await call(
       new Account(id, p, new KeyPairSigner(key)),
       "accept_vendor_policy",
-      { policy_id: "moonpark-v6-persistent-vendors-1" },
+      { policy_id: "moonpark-v7-persistent-vendors-1" },
     );
   }
   await call(root, "fund_prizes", {}, 500000000000000000000000n);
@@ -75,13 +75,13 @@ try {
   });
   await call(root, "open_challenge", {});
   let state = await call(alice, "create_run", {
-    challenge_id: "moonpark-v6",
+    challenge_id: "moonpark-v7",
     request_id: "sandbox",
   });
   assert.deepEqual(
     state,
     await call(alice, "create_run", {
-      challenge_id: "moonpark-v6",
+      challenge_id: "moonpark-v7",
       request_id: "sandbox",
     }),
   );
@@ -264,7 +264,7 @@ try {
     display_name: "Bob",
   });
   const buyer = await call(bob, "create_run", {
-    challenge_id: "moonpark-v6",
+    challenge_id: "moonpark-v7",
     request_id: "buyer",
   });
   await assert.rejects(() =>

@@ -27,15 +27,15 @@
       "file": "/video/moonpark-opening-v7.mp4",
       "width": 1920,
       "height": 1080,
-      "bytes": 30377719,
-      "sha256": "ddc81d9d03a35576e79412bb814786ea0cd09e00a5072769379e63957d470ded"
+      "bytes": 39750201,
+      "sha256": "0c80d838bbd2b59968f2d2ba113e17a6fd94a45b15e1edcded9000e2433c266f"
     },
     {
       "file": "/video/moonpark-opening-v7-mobile.mp4",
       "width": 720,
       "height": 1280,
-      "bytes": 12972826,
-      "sha256": "3e55383c1af1682971e407de3083532254a6a0c392c2bf4a9e5cb240a5f28fc6"
+      "bytes": 15796355,
+      "sha256": "0e2a9e2837ead5b1a71e23ff21685dc7d99aeb7f519a7bb8fed343fb1c7a509a"
     }
   ]
 }

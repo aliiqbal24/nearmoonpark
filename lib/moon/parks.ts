@@ -1,6 +1,7 @@
 import type { Run } from "./model";
 import { config, view, type Config, type Credentials } from "./near";
 import archivedV5 from "@/public/moon-v5-config.json";
+import archivedV6 from "@/public/moon-v6-config.json";
 import archivedV4 from "@/public/moon-v4-config.json";
 import { failoverRpc } from "./rpc";
 import type { Design, Kind, RecordState } from "./model";
@@ -213,8 +214,7 @@ export async function parkAction(
   return { value, tx: raw.transaction.hash };
 }
 let connector:
-  | Promise<import("@hot-labs/near-connect").NearConnector>
-  | undefined;
+  Promise<import("@hot-labs/near-connect").NearConnector> | undefined;
 export function walletConnector(cfg: Config) {
   return (connector ??= import("@hot-labs/near-connect").then(
     ({ NearConnector }) =>
@@ -275,7 +275,7 @@ export async function parkSnapshot(cfg: Config, park: Park) {
   const record = await view<RecordState>(cfg, "get_run", {
     run_id: park.run_id,
   });
-  if (!cfg.archivedVersion) {
+  if (!cfg.archivedVersion || cfg.archivedVersion === "v6") {
     const snapshot = await view<Run | null>(cfg, "get_park_snapshot", {
       park_id: park.id,
     });
@@ -285,7 +285,7 @@ export async function parkSnapshot(cfg: Config, park: Park) {
 }
 export async function publicPark(
   accountId: string,
-  version?: "v4" | "v5" | "v6",
+  version?: "v4" | "v5" | "v6" | "v7",
 ) {
   const current = await config();
   const candidates =
@@ -294,8 +294,15 @@ export async function publicPark(
       : version === "v5"
         ? [archivedV5 as Config]
         : version === "v6"
-          ? [current]
-          : [archivedV4 as Config, archivedV5 as Config, current];
+          ? [archivedV6 as Config]
+          : version === "v7"
+            ? [current]
+            : [
+                archivedV4 as Config,
+                archivedV5 as Config,
+                archivedV6 as Config,
+                current,
+              ];
   for (const cfg of candidates) {
     if (!cfg) continue;
     const park = /^p-\d+$/.test(accountId)

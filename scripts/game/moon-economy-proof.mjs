@@ -9,7 +9,10 @@ export async function verifyEconomy(provider, contractId, record) {
   const run = record.run;
   assert.equal(economy.revision, run.revision);
   assert.equal(economy.tick, run.tick);
-  assert.equal(economy.locked, run.version === "moonpark-v6" || !run.finished);
+  assert.equal(
+    economy.locked,
+    ["moonpark-v6", "moonpark-v7"].includes(run.version) || !run.finished,
+  );
   const expected = {
     park: [run.cash, 0, 0, 0],
     passengers: [

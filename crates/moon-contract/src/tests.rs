@@ -13,7 +13,7 @@ fn new_contract() -> Moonpark {
     let mut contract = Moonpark::new("sponsor.testnet".parse().unwrap());
     for name in economy::VENDORS {
         context(&format!("{name}.sponsor.testnet"), time);
-        contract.accept_vendor_policy("moonpark-v6-persistent-vendors-1".into());
+        contract.accept_vendor_policy("moonpark-v7-persistent-vendors-1".into());
     }
     context(&caller, time);
     contract
@@ -108,7 +108,7 @@ fn vendor_tokens_clear_atomically_conserve_supply_and_isolate_rounds() {
 #[should_panic(expected = "Vendor account only")]
 fn a_player_cannot_authorize_a_vendor_wallet() {
     let mut c = economy_fixture();
-    c.accept_vendor_policy("moonpark-v6-persistent-vendors-1".into());
+    c.accept_vendor_policy("moonpark-v7-persistent-vendors-1".into());
 }
 #[test]
 #[should_panic(expected = "Vendor policy is awaiting")]
@@ -809,7 +809,7 @@ fn deadline_keeps_free_cosmetic_edits_available() {
         }],
         0,
     );
-    assert_eq!(r["run"]["cash"], 160000);
+    assert_eq!(r["run"]["cash"], 320000);
     assert_eq!(r["run"]["buildings"][0]["design"]["palette"], 3);
 }
 

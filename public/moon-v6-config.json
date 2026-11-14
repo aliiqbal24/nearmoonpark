@@ -1,0 +1,14 @@
+{
+  "contractId": "game.moonpark-mwgb9j6a.testnet",
+  "rpcUrl": "https://test.rpc.fastnear.com",
+  "fallbackRpcUrl": "https://rpc.testnet.near.org",
+  "codeHash": "7w94wtMJgV9FfQu3d9vRTPsucxyc9tv1KRAuxVsqGrAP",
+  "network": "testnet",
+  "immutable": true,
+  "vendors": {
+    "omar": "omar.moonpark-mwgb9j6a.testnet",
+    "mina": "mina.moonpark-mwgb9j6a.testnet",
+    "logistics": "logistics.moonpark-mwgb9j6a.testnet"
+  },
+  "archivedVersion": "v6"
+}

@@ -10,6 +10,7 @@ const loading = new Map<string, Promise<Exports>>();
 export async function engine(version = VERSION) {
   if (
     version !== VERSION &&
+    version !== "moonpark-v6" &&
     version !== "moonpark-v4" &&
     version !== "moonpark-v5"
   )
@@ -18,7 +19,7 @@ export async function engine(version = VERSION) {
   if (!result) {
     result = (async () => {
       const path =
-        version === "moonpark-v4" || version === "moonpark-v5"
+        version !== VERSION
           ? `/engine/${version.replace("moonpark", "moon")}.wasm`
           : "/engine/moon.wasm";
       const r = await fetch(`${path}?v=${version}`);

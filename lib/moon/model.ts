@@ -1,4 +1,4 @@
-export const VERSION = "moonpark-v6";
+export const VERSION = "moonpark-v7";
 export const LANDING = 10;
 export const END = 550;
 export const DAY_SECONDS = END - LANDING;
@@ -160,7 +160,8 @@ export const resaleValue = (b: Building) =>
       10000,
   );
 export type TrackPoint = { x: number; y: number; z: number };
-export const isPersistent = (run: Run) => run.version === VERSION;
+export const isPersistent = (run: Run) =>
+  run.version === VERSION || run.version === "moonpark-v6";
 export const parkWidth = (run: Run) => (isPersistent(run) ? WIDTH : 32);
 export const parkHeight = (run: Run) => (isPersistent(run) ? HEIGHT : 24);
 export const parkOriginZ = (run: Run) => (isPersistent(run) ? 36 : 12);

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::VecDeque;
 
-pub const VERSION: &str = "moonpark-v6";
+pub const VERSION: &str = "moonpark-v7";
 pub const WIDTH: u16 = 48;
 pub const HEIGHT: u16 = 48;
 pub const LANDING: u32 = 10;
@@ -379,7 +379,7 @@ impl Run {
             reputation: 65,
             tick: 0,
             revision: 0,
-            cash: 160000,
+            cash: 320000,
             opening_equity: 0,
             supplier_cash: 10000000,
             builder_cash: 1000000,

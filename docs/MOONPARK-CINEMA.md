@@ -10,6 +10,10 @@ Both complete exports decode successfully. Exported desktop and portrait contact
 
 The current camera source is `lib/moon/cinema.ts`. `scripts/video/moonpark-intro.mjs` captures deterministic 60 fps picture masters and supports `--sample`, `--range=0,4` and `--portrait`. `scripts/video/moonpark-score.py` generates narration, the sound edit and its stems. Set MOON_KOKORO_DIR to the local model folder. `scripts/video/moonpark-finish.mjs` composites branding and titles, encodes delivery files, checks all frames and writes their hashes. Masters and review outputs are kept in the ignored `outputs/moonpark-cinema-v7` directory. The game plays the checked-in exports without production tools or models.
 
+## Sky clarity revision
+
+The v7 deliveries are refreshed with the shared 8K KTX2 Milky Way layer and analytic point stars. Both full picture masters are re-rendered at 60 fps. The Milky Way is graded below the point-star foreground to reduce visible grain. PNG frame capture uses Chrome’s speed-optimized lossless encoder. Decoded pixel hashes match the regular Playwright capture in the reviewed sample. Earlier picture masters, the corrected front-seat inserts and previous public exports are preserved in `outputs/moonpark-cinema-v7/sky-v3-originals`. Full new masters supersede those inserts. Delivery encoding uses CRF 18 with an 8.5 Mbps ceiling on desktop and CRF 20 with a 3.2 Mbps ceiling in portrait to retain fine stars through motion. The story, soundtrack and timings use the existing editable masters. File hashes in the public manifest identify this revision.
+
 ## Earlier v6 production record
 
 

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Coins, Rocket } from "lucide-react";
-import { footprint, money, type Run } from "@/lib/moon/model";
+import { footprint, money, isPersistent, type Run } from "@/lib/moon/model";
 import type { Snapshot } from "@/lib/moon/session";
 import type { MoonWorld } from "@/lib/moon/world";
 import type { MoonAudio } from "@/lib/moon/audio";
@@ -178,14 +178,14 @@ export function ShuttleStatus({ run }: { run: Run }) {
     flight = Math.floor(run.tick / 40),
     waiting = run.guests.filter((g) => g.status === "boarding").length;
   const text =
-    run.finished && run.version !== "moonpark-v6"
+    run.finished && !isPersistent(run)
       ? "Evening shuttles · opening day complete"
       : phase < 10
         ? `Shuttle inbound · docking in ${10 - phase}s`
         : phase < 30
-          ? `${flight < 12 || (run.version === "moonpark-v6" && run.finished) ? `${run.bookings?.[flight] ?? 8} new explorers` : "Return shuttle"} · ${waiting} homebound`
+          ? `${flight < 12 || (isPersistent(run) && run.finished) ? `${run.bookings?.[flight] ?? 8} new explorers` : "Return shuttle"} · ${waiting} homebound`
           : phase < 38
-            ? `Shuttle departing · ${run.departures[run.version === "moonpark-v6" ? flight % 64 : flight] ?? 0} aboard`
+            ? `Shuttle departing · ${run.departures[isPersistent(run) ? flight % 64 : flight] ?? 0} aboard`
             : `Next shuttle in ${40 - phase}s`;
   return (
     <span

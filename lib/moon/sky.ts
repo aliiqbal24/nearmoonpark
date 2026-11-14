@@ -1,4 +1,5 @@
 import * as T from "three";
+import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 
 // Shared by the visible solar disc and both lighting scenes.
 export const SUN_DIRECTION = new T.Vector3(-0.72, 0.27, 0.64).normalize();
@@ -41,42 +42,45 @@ export function lunarEnvironment(renderer: T.WebGLRenderer) {
 
 export const EARTH_DIRECTION = new T.Vector3(-0.42, 0.25, -0.87).normalize();
 
-export function createSky(sky: T.Scene) {
+export function createSky(sky: T.Scene, renderer: T.WebGLRenderer) {
   const loader = new T.TextureLoader();
-  const starmap = loader.loadAsync("/textures/space/starmap-v3.webp");
+  const compressed = new KTX2Loader()
+    .setTranscoderPath("/textures/space/basis/")
+    .setWorkerLimit(1)
+    .detectSupport(renderer);
+  const starmap = (
+    renderer.capabilities.maxTextureSize >= 8192
+      ? compressed.loadAsync("/textures/space/milkyway-8k-v4.ktx2")
+      : loader.loadAsync("/textures/space/starmap-v3.webp")
+  )
+    .catch(() => loader.loadAsync("/textures/space/starmap-v3.webp"))
+    .finally(() => compressed.dispose());
   const daymap = loader.loadAsync("/textures/space/earth-day-v3.webp");
   const nightmap = loader.loadAsync("/textures/space/earth-night-v3.webp");
   const cloudmap = loader.loadAsync("/textures/space/earth-clouds-v3.webp");
   const domeMaterial = new T.MeshBasicMaterial({
-    color: "#667a99",
+    color: "#4a5970",
     side: T.BackSide,
     depthWrite: false,
     toneMapped: false,
   });
   const dome = new T.Mesh(new T.SphereGeometry(2800, 48, 24), domeMaterial);
+  dome.name = "milky-way-background";
   dome.rotation.set(0.65, 1.25, 0.32);
   sky.add(dome);
 
-  const starCanvas = document.createElement("canvas");
-  starCanvas.width = starCanvas.height = 32;
-  const paint = starCanvas.getContext("2d")!;
-  const gradient = paint.createRadialGradient(16, 16, 0, 16, 16, 15);
-  gradient.addColorStop(0, "#ffffffff");
-  gradient.addColorStop(0.18, "#ffffffec");
-  gradient.addColorStop(0.45, "#ffffff66");
-  gradient.addColorStop(1, "#ffffff00");
-  paint.fillStyle = gradient;
-  paint.fillRect(0, 0, 32, 32);
-  const starTexture = new T.CanvasTexture(starCanvas);
   let seed = 71823;
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;
   };
-  const positions = new Float32Array(520 * 3);
-  const colors = new Float32Array(520 * 3);
+  const count = 16000;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  const intensities = new Float32Array(count);
   const starColor = new T.Color();
-  for (let i = 0; i < 520; i++) {
+  for (let i = 0; i < count; i++) {
     const angle = random() * Math.PI * 2,
       height = random() * 2 - 1;
     const radius = Math.sqrt(1 - height * height);
@@ -89,27 +93,48 @@ export function createSky(sky: T.Scene) {
       i * 3,
     );
     starColor
-      .set(["#d5e3ff", "#f5e7ce", "#96b5ec"][i % 3])
+      .set(["#e3ecff", "#fff1db", "#bfd5ff", "#ffffff"][i % 4])
       .toArray(colors, i * 3);
+    const brightness = random() ** 4;
+    sizes[i] = 0.55 + brightness * 0.65;
+    intensities[i] = 0.15 + brightness * 1.65;
   }
   const stars = new T.BufferGeometry();
   stars.setAttribute("position", new T.BufferAttribute(positions, 3));
   stars.setAttribute("color", new T.BufferAttribute(colors, 3));
-  sky.add(
-    new T.Points(
-      stars,
-      new T.PointsMaterial({
-        map: starTexture,
-        vertexColors: true,
-        size: 2.4,
-        sizeAttenuation: true,
-        transparent: true,
-        opacity: 0.55,
-        depthWrite: false,
-        toneMapped: false,
-      }),
-    ),
-  );
+  stars.setAttribute("starSize", new T.BufferAttribute(sizes, 1));
+  stars.setAttribute("intensity", new T.BufferAttribute(intensities, 1));
+  // Screen-space analytic cores retain subpixel edges through zoom and high-DPI rendering.
+  const starMaterial = new T.ShaderMaterial({
+    uniforms: { pixelRatio: { value: renderer.getPixelRatio() } },
+    transparent: true,
+    depthWrite: false,
+    blending: T.AdditiveBlending,
+    toneMapped: false,
+    vertexShader: `attribute vec3 color; attribute float starSize; attribute float intensity;
+      uniform float pixelRatio; varying vec3 vColor; varying float vSize; varying float vIntensity;
+      void main() {
+        vColor = color; vSize = starSize; vIntensity = intensity;
+        gl_PointSize = 6.0 * starSize * pixelRatio;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: `varying vec3 vColor; varying float vSize; varying float vIntensity;
+      void main() {
+        float radius = length((gl_PointCoord - 0.5) * 6.0 * vSize);
+        float core = 1.0 - smoothstep(vSize * 0.22, vSize * 0.85, radius);
+        float halo = exp(-radius * radius / (vSize * vSize * 1.1)) * 0.045;
+        float alpha = (core + halo) * vIntensity;
+        if (alpha < 0.003) discard;
+        gl_FragColor = vec4(vColor, alpha);
+        #include <colorspace_fragment>
+      }`,
+  });
+  const pinpoints = new T.Points(stars, starMaterial);
+  pinpoints.name = "pinpoint-stars";
+  pinpoints.onBeforeRender = () => {
+    starMaterial.uniforms.pixelRatio.value = renderer.getPixelRatio();
+  };
+  sky.add(pinpoints);
 
   const solarPosition = SUN_DIRECTION.clone().multiplyScalar(1800);
   const sun = new T.Mesh(

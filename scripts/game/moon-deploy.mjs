@@ -10,7 +10,7 @@ import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { createHash, randomBytes } from "node:crypto";
 import assert from "node:assert/strict";
 await mkdir(".near-local", { recursive: true });
-const keyPath = ".near-local/moon-v6-deployer.json";
+const keyPath = ".near-local/moon-v7-deployer.json";
 let key;
 try {
   key = JSON.parse(await readFile(keyPath, "utf8"));
@@ -66,7 +66,7 @@ if (!exists) {
   // supplies deployment fees and the first sponsored play sessions.
   const balance = await sponsor.getState();
   if (balance.balance.available < 11500000000000000000000000n) {
-    const treasuryPath = ".near-local/moon-v6-faucet-treasury.json";
+    const treasuryPath = ".near-local/moon-v7-faucet-treasury.json";
     let treasuryKey;
     try {
       treasuryKey = JSON.parse(await readFile(treasuryPath, "utf8"));
@@ -222,7 +222,7 @@ let challenge = await provider.callFunction({
   method: "get_challenge",
   args: {},
 });
-assert.equal(challenge.id, "moonpark-v6");
+assert.equal(challenge.id, "moonpark-v7");
 if (process.argv.includes("--open") && !challenge.open) {
   await call("open_challenge");
   challenge = await provider.callFunction({
@@ -275,7 +275,7 @@ await writeFile(
   "public/moon-build.json",
   JSON.stringify(
     {
-      version: "moonpark-v6",
+      version: "moonpark-v7",
       contractSha256: createHash("sha256").update(code).digest("hex"),
       engineSha256: createHash("sha256")
         .update(await readFile("public/engine/moon.wasm"))

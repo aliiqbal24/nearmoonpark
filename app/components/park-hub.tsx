@@ -9,7 +9,12 @@ import {
   Sparkles,
   Wallet,
 } from "lucide-react";
-import { blueprint, isRide, type Command } from "@/lib/moon/model";
+import {
+  blueprint,
+  isRide,
+  isPersistent,
+  type Command,
+} from "@/lib/moon/model";
 import { type Config, view } from "@/lib/moon/near";
 import {
   type Park,
@@ -76,7 +81,7 @@ export function ParkHub({
   const accountId = credentials?.accountId;
   const credentialIdentity = credentials?.identity;
   const ownerCredentials = cfg && park ? credentialsFor(cfg, park.owner) : null;
-  const versionQuery = `?version=${cfg?.archivedVersion ?? "v6"}`;
+  const versionQuery = `?version=${cfg?.archivedVersion ?? "v7"}`;
   const loadKey = `${cfg?.contractId ?? "local"}:${accountId ?? "guest"}`;
   const loading = loadedFor !== loadKey;
   const refresh = useCallback(async () => {
@@ -200,7 +205,7 @@ export function ParkHub({
       }
       await onConfirm?.();
       const [confirmed, currentPark] =
-        state?.record && state.run.version === "moonpark-v6"
+        state?.record && isPersistent(state.run)
           ? await Promise.all([
               view<typeof state.record>(cfg, "get_run", {
                 run_id: state.record.run_id,
@@ -210,10 +215,10 @@ export function ParkHub({
           : [state?.record, park];
       const runId =
         confirmed?.park_id === park.id &&
-        (confirmed.run.version === "moonpark-v6"
+        (isPersistent(confirmed.run)
           ? confirmed.run.tick >= 10
           : confirmed.run.finished) &&
-        (confirmed.run.version === "moonpark-v6" || !state?.pending)
+        (isPersistent(confirmed.run) || !state?.pending)
           ? confirmed.run_id
           : null;
       const r = await parkAction(
@@ -262,10 +267,8 @@ export function ParkHub({
     });
   const ready =
     !!state?.record &&
-    (state.run.version === "moonpark-v6"
-      ? state.run.tick >= 10
-      : state.run.finished) &&
-    (state.run.version === "moonpark-v6" || !state.pending);
+    (isPersistent(state.run) ? state.run.tick >= 10 : state.run.finished) &&
+    (isPersistent(state.run) || !state.pending);
   return (
     <div className="mp-park-hub">
       <div className="mp-near-intro">
@@ -624,7 +627,7 @@ export function ParkHub({
                         disabled={
                           !!busy ||
                           park.blueprint_ids.includes(
-                            `${state.record!.run_id}:${b.id}${state.run.version === "moonpark-v6" ? `:${b.design_revision ?? 0}` : ""}`,
+                            `${state.record!.run_id}:${b.id}${isPersistent(state.run) ? `:${b.design_revision ?? 0}` : ""}`,
                           )
                         }
                         onClick={() =>
@@ -655,7 +658,7 @@ export function ParkHub({
                         }
                       >
                         {park.blueprint_ids.includes(
-                          `${state.record!.run_id}:${b.id}${state.run.version === "moonpark-v6" ? `:${b.design_revision ?? 0}` : ""}`,
+                          `${state.record!.run_id}:${b.id}${isPersistent(state.run) ? `:${b.design_revision ?? 0}` : ""}`,
                         )
                           ? "Published"
                           : "Publish design"}
@@ -697,8 +700,7 @@ export function ParkHub({
                     className="mp-primary"
                     disabled={
                       !!busy ||
-                      (!!state?.run.finished &&
-                        state.run.version !== "moonpark-v6") ||
+                      (!!state?.run.finished && !isPersistent(state.run)) ||
                       !state
                     }
                     onClick={() =>

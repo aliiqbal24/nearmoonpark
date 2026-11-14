@@ -83,6 +83,7 @@ try {
     }
     console.log("Cinematic samples captured");
   } else {
+    const capture = await page.context().newCDPSession(page);
     const ff = spawn(
       "ffmpeg",
       [
@@ -118,7 +119,12 @@ try {
     for (let i = first; i < last; i++) {
       if (ffError) throw ffError;
       await render(i / 60);
-      const png = await page.screenshot({ type: "png", animations: "allow" });
+      const { data } = await capture.send("Page.captureScreenshot", {
+        format: "png",
+        optimizeForSpeed: true,
+        captureBeyondViewport: false,
+      });
+      const png = Buffer.from(data, "base64");
       if (!ff.stdin.write(png)) await once(ff.stdin, "drain");
       if ((i - first) % 150 === 0)
         console.log(`Intro render ${i - first}/${last - first} frames`);

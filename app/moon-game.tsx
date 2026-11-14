@@ -71,6 +71,7 @@ import type { MoonWorld as World } from "@/lib/moon/world";
 import { CoasterEditor } from "./components/coaster-editor";
 import openingStory from "@/public/video/moonpark-opening-v7-story.json";
 import archivedV5 from "@/public/moon-v5-config.json";
+import archivedV6 from "@/public/moon-v6-config.json";
 import archivedV4 from "@/public/moon-v4-config.json";
 import "./moonpark.css";
 
@@ -180,12 +181,12 @@ export default function Game() {
             localStorage.getItem("moonpark-current") || "null",
           );
           setResumeAvailable(
-            [VERSION, "moonpark-v5", "moonpark-v4"].includes(
+            [VERSION, "moonpark-v6", "moonpark-v5", "moonpark-v4"].includes(
               saved?.state?.run?.version,
             ),
           );
           if (
-            [VERSION, "moonpark-v5", "moonpark-v4"].includes(
+            [VERSION, "moonpark-v6", "moonpark-v5", "moonpark-v4"].includes(
               saved?.state?.run?.version,
             ) &&
             !parkClosed(saved.state.run)
@@ -639,7 +640,9 @@ export default function Game() {
       ? (archivedV4 as Config)
       : snapshot?.run.version === "moonpark-v5"
         ? (archivedV5 as Config)
-        : cfg;
+        : snapshot?.run.version === "moonpark-v6"
+          ? (archivedV6 as Config)
+          : cfg;
   return (
     <main
       className="moonpark"
@@ -1380,7 +1383,7 @@ export default function Game() {
                 >
                   <Trophy size={16} /> Rankings & prize escrow
                 </button>
-                <a href="/archive/v5">Earlier parks & earnings</a>
+                <a href="/archive/v6">Earlier parks & earnings</a>
                 <a href="/legacy-claims">Earlier concession claims</a>
                 <a
                   href={
@@ -1520,7 +1523,7 @@ export default function Game() {
                 >
                   NASA/Goddard SVS · ESA/Gaia/DPAC
                 </a>{" "}
-                star map;{" "}
+                Milky Way map; original rendered stars;{" "}
                 <a
                   href="https://www.solarsystemscope.com/textures/"
                   target="_blank"

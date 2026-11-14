@@ -1,4 +1,20 @@
-# Moonpark v6 verification
+# Moonpark v7 verification
+
+The current contract is `game.moonpark-mwgdp7qs.testnet`. New parks receive 3,200 lunar credits. The shared Rust engine initializes their score baseline from that allocation, so the starting grant creates no score. A regression test constructs two coasters and a wheel from the initial budget and checks exact conservation.
+
+All 20 simulation tests and 37 contract tests pass. Five strategies produce 351 exact native/WASM checkpoint matches. Gold and balanced score 7,377. The Sandbox proof verifies 37 settled batches with a maximum of 68.09 TGas. The public testnet proof verifies 71 checkpoints, real account holdings, signed park ownership, licensing and a creator payout, with a maximum batch of 60.12 TGas.
+
+V6 remains a persistent supported ruleset. Its archived engine, configuration, ownership desk and published snapshots are retained. The provisioning API accepts the known v6 contract through its separate sponsor credentials and rejects unknown contracts. A live API check provisions a restricted v6 session and creates its original 1,600-credit run. Browser checks also resume archived v4, v5 and v6 saves. The retired v6 prize board had zero eligible entries before v7 admission opened.
+
+All 28 game browser cases and both camera-preview cases pass across the release runs. The changed source passes targeted ESLint and TypeScript checks.
+
+The sky uses an 8K GPU-compressed Milky Way texture and 16,000 separately rendered point stars. GPU captures verify the full 8192×4096 compressed texture and analytic star geometry, with zero page errors. A texture-loading fallback covers restricted devices and failed downloads. Both full opening films are re-rendered from this scene with higher H.264 bitrate limits.
+
+Evidence is recorded in [the v7 canonical replay](moon-v7-testnet-smoke.json), [Sandbox settlement](moon-v7-sandbox-smoke.json), [the authored browser park](moon-v7-browser-smoke.json) and [v6 sponsored recovery](moon-v6-renewal-smoke.json) and [v7 browser licensing](moon-v7-license-ui-proof.json). Earlier verification records follow.
+
+---
+
+# Earlier v6 verification record
 
 The current immutable contract is `game.moonpark-mwgb9j6a.testnet`. The browser and contract share the persistent Rust simulation. Parks have 48×48 plots, custom eight-point coasters, continuing trade after scoring and independently published visitor snapshots. The first 96 visitors seal the opening score. Later paying arrivals fund further building. Earlier v5 and v4 contracts, saved engines and public pages remain accessible.
 

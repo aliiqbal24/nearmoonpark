@@ -1,6 +1,6 @@
 # Why Moonpark uses NEAR
 
-Moonpark v6 makes a player’s park and signature ride designs persistent economic objects. Players can publish a guest-tested ride, license a design from another park and collect creator income. NEAR records ownership, verifies the design’s source and settles actual testnet payments. Ordinary construction uses sponsored accounts and responsive local prediction.
+Moonpark v7 makes a player’s park and signature ride designs persistent economic objects. Players can publish a guest-tested ride, license a design from another park and collect creator income. NEAR records ownership, verifies the design’s source and settles actual testnet payments. Ordinary construction uses sponsored accounts and responsive local prediction.
 
 ## Automatic vendor wallets
 
@@ -18,7 +18,7 @@ All native funding comes from free testnet funds. Credits and inventory have no 
 
 ## Persistent park ownership
 
-Every admitted game account gets one stable park and active run. Returning to that account returns its existing park. The registry records the owner, authorized operator, name, emblem, published snapshot and signature designs. Owners can publish after the first landing. Publication snapshots the confirmed run for offline visits at `/park/OWNER_ACCOUNT?version=v6`, with `/park/p-PARK_ID?version=v6` as an ID alternative. Each publication replaces the public revision while the owner continues building. Earlier links select v4 or v5, and unversioned historical links resolve the earlier registries first.
+Every admitted game account gets one stable park and active run. Returning to that account returns its existing park. The registry records the owner, authorized operator, name, emblem, published snapshot and signature designs. Owners can publish after the first landing. Publication snapshots the confirmed run for offline visits at `/park/OWNER_ACCOUNT?version=v7`, with `/park/p-PARK_ID?version=v7` as an ID alternative. Each publication replaces the public revision while the owner continues building. Earlier links select v4, v5 or v6, and unversioned historical links resolve the earlier registries first.
 
 The generated account initially owns its park. Claiming connects a supported wallet through NEAR Connect on testnet, nominates its account and requires that account to sign `accept_park`. A nomination alone does not transfer ownership. The recipient cannot already own another park. The game operator can update and publish the park. Its owner can replace that operator, including when restoring on a new browser.
 
@@ -40,7 +40,7 @@ NPCs have finite virtual budgets, cash, inventory, preferences and deterministic
 
 The contract validates commands and calculates the opening score from the first 96 visitors. Their completed departures seal the score, revision and proof hash. Later visitor income and construction continue independently. Signed-in identities get one best eligible leaderboard result, and guest exhibitions appear on the public board. Community reviews are independently signed and do not alter that score.
 
-The current immutable challenge is **moonpark-v6**. Earlier parks, licenses and creator earnings are accessible at `/archive/v5` and `/archive/v4`. Unfinished v4 and v5 browser saves resume with their archived engines and contracts. Historical v3 concession ownership and funded claims remain at `/legacy-claims`.
+The current immutable challenge is **moonpark-v7**. Earlier parks, licenses and creator earnings are accessible at `/archive/v6`, `/archive/v5` and `/archive/v4`. V4, v5 and v6 browser saves resume with their archived engines and contracts. Historical v3 concession ownership and funded claims remain at `/legacy-claims`.
 
 A separate **0.5 tNEAR** competition escrow demonstrates payouts. After the November 18, 2026, 23:59 UTC cutoff, the sponsor may attest a qualifying hackathon award once. The contract allocates the first four frozen accounts at weights 40/30/20/10, normalized if fewer qualify. The park owner at completion receives the winner entitlement. Eligible accounts collect directly. The external award requires human attestation.
 
@@ -48,7 +48,7 @@ The personal **US$1K track / US$5K grand-prize pledge** remains conditional and 
 
 ## Contract and custody boundaries
 
-The v6 contract is a keyless child account with no upgrade or general withdrawal method. Its separate sponsor creates game accounts and supplies storage funding. The deploy script compares code hashes and verifies the empty access-key list. Creator and prize liabilities are protected from storage growth. `fund_storage` refunds only the unneeded part of a new deposit.
+The v7 contract is a keyless child account with no upgrade or general withdrawal method. Its separate sponsor creates game accounts and supplies storage funding. The deploy script compares code hashes and verifies the empty access-key list. Creator and prize liabilities are protected from storage growth. `fund_storage` refunds only the unneeded part of a new deposit.
 
 The server receives public keys. Ordinary gameplay uses a restricted session key. Park administration and testnet license deposits use the browser-held generated recovery key. Wallet claiming and external-owner administration use NEAR Connect with testnet-capable wallets. Sponsorship, identity admission, browser key storage, wallet availability and external-award attestation remain operational trust boundaries.
 

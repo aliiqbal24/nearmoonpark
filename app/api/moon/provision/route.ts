@@ -9,13 +9,14 @@ import {
 } from "near-api-js";
 import { identity } from "@/lib/moon/auth";
 import { failoverRpc } from "@/lib/moon/rpc";
+import archivedV6 from "@/public/moon-v6-config.json";
 export const dynamic = "force-dynamic";
 let queue: Promise<unknown> = Promise.resolve();
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin)
     return Response.json({ error: "Origin mismatch" }, { status: 403 });
-  const e = process.env;
+  let e = process.env;
   if (
     !e.DATABASE_URL ||
     !e.MOON_SPONSOR_ID ||
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     recoveryPublicKey: string;
     sessionPublicKey: string;
     ranked?: boolean;
+    contractId?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -45,6 +47,36 @@ export async function POST(request: Request) {
       throw Error();
   } catch {
     return Response.json({ error: "Invalid public keys." }, { status: 400 });
+  }
+  // Pre-v7 clients omit the contract ID. Keep their recovery on the original registry.
+  const contractId =
+    body.contractId ??
+    (e.MOON_V6_CONTRACT_ID === archivedV6.contractId
+      ? archivedV6.contractId
+      : e.MOON_CONTRACT_ID);
+  if (contractId !== e.MOON_CONTRACT_ID) {
+    if (contractId !== archivedV6.contractId)
+      return Response.json(
+        { error: "Unsupported park contract." },
+        { status: 400 },
+      );
+    if (
+      !e.MOON_V6_SPONSOR_ID ||
+      !e.MOON_V6_SPONSOR_KEY ||
+      e.MOON_V6_CONTRACT_ID !== contractId
+    )
+      return Response.json(
+        {
+          error: "Earlier park sponsorship is unavailable. Your park is saved.",
+        },
+        { status: 503 },
+      );
+    e = {
+      ...e,
+      MOON_SPONSOR_ID: e.MOON_V6_SPONSOR_ID,
+      MOON_SPONSOR_KEY: e.MOON_V6_SPONSOR_KEY,
+      MOON_CONTRACT_ID: e.MOON_V6_CONTRACT_ID,
+    };
   }
   let playerId: string,
     displayName = "Moon Explorer";

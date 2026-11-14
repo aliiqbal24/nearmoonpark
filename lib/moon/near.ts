@@ -8,7 +8,7 @@ export type Config = {
   fallbackRpcUrl: string;
   network: string;
   codeHash: string;
-  archivedVersion?: "v4" | "v5";
+  archivedVersion?: "v4" | "v5" | "v6";
   vendors?: { omar: string; mina: string; logistics: string };
 };
 export type Credentials = {
@@ -146,6 +146,7 @@ export async function provision(
       sessionPublicKey: m.KeyPair.fromString(pending.session)
         .getPublicKey()
         .toString(),
+      contractId: c.contractId,
       ranked,
     }),
   });
@@ -218,7 +219,9 @@ export async function create(c: Credentials, cfg: Config, requestId: string) {
       contractId: cfg.contractId,
       methodName: "create_run",
       args: {
-        challenge_id: VERSION,
+        challenge_id: cfg.archivedVersion
+          ? `moonpark-${cfg.archivedVersion}`
+          : VERSION,
         request_id: requestId,
         display_name: c.displayName ?? null,
       },
