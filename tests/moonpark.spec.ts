@@ -143,6 +143,12 @@ test("opening starts with a designed coaster and restaurant, then unlocks the pa
   await expect(
     page.getByRole("button", { name: "2×", exact: true }),
   ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Pause", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Resume", exact: true }),
+  ).toHaveCount(0);
   await expect(page.locator(".mp-subhud")).not.toContainText("power");
   await expect
     .poll(async () => (await savedRun(page)).tick, { timeout: 18000 })
@@ -150,6 +156,14 @@ test("opening starts with a designed coaster and restaurant, then unlocks the pa
   expect(
     (await savedRun(page)).guests.some((g) => g.status !== "upcoming"),
   ).toBe(true);
+  await page.getByRole("button", { name: "How to play", exact: true }).click();
+  const planningTick = (await savedRun(page)).tick;
+  await page.waitForTimeout(1300);
+  expect((await savedRun(page)).tick).toBe(planningTick);
+  await page.getByRole("button", { name: "Close panel", exact: true }).click();
+  await expect
+    .poll(async () => (await savedRun(page)).tick)
+    .toBeGreaterThan(planningTick);
   await page.screenshot({ path: "outputs/moon-v8-opening-gameplay.png" });
   expect(errors).toEqual([]);
 });
@@ -288,7 +302,6 @@ test("ride fares are fixed and selling returns half without an open-close contro
   page,
 }) => {
   await opening(page);
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
   const p = project(page, 8, 25);
   await page.mouse.click(p.x, p.y);
   await expect(page.getByTestId("building-inspector")).toBeVisible();
@@ -838,7 +851,9 @@ test("signed-in recovery restores the same park in two independent browser conte
     await expect(
       page.getByRole("button", { name: "Build Lunar Bounce", exact: true }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    await page
+      .getByRole("button", { name: "How to play", exact: true })
+      .click();
     expect((await savedRun(page)).buildings[0].design?.name).toBe(
       "Cloud Skimmer",
     );
@@ -941,7 +956,7 @@ test("resuming reconciles a conflicting edit from another device and keeps compa
   await expect(
     page.getByRole("button", { name: "Build Lunar Bounce", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await page.getByRole("button", { name: "How to play", exact: true }).click();
   const restored = await savedRun(page);
   expect(restored.buildings).toHaveLength(3);
   expect(restored.palette).toBe(4);

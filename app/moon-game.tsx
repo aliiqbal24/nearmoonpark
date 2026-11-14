@@ -103,7 +103,6 @@ export default function Game() {
       "local" | "saving" | "ready" | "error"
     >("local"),
     [cloudRetry, setCloudRetry] = useState(0),
-    [speed, setSpeed] = useState(1),
     [placement, setPlacement] = useState<Placement | null>(null),
     [selection, setSelection] = useState<Detail | null>(null),
     [hover, setHover] = useState<Detail | null>(null),
@@ -347,6 +346,12 @@ export default function Game() {
     const t = setTimeout(() => setToast(""), 6000);
     return () => clearTimeout(t);
   }, [toast]);
+  const simulationPaused = !!(
+    designingKind ||
+    editingCoaster ||
+    panel ||
+    (run?.finished && showResults)
+  );
   useEffect(() => {
     if (screen !== "playing" || introLeaving) return;
     let last = Date.now();
@@ -359,18 +364,11 @@ export default function Game() {
         dt = (now - last) / 1000;
       last = now;
       const s = session.current;
-      if (s) {
+      if (s && !document.hidden) {
         if (!isPersistent(s.state.run))
           setWallLeft(Math.max(0, (s.state.deadline - now) / 1000));
         void s
-          .update(
-            dt,
-            designingKind ||
-              editingCoaster ||
-              (s.state.run.opening_stage ?? 3) < 2
-              ? 0
-              : speed,
-          )
+          .update(dt, simulationPaused ? 0 : 1)
           .catch((e) => setToast(String(e)));
       }
     }, 200);
@@ -378,7 +376,7 @@ export default function Game() {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", resetClock);
     };
-  }, [screen, speed, introLeaving, designingKind, editingCoaster]);
+  }, [screen, introLeaving, simulationPaused]);
   useEffect(() => {
     if (screen !== "intro" || !videoFailed) return;
     const start = performance.now(),
@@ -494,7 +492,6 @@ export default function Game() {
     setSelection(null);
     setRideId(null);
     setPanel(null);
-    setSpeed(1);
     setIntroTime(0);
     setScreen("intro");
     setLaunching(false);
@@ -596,7 +593,7 @@ export default function Game() {
       if (next) {
         session.current = next;
         setScreen(parkClosed(next.state.run) ? "results" : "playing");
-        setShowResults(true);
+        setShowResults(!isPersistent(next.state.run));
         worldRef.current?.home();
       } else setToast("No saved park found.");
     } catch (e) {
@@ -775,9 +772,9 @@ export default function Game() {
         identity={parkIdentity}
         speed={
           screen === "playing"
-            ? designingKind || editingCoaster || openingStage < 2
+            ? simulationPaused || openingStage < 2
               ? 0
-              : speed
+              : 1
             : 0.4
         }
         placement={screen === "playing" ? placement : null}
@@ -1102,19 +1099,6 @@ export default function Game() {
                         : Math.min(END - run.tick, wallLeft),
                     )}
               </strong>
-              <div className="mp-speeds">
-                {[0, 1].map((n) => (
-                  <button
-                    key={n}
-                    disabled={parkClosed(run)}
-                    aria-label={n === 0 ? "Pause" : "Resume"}
-                    aria-pressed={speed === n}
-                    onClick={() => setSpeed(n)}
-                  >
-                    {n === 0 ? "Ⅱ" : "▶"}
-                  </button>
-                ))}
-              </div>
             </div>
           </header>
           <div className="mp-subhud">
@@ -1221,7 +1205,8 @@ export default function Game() {
                 </div>
               </div>
             )}
-          {openingStage === 3 &&
+          {run.version === VERSION &&
+            openingStage === 3 &&
             !economyUnderstood &&
             !panel &&
             !designingKind &&
@@ -1419,13 +1404,11 @@ export default function Game() {
                       if (b.riders.length) {
                         if (b.enabled)
                           await action({ kind: "toggle", building: b.id });
-                        setSpeed(1);
                         setToast(
                           "The coaster is closing. Let its current passengers finish, then open the designer.",
                         );
                         return;
                       }
-                      setSpeed(0);
                       if (b.enabled)
                         await action({ kind: "toggle", building: b.id });
                       setEditingCoaster(b);
@@ -1632,7 +1615,6 @@ export default function Game() {
             <>
               <ParkHub
                 onConfirm={async () => {
-                  setSpeed(0);
                   await session.current?.confirm();
                 }}
                 cfg={activeConfig}
@@ -1786,7 +1768,8 @@ export default function Game() {
                   <strong>Make your opening day count.</strong> Happy visitors,
                   a healthy business and new experiences earn points. The first
                   96 visitors seal your score when they depart. Later rockets
-                  keep your park earning. Pause whenever you want time to plan.
+                  keep your park earning. Designing a ride or opening a panel
+                  gives you time to plan.
                 </li>
               </ol>
               <p>

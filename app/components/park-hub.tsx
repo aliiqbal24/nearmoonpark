@@ -366,6 +366,7 @@ export function ParkHub({
               {park.run_id && (
                 <button
                   className="mp-primary full"
+                  disabled={!!busy}
                   onClick={() =>
                     void perform("share", async () => {
                       const link = new URL(

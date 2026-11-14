@@ -5,9 +5,8 @@ import {
 } from "near-api-js/rpc-errors";
 import type { FailoverRpcProvider } from "near-api-js";
 
-// near-api-js refreshes its nonce cache for InvalidNonceError. Its failover
-// provider wraps that error, hiding it from Account's built-in retry. Preserve
-// it and prepaid-allowance errors so nonce and gas-budget retries can recover.
+// Nonce and gas-budget errors need a new signature or reservation. Retrying
+// that same transaction at another endpoint delays the account's recovery.
 export function failoverRpc(
   api: Pick<
     typeof import("near-api-js"),
@@ -19,18 +18,21 @@ export function failoverRpc(
     override async sendTransactionUntil(
       ...args: Parameters<FailoverRpcProvider["sendTransactionUntil"]>
     ) {
-      try {
-        return await super.sendTransactionUntil(...args);
-      } catch (error) {
-        const recoverable = (error as { errors?: unknown[] })?.errors?.find(
-          (e) =>
-            e instanceof InvalidNonceError ||
-            e instanceof AccessKeyNotEnoughAllowanceActionError ||
-            e instanceof NotEnoughBalanceError,
-        );
-        if (recoverable) throw recoverable;
-        throw error;
+      let last;
+      for (const provider of this.providers) {
+        try {
+          return await provider.sendTransactionUntil(...args);
+        } catch (error) {
+          if (
+            error instanceof InvalidNonceError ||
+            error instanceof AccessKeyNotEnoughAllowanceActionError ||
+            error instanceof NotEnoughBalanceError
+          )
+            throw error;
+          last = error;
+        }
       }
+      throw last;
     }
   }
   return new Provider(urls.map((url) => new api.JsonRpcProvider({ url })));

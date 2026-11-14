@@ -720,21 +720,6 @@
   text-align: right;
   letter-spacing: -1px;
 }
-.mp-speeds {
-  display: flex;
-  gap: 3px;
-}
-.moonpark .mp-speeds button {
-  font-size: 10px;
-  padding: 3px 9px;
-  border-radius: 5px;
-  border-color: transparent;
-  background: #e8e6df;
-}
-.moonpark .mp-speeds button[aria-pressed="true"] {
-  background: #355a5a;
-  color: #ebfff4;
-}
 .mp-live-dot {
   display: inline-block;
   width: 5px;
@@ -1737,10 +1722,6 @@
   }
   .mp-time > span {
     font-size: 6px;
-  }
-  .mp-speeds button {
-    font-size: 9px !important;
-    padding: 4px 8px !important;
   }
   .moonpark .mp-score {
     grid-column: 1;
