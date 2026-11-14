@@ -1,6 +1,6 @@
 # Moonpark v9 verification
 
-The final presentation pass trims entry to the four-second mass-driver scene and automatically hands control to construction. Twenty routine browser cases pass, including bounded dialogs on desktop, portrait phone and landscape phone layouts, internal scrolling, reachable close controls and stable keyboard focus. The 28 simulation tests, 37 contract tests and 355 native/WASM parity states pass again. TypeScript, ESLint and the production build pass.
+The final presentation pass trims entry to the four-second mass-driver scene and automatically hands control to construction. Twenty-one routine browser cases pass across the final release checks, including automatic framing of a sixty-metre design turn, bounded dialogs on desktop, portrait phone and landscape phone layouts, internal scrolling, reachable close controls and stable keyboard focus. The 28 simulation tests, 37 contract tests and 355 native/WASM parity states pass again. TypeScript, ESLint and the production build pass.
 
 The current keyless contract is `game.moonpark-mwguq289.testnet`, with code hash `HKk1DwrdrWRg6oZ2joaJ64UgZzKCgHRbXHMnTWnxZMjP`. [Public build commitments](../public/moon-build.json) record the browser and contract hashes. The account has zero access keys. NPC policy accounts are `illia`, `mert` and `logistics` under the same testnet sponsor.
 

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { PerspectiveCamera, Vector3 } from "three";
+import { Matrix4, PerspectiveCamera, Vector3 } from "three";
 import { KeyPair } from "near-api-js";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import type { Run } from "../lib/moon/model";
@@ -1121,4 +1121,73 @@ test("panels stay bounded, scroll inside their body and keep the close control r
       await expect(dialog).toHaveCount(0);
     }
   }
+});
+
+test("a sixty-metre turn remains framed while designing the coaster", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const tracked = new WeakSet<WebGLUniformLocation>();
+    const get = WebGL2RenderingContext.prototype.getUniformLocation;
+    const set = WebGL2RenderingContext.prototype.uniformMatrix4fv;
+    WebGL2RenderingContext.prototype.getUniformLocation = function (
+      program,
+      name,
+    ) {
+      const location = get.call(this, program, name);
+      if (location && name === "viewMatrix") tracked.add(location);
+      return location;
+    };
+    WebGL2RenderingContext.prototype.uniformMatrix4fv = function (
+      location,
+      transpose,
+      data,
+    ) {
+      const values = Array.from(data);
+      if (
+        location &&
+        tracked.has(location) &&
+        Math.abs(values[12]) + Math.abs(values[13]) + Math.abs(values[14]) > 1
+      ) {
+        (
+          window as unknown as { heightPreviewView: number[] }
+        ).heightPreviewView = values.slice(0, 16);
+      }
+      return set.call(this, location, transpose, data);
+    };
+  });
+  await open(page);
+  await drawCoaster(page);
+  await page.getByRole("slider", { name: "Track height", exact: true }).focus();
+  await page.keyboard.press("End");
+  await expect(page.locator(".mp-map-designer")).toContainText("60.0 m");
+  await page.waitForTimeout(700);
+  const { view, point } = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((k) =>
+      k.endsWith(":map-coaster"),
+    )!;
+    const draft = JSON.parse(localStorage.getItem(key)!).state;
+    return {
+      view: (window as unknown as { heightPreviewView: number[] })
+        .heightPreviewView,
+      point: draft.points[draft.selected] as {
+        x: number;
+        y: number;
+        z: number;
+      },
+    };
+  });
+  const { width, height } = page.viewportSize()!;
+  const camera = new PerspectiveCamera(50, width / height, 0.1, 2200);
+  const pointOnScreen = new Vector3(
+    (point.x / 10 - 24) * 1.25,
+    point.y / 10 + 0.2,
+    (point.z / 10 - 36) * 1.25,
+  )
+    .applyMatrix4(new Matrix4().fromArray(view))
+    .applyMatrix4(camera.projectionMatrix);
+  expect(point.y).toBe(600);
+  expect(Math.abs(pointOnScreen.x)).toBeLessThan(0.94);
+  expect(Math.abs(pointOnScreen.y)).toBeLessThan(0.88);
+  await page.screenshot({ path: "outputs/moon-final-tall-hill-preview.png" });
 });

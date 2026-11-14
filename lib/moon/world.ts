@@ -873,6 +873,7 @@ export class MoonWorld {
     this.trackGesture = handler;
     this.grid.visible = true;
     this.trackOverlay.visible = true;
+    const previousPeak = this.previewPeak;
     this.previewPeak = Math.max(0, ...draft.points.map((p) => p.y / 10));
     this.controls.maxDistance = Math.min(
       320,
@@ -881,6 +882,8 @@ export class MoonWorld {
         this.previewPeak * 2.97 * Math.max(1, 0.9 / this.camera.aspect),
       ),
     );
+    if (this.previewPeak > 18 && this.previewPeak > previousPeak)
+      this.home();
     this.configureDrawingControls();
     this.drawTrackDraft();
   }
