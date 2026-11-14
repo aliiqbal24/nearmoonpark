@@ -5,7 +5,7 @@ import {
   InvalidNonceError,
   NotEnoughBalanceError,
 } from "near-api-js/rpc-errors";
-import { failoverRpc } from "../lib/moon/rpc";
+import { failoverRpc, reducedPrepaidGas } from "../lib/moon/rpc";
 import { renewalMessage } from "../lib/moon/sponsorship";
 
 test("renewal signatures bind the park contract and both replacement keys", async () => {
@@ -129,4 +129,44 @@ test("transaction transport failures retain endpoint failover", async () => {
   await expect(
     provider.sendTransactionUntil({} as near.SignedTransaction, "EXECUTED"),
   ).resolves.toBe(accepted);
+});
+
+test("settlement reservations fit both session allowances and account balances", () => {
+  const publicKey = near.KeyPair.fromRandom("ed25519").getPublicKey();
+  const available = 244000000000000000000000n;
+  const cost = 251000000000000000000000n;
+  const failures = [
+    new AccessKeyNotEnoughAllowanceActionError(
+      "park.testnet",
+      available,
+      cost,
+      publicKey,
+      null,
+      "transaction",
+      "block",
+    ),
+    new NotEnoughBalanceError(
+      available,
+      cost,
+      "park.testnet",
+      "transaction",
+      "block",
+    ),
+  ];
+  for (const error of failures) {
+    const gas = reducedPrepaidGas(error, 250000000000000n);
+    expect(gas).toBe(218725099601593n);
+    expect(gas).toBeGreaterThanOrEqual(110000000000000n);
+    expect((cost * gas) / 250000000000000n).toBeLessThan(available);
+  }
+  const depleted = new NotEnoughBalanceError(
+    1n,
+    cost,
+    "park.testnet",
+    "transaction",
+    "block",
+  );
+  expect(() => reducedPrepaidGas(depleted, 250000000000000n)).toThrow(depleted);
+  const unrelated = new InvalidNonceError(2, 1, "transaction", "block");
+  expect(() => reducedPrepaidGas(unrelated, 250000000000000n)).toThrow(unrelated);
 });

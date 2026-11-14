@@ -5,6 +5,22 @@ import {
 } from "near-api-js/rpc-errors";
 import type { FailoverRpcProvider } from "near-api-js";
 
+export function reducedPrepaidGas(error: unknown, prepaidGas: bigint) {
+  if (
+    !(error instanceof AccessKeyNotEnoughAllowanceActionError) &&
+    !(error instanceof NotEnoughBalanceError)
+  )
+    throw error;
+  if (error.cost <= 0n) throw error;
+  const available =
+    error instanceof AccessKeyNotEnoughAllowanceActionError
+      ? error.allowance
+      : error.balance;
+  const gas = (prepaidGas * available * 9n) / (error.cost * 10n);
+  if (gas < 110000000000000n || gas >= prepaidGas) throw error;
+  return gas;
+}
+
 // Nonce and gas-budget errors need a new signature or reservation. Retrying
 // that same transaction at another endpoint delays the account's recovery.
 export function failoverRpc(

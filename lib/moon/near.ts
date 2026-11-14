@@ -1,8 +1,7 @@
 import type { Command, RecordState, Entry } from "./model";
 import { VERSION } from "./model";
-import { failoverRpc } from "./rpc";
+import { failoverRpc, reducedPrepaidGas } from "./rpc";
 import { renewalMessage, type RenewalProof } from "./sponsorship";
-import { AccessKeyNotEnoughAllowanceActionError } from "near-api-js/rpc-errors";
 export type Config = {
   contractId: string;
   rpcUrl: string;
@@ -291,11 +290,9 @@ export async function settle(
   try {
     raw = await within(a.callFunctionRaw(call));
   } catch (error) {
-    if (!(error instanceof AccessKeyNotEnoughAllowanceActionError)) throw error;
     // NEAR reserves the full prepaid gas before execution. As the finite key
-    // budget falls, fit that reservation to the remaining allowance with margin.
-    const gas = (call.gas * error.allowance * 9n) / (error.cost * 10n);
-    if (gas < 110000000000000n) throw error;
+    // or account budget falls, fit the reservation with a safety margin.
+    const gas = reducedPrepaidGas(error, call.gas);
     raw = await within(a.callFunctionRaw({ ...call, gas }));
   }
   const status = raw.status;

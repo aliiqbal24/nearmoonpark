@@ -2,6 +2,8 @@
 
 The final presentation pass trims entry to the four-second mass-driver scene and automatically hands control to construction. Twenty-one routine browser cases pass across the final release checks, including automatic framing of a sixty-metre design turn, bounded dialogs on desktop, portrait phone and landscape phone layouts, internal scrolling, reachable close controls and stable keyboard focus. The 28 simulation tests, 37 contract tests and 355 native/WASM parity states pass again. TypeScript, ESLint and the production build pass.
 
+Settlement reservations adapt to both the remaining session-key allowance and the account's available balance. A live continued-play check initially rejected the 250 TGas reservation, then settled with 220.81 TGas prepaid while preserving the sealed 9,066 score. Four signature, RPC and reservation regression cases pass. [Continued-play receipt](https://testnet.nearblocks.io/txns/xKHhKytVbA6CRLsg3mk6iZhLUh6yyaQxtQGN57MMUAa)
+
 The current keyless contract is `game.moonpark-mwguq289.testnet`, with code hash `HKk1DwrdrWRg6oZ2joaJ64UgZzKCgHRbXHMnTWnxZMjP`. [Public build commitments](../public/moon-build.json) record the browser and contract hashes. The account has zero access keys. NPC policy accounts are `illia`, `mert` and `logistics` under the same testnet sponsor.
 
 All 28 simulation tests and 37 contract tests pass. Five complete strategies produce 355 exact native/WASM checkpoint matches. Balanced and Gold score 9,066. Sandbox settles 37 batches, tests ownership, licensing, creator payments and prizes, and checks a separate 246-turn whole-map coaster with an atomic path stroke. The baseline maximum is 69.90 TGas. The large map build uses 74.08 TGas. [Sandbox proof](moon-v9-sandbox-smoke.json)
