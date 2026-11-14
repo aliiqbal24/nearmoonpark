@@ -17,7 +17,7 @@ Players publish parks for public visits and guest-tested ride designs for paid l
 
 ## Short demo sequence
 
-1. Briefly show the lunar resort reveal, then skip into construction.
+1. The four-second mass-driver announcement leads directly into construction.
 2. Choose a station, drag an unusual coaster loop over the park, raise a turn and build. Show the first rocket landing.
 3. Follow one visitor walking, paying and riding. Click Illia's portrait to show stock, business cash, automatic pricing reasoning and its confirmed NEAR wallet.
 4. Drag a path through the coaster's interior and add a different ride. Show a visitor's reaction and the coaster's front-seat camera.
@@ -42,7 +42,7 @@ Attach the final gameplay demonstration before publication.
 
 ## Remaining owner steps
 
-The demo post, team/contact details, mainnet payout address, consent and final submission review remain with the owner. The repository and website can be reviewed independently while these are prepared.
+The owner will enter the team/contact details and mainnet payout address, publish the demo post and submit the final form. Contact-notice consent was confirmed during preparation. The repository and website can be reviewed independently while these are prepared.
 
 The organizer currently lists **November 14, 2026 at 23:59 UTC** as the development/submission deadline. Public source and a public X demo post are required. The track prompt is an example, and an original NEAR contract is allowed. Testnet projects are eligible. Recheck the live rules when preparing the final submission. [Official rules](https://nearhackathon.com/HACKATHON.md)
 

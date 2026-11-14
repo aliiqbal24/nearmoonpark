@@ -396,29 +396,14 @@ test("opening film decodes, advances smoothly and hands over to the park", async
       height: e.videoHeight,
       duration: e.duration,
     })),
-  ).toEqual({ width: 1920, height: 1080, duration: 40 });
-  await video.evaluate((e: HTMLVideoElement) => (e.currentTime = 15));
-  await page.waitForTimeout(600);
-  await page.screenshot({ path: "outputs/moon-opening-playback.png" });
-  await video.evaluate((e: HTMLVideoElement) => (e.currentTime = 36));
-  await expect(page.locator(".mp-intro-captions.is-finale h1")).toHaveText(
-    "MOONPARK",
+  ).toEqual({ width: 1920, height: 1080, duration: 4 });
+  await expect(page.locator(".mp-intro-captions")).toContainText(
+    "Mass driver online.",
   );
-  await expect(
-    page.getByText("YOUR PARK. YOUR CREATIONS. ON NEAR.", { exact: true }),
-  ).toHaveText("YOUR PARK. YOUR CREATIONS. ON NEAR.");
-  await expect
-    .poll(() =>
-      page
-        .locator(".mp-intro-captions.is-finale")
-        .evaluate((element) => getComputedStyle(element).opacity),
-    )
-    .toBe("1");
-  await page.screenshot({ path: "outputs/moon-opening-near-finale.png" });
-  await page.getByRole("button", { name: "Skip intro" }).click();
+  await page.screenshot({ path: "outputs/moon-opening-playback.png" });
   await expect(
     page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 10000 });
   await expect
     .poll(() => video.evaluate((e: HTMLVideoElement) => e.paused))
     .toBe(true);
@@ -1099,6 +1084,41 @@ test("map previews and Rust agree on the rail corridor for all station orientati
           ticks: 0,
         }),
       ).rejects.toThrow(/building|station/);
+    }
+  }
+});
+
+test("panels stay bounded, scroll inside their body and keep the close control reachable", async ({
+  page,
+}) => {
+  await open(page);
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+  ]) {
+    await page.setViewportSize(viewport);
+    for (const name of [
+      "How to play",
+      "View Illia’s status",
+      "My park and ride exchange",
+    ]) {
+      await page.getByRole("button", { name, exact: true }).click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      const bounds = await dialog.boundingBox();
+      expect(bounds!.height).toBeLessThanOrEqual(viewport.height * 0.81);
+      expect(bounds!.width).toBeLessThan(viewport.width);
+      const close = page.getByRole("button", {
+        name: "Close panel",
+        exact: true,
+      });
+      await dialog.locator(".mp-dialog-body").evaluate((e) => {
+        e.scrollTop = e.scrollHeight;
+      });
+      await expect(close).toBeInViewport();
+      await page.keyboard.press("Escape");
+      await expect(dialog).toHaveCount(0);
     }
   }
 });

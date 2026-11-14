@@ -10,7 +10,7 @@ One player designs the park. NPCs walk, queue, ride, spend finite budgets and fo
 
 ## Try one complete loop
 
-1. Choose **Open your park** for sponsored NEAR testnet play, or **Practice offline** for local play. The opening film is skippable. Optional **Continue with Google** sign-in enables account recovery across devices and eligible leaderboard play.
+1. Choose **Open your park** for sponsored NEAR testnet play, or **Practice offline** for local play. A skippable four-second mass-driver launch leads straight into construction. Optional **Continue with Google** sign-in enables account recovery across devices and eligible leaderboard play.
 2. Start with **3,200 credits**, a connected kitchen, drinks stall and garage. The first rocket waits while you build your first coaster.
 3. Choose **Mass-Driver Coaster**, click clear tiles for its station and drag a route across the actual park. Return to the golden connection or choose **Close loop to station**. Adjust a turn's height, colors, style and name, then build. The preview costs nothing until confirmed.
 4. Watch the first rocket land. Visitors eat, drink and choose rides according to their budgets and preferences. Click the three faces on the right to inspect stock, business cash, customer counts and maintenance. The shop owners set prices, buy supplies and pay the park a fixed **10% share**.

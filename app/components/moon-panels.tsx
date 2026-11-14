@@ -1,7 +1,7 @@
 "use client";
 import type { Config } from "@/lib/moon/near";
 import { AttractionDesign } from "./attraction-design";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   X,
   Link2,
@@ -49,16 +49,20 @@ export function Dialog({
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  useLayoutEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const el = ref.current;
     el?.querySelector<HTMLButtonElement>("button")?.focus();
     const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") closeRef.current();
       if (e.key === "Tab" && el) {
         const controls = [
           ...el.querySelectorAll<HTMLElement>(
-            'button:not([disabled]),a[href],input,select,[tabindex="0"]',
+            'button:not([disabled]),a[href],input,textarea,select,[tabindex="0"]',
           ),
         ];
         const first = controls[0],
@@ -77,7 +81,7 @@ export function Dialog({
       document.removeEventListener("keydown", key);
       previous?.focus();
     };
-  }, [onClose]);
+  }, []);
   return (
     <div
       className="mp-scrim"
@@ -99,7 +103,7 @@ export function Dialog({
           </button>
         </header>
         <h2>{title}</h2>
-        {children}
+        <div className="mp-dialog-body">{children}</div>
       </div>
     </div>
   );

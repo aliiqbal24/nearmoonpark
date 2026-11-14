@@ -118,8 +118,8 @@ export function StaffStatus({
       {role === "nia" ? (
         <>
           <p>
-            Haseeb’s park robots handle repairs automatically. Build a Lunar
-            Care Depot to give them a base.
+            Haseeb’s park robots handle repairs automatically. Build Dragonfly
+            Garage to give them a base.
           </p>
           <dl>
             <div>

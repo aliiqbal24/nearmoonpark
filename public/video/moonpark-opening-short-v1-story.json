@@ -1,0 +1,20 @@
+{
+  "duration": 4,
+  "segments": [
+    {
+      "start": 0.25,
+      "end": 1.999,
+      "text": "Mass driver online.",
+      "voice": "am_michael",
+      "speed": 1.0
+    }
+  ],
+  "music": {
+    "title": "Helios",
+    "artist": "Scott Buckley",
+    "source": "https://www.scottbuckley.com.au/library/helios/",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "edit": "Four-second opening excerpt with the original mass-driver announcement and sound design"
+  }
+}

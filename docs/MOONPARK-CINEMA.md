@@ -1,3 +1,9 @@
+# Current game opening
+
+The game now plays only the four-second mass-driver launch and “Mass driver online” announcement, then enters the player’s park automatically. Desktop and portrait deliveries retain the original 60 fps camera work, with a short audio and picture fade. The longer source film remains preserved for cinematography and editing. The gameplay clock begins after construction and arrival, independently of this clip.
+
+# Preserved full-length source film
+
 # Moonpark opening film v7
 
 The current opening is a 40-second, 60 fps film with 2,400 frames in each delivery. Desktop is 1920×1080. Mobile uses a separately composed 720×1280 render. The film opens on a magnetic coaster launch, reveals Earth, lands a passenger rocket, welcomes visitors, rides the mass driver, visits the kitchen and ends with the player's invitation to open the park.

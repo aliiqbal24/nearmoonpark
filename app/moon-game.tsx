@@ -82,13 +82,15 @@ import { LegacyCoasterEditor } from "./components/legacy-coaster-editor";
 import { BuildDesigner } from "./components/build-designer";
 import { MapCoasterDesigner } from "./components/map-coaster-designer";
 import { BuildCatalogue } from "./components/build-catalogue";
-import openingStory from "@/public/video/moonpark-opening-v7-story.json";
+import openingStory from "@/public/video/moonpark-opening-short-v1-story.json";
 import archivedV5 from "@/public/moon-v5-config.json";
 import archivedV8 from "@/public/moon-v8-config.json";
 import archivedV7 from "@/public/moon-v7-config.json";
 import archivedV6 from "@/public/moon-v6-config.json";
 import archivedV4 from "@/public/moon-v4-config.json";
 import "./moonpark.css";
+
+const OPENING_SECONDS = openingStory.duration;
 
 type Player = { player_id: string; display_name: string };
 type Screen = "title" | "intro" | "playing" | "results";
@@ -399,8 +401,8 @@ export default function Game() {
       offset = videoRef.current?.currentTime ?? 0;
     const t = setInterval(() => {
       const elapsed = offset + (performance.now() - start) / 1000;
-      setIntroTime(Math.min(40, elapsed));
-      if (elapsed >= 40) {
+      setIntroTime(Math.min(OPENING_SECONDS, elapsed));
+      if (elapsed >= OPENING_SECONDS) {
         clearInterval(t);
         finishIntroRef.current();
       }
@@ -781,13 +783,7 @@ export default function Game() {
     (line) => introTime >= line.start && introTime < line.end + 0.3,
   );
   const introBeat = {
-    k:
-      introTime < 4
-        ? "A NEAR PROTOCOL PRESENTATION"
-        : introTime >= 35.5
-          ? "YOUR PARK. YOUR CREATIONS. ON NEAR."
-          : "",
-    title: introTime >= 35.5 ? "MOONPARK" : "",
+    k: "A NEAR PROTOCOL PRESENTATION",
     text: spokenLine?.text ?? "",
   };
   const activeConfig =
@@ -859,12 +855,12 @@ export default function Game() {
         }}
       >
         <source
-          src="/video/moonpark-opening-v7-mobile.mp4"
+          src="/video/moonpark-opening-short-v1-mobile.mp4"
           media="(max-width: 800px)"
           type="video/mp4"
         />
         <source
-          src="/video/moonpark-opening-v7.mp4"
+          src="/video/moonpark-opening-short-v1.mp4"
           type="video/mp4"
           onError={() => setVideoFailed(true)}
         />
@@ -1034,11 +1030,10 @@ export default function Game() {
             </button>
           </div>
           <div
-            className={`mp-intro-captions${introTime >= 35.5 ? " is-finale" : ""}${videoFailed ? "" : " film-subtitles"}`}
+            className={`mp-intro-captions${videoFailed ? "" : " film-subtitles"}`}
             key={introBeat.k}
           >
             <span className="mp-eyebrow">{introBeat.k}</span>
-            <h1>{introBeat.title}</h1>
             <p>{introBeat.text}</p>
           </div>
           <div className="mp-intro-bottom">
@@ -1047,7 +1042,7 @@ export default function Game() {
                 ? "Preparing your park…"
                 : openingError
                   ? "Retry NEAR or open your park in practice."
-                  : "THE DREAM / A LUNAR OPENING DAY"}
+                  : "YOUR PARK IS READY FOR OPENING DAY"}
             </span>
             <button
               className="mp-secondary"
@@ -1072,7 +1067,7 @@ export default function Game() {
           </div>
           <div
             className="mp-intro-progress"
-            style={{ width: `${(introTime / 40) * 100}%` }}
+            style={{ width: `${(introTime / OPENING_SECONDS) * 100}%` }}
           />
         </div>
       )}
