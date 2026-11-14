@@ -1,4 +1,22 @@
-# Moonpark v8 verification
+# Moonpark v9 verification
+
+The current keyless contract is `game.moonpark-mwguq289.testnet`, with code hash `HKk1DwrdrWRg6oZ2joaJ64UgZzKCgHRbXHMnTWnxZMjP`. [Public build commitments](../public/moon-build.json) record the browser and contract hashes. The account has zero access keys. NPC policy accounts are `illia`, `mert` and `logistics` under the same testnet sponsor.
+
+All 28 simulation tests and 37 contract tests pass. Five complete strategies produce 355 exact native/WASM checkpoint matches. Balanced and Gold score 9,066. Sandbox settles 37 batches, tests ownership, licensing, creator payments and prizes, and checks a separate 246-turn whole-map coaster with an atomic path stroke. The baseline maximum is 69.90 TGas. The large map build uses 74.08 TGas. [Sandbox proof](moon-v9-sandbox-smoke.json)
+
+The browser verification covers direct map drawing, four station orientations, paths under raised rails, starter stores, pre-build Lunar Bounce heights, staff status, catalogue scrolling, refresh and draft recovery, mobile layouts, cloud recovery in two independent contexts, stale-edit reconciliation, earlier engines, film playback and fallback, stereo audio and the compressed 8K sky. A real sponsored browser flow builds a drawn coaster, confirms a food sale in Illia's actual wallet, publishes a park, opens its public snapshot and reloads its saved game. [Live browser proof](moon-v9-browser-smoke.json)
+
+The public testnet replay completes 71 canonical checkpoints and checks every account holding against the engine. Its heaviest game batch uses 64.17 TGas. It also verifies signed park claiming, published snapshots, blueprint licensing, attributed construction, the creator's 90% payout, duplicate payment protection and contract solvency. The opening score seals at 9,066 and later cosmetic publication preserves it. [Public replay and paid licensing](moon-v9-testnet-smoke.json)
+
+All 20 game-browser cases pass across the production and live-testnet runs, including the automatic movie-failure handoff. Both camera-preview cases and three retained Mars browser cases pass. All three renewal-signature and RPC failure/retry cases pass. TypeScript, repository-wide ESLint and the production Next.js build pass. ESLint retains image-optimization warnings and warnings in the archived prototype.
+
+The API tops up the contract's actual storage shortfall before admission. It keeps the player-account allocation and gas margin available while protecting existing reward reserves. Verification reuses free testnet funds from earlier proof accounts, retaining gas for their ownership and earnings operations.
+
+The retained earlier records below describe their original releases. The v8 eligible board contained one entry at the transition. Its park, published layout and historical standings remain preserved. Only the current challenge counts toward the conditional USD giveaway, following the owner's decision.
+
+---
+
+# Earlier v8 verification record
 
 The immutable contract is `game.moonpark-mwgh000n.testnet`, with code hash `8iTkztBYZvA3CecctfCPgZuEgteyaiF9eP5EcXY9EBgk`. The public build manifest records the exact browser-engine and contract SHA-256 values. The deployed account has zero access keys. All funding uses free testnet assets.
 

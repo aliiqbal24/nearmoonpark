@@ -14,8 +14,8 @@ type Economy = {
 const names: Record<string, string> = {
   park: "Your park",
   passengers: "Visitor budgets",
-  omar: "Omar · Moon Pie Kitchen",
-  mina: "Mina · Crater Coolers",
+  omar: "Illia · Attention Kitchen",
+  mina: "Mert · Finality Fizz",
   logistics: "Lunar Logistics",
 };
 
@@ -66,7 +66,7 @@ export function VendorWallets({
         <NearMark /> {role ? "NEAR business wallet" : "View testnet wallets"}
       </summary>
       <p className="mp-fine">
-        Omar and Mina receive payments, buy stock and pay your park a fixed 10%
+        Illia and Mert receive payments, buy stock and pay your park a fixed 10%
         share automatically. Each owner has a separate NEAR account and a signed
         spending policy. Each opening day has its own finite credits and stock.
       </p>

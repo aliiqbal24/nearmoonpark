@@ -1,0 +1,22 @@
+{
+  "tool": "Built-in image_gen",
+  "intent": "Original fictional lunar-resort cameo illustrations",
+  "reference": "User-provided screenshot of the official NEAR Hackathon judge portraits",
+  "assets": [
+    {
+      "name": "illia",
+      "prompt": "Use case: stylized-concept. Asset type: polished in-game character portrait icon for Moonpark, an upscale lunar resort tycoon. Reference image is the attached hackathon judge grid, used only for the named person's facial likeness. Create an original friendly stylized 3D game character, high-end animated feature quality, tactile ivory-and-deep-teal lunar resort uniform, a little warm brass hardware, soft golden key light and cool Earth rim light, very crisp face and eyes. Square bust portrait, only head and upper shoulders, three-quarter facing slightly toward viewer, face occupies 65% of image, gentle smile. No text, no labels, no watermark, no additional people. Soft muted dark teal background that can crop to a circle. Keep recognizably close to the named person's reference. Subject: Illia Polosukhin, top-left portrait in the reference grid. Short light-brown hair, fair complexion, familiar face and slight smile. His fictional lunar kitchen uniform has a tasteful little chef-collar detail and a small geometric NEAR-style suit patch.",
+      "path": "public/art/cameo-illia-v1.webp"
+    },
+    {
+      "name": "mert",
+      "prompt": "Use case: stylized-concept. Asset type: polished in-game character portrait icon for Moonpark, an upscale lunar resort tycoon. Reference image is the attached hackathon judge grid, used only for the named person's facial likeness. Create an original friendly stylized 3D game character, high-end animated feature quality, tactile ivory-and-deep-teal lunar resort uniform, a little warm brass hardware, soft golden key light and cool Earth rim light, very crisp face and eyes. Square bust portrait, only head and upper shoulders, three-quarter facing slightly toward viewer, face occupies 65% of image, gentle smile. No text, no labels, no watermark, no additional people. Soft muted dark teal background that can crop to a circle. Keep recognizably close to the named person's reference. Subject: Mert Mumtaz, top-right portrait in the reference grid. Closely cropped dark hair with a receding hairline, full well-kept dark beard, expressive friendly face. His fictional lunar drinks-stall uniform has a little coral trim and a clear helmet collar.",
+      "path": "public/art/cameo-mert-v1.webp"
+    },
+    {
+      "name": "haseeb",
+      "prompt": "Use case: stylized-concept. Asset type: polished in-game character portrait icon for Moonpark, an upscale lunar resort tycoon. Reference image is the attached hackathon judge grid, used only for the named person's facial likeness. Create an original friendly stylized 3D game character, high-end animated feature quality, tactile ivory-and-deep-teal lunar resort uniform, a little warm brass hardware, soft golden key light and cool Earth rim light, very crisp face and eyes. Square bust portrait, only head and upper shoulders, three-quarter facing slightly toward viewer, face occupies 65% of image, gentle smile. No text, no labels, no watermark, no additional people. Soft muted dark teal background that can crop to a circle. Keep recognizably close to the named person's reference. Subject: Haseeb Qureshi, bottom-middle portrait in the reference grid. Bald head, warm familiar smile, short neat facial hair. His fictional lunar garage uniform has a small brass dragonfly brooch and subtle mechanic-collar details.",
+      "path": "public/art/cameo-haseeb-v1.webp"
+    }
+  ]
+}

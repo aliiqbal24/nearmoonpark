@@ -82,7 +82,7 @@ try {
       renderer,
       scene,
       assets,
-      base: prepared.buildings[0],
+      base: prepared.buildings.find(b => b.kind === "coaster"),
       model: null,
     };
   });
@@ -145,7 +145,7 @@ try {
                 kind: name,
                 rotation: 0,
                 launch: 2,
-                design: { name: "", palette: 255, style, lights: 1, height: 1 },
+                design: { name: "", palette: 255, style, lights: 1, height: 1, bounce_height: 8 },
               });
           if (model?.upAt) {
             for (let i = 0; i < 1000; i++) {
@@ -260,7 +260,7 @@ try {
       if (encode.status) throw Error(encode.stderr.toString());
       await rename(
         `outputs/moonpark-art/${asset}.webp`,
-        `public/art/${asset}-${portrait ? "v3" : "v4"}.webp`,
+        `public/art/${asset}-${portrait ? "v3" : "v5"}.webp`,
       );
       count++;
     }

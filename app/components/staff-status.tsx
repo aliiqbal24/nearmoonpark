@@ -4,22 +4,28 @@ import type { Config } from "@/lib/moon/near";
 import { VendorWallets } from "./vendor-wallets";
 export const STAFF = {
   omar: {
-    name: "Omar",
-    business: "Moon Pie Kitchen",
+    name: "Illia",
+    business: "Attention Kitchen",
     kind: "food",
-    image: "owner-food",
+    tagline: "Attention Is All You Knead",
+    fullName: "Illia Polosukhin",
+    image: "/art/cameo-illia-v1.webp",
   },
   mina: {
-    name: "Mina",
-    business: "Crater Coolers",
+    name: "Mert",
+    business: "Finality Fizz",
     kind: "drink",
-    image: "owner-drink",
+    tagline: "Low latency. Zero thirst.",
+    fullName: "Mert Mumtaz",
+    image: "/art/cameo-mert-v1.webp",
   },
   nia: {
-    name: "Nia",
-    business: "Park maintenance",
+    name: "Haseeb",
+    business: "Dragonfly Garage",
     kind: "depot",
-    image: "owner-depot",
+    tagline: "Due diligence, then duct tape.",
+    fullName: "Haseeb Qureshi",
+    image: "/art/cameo-haseeb-v1.webp",
   },
 } as const;
 export type StaffRole = keyof typeof STAFF;
@@ -36,7 +42,12 @@ export function StaffPortraits({
       {(Object.keys(STAFF) as StaffRole[]).map((role) => {
         const person = STAFF[role];
         const active = run.buildings.some(
-          (b) => !b.sold && b.kind === person.kind && b.ready_at <= run.tick,
+          (b) =>
+            !b.sold &&
+            b.kind === person.kind &&
+            b.ready_at <= run.tick &&
+            b.connected &&
+            b.powered,
         );
         return (
           <button
@@ -46,7 +57,7 @@ export function StaffPortraits({
             title={`${person.name} · ${person.business}`}
           >
             <span className={active ? "mp-staff-face active" : "mp-staff-face"}>
-              <img src={`/art/${person.image}-v3.webp`} alt="" />
+              <img src={person.image} alt="" />
             </span>
             <span>{person.name}</span>
           </button>
@@ -71,7 +82,9 @@ export function StaffStatus({
   const outlets = run.buildings.filter(
     (b) => !b.sold && b.kind === person.kind,
   );
-  const ready = outlets.filter((b) => b.ready_at <= run.tick);
+  const ready = outlets.filter(
+    (b) => b.ready_at <= run.tick && b.connected && b.powered,
+  );
   const sum = (key: "cash" | "stock" | "served") =>
     outlets.reduce((total, b) => total + b[key], 0);
   const repairsNeeded = run.buildings.filter(
@@ -93,18 +106,20 @@ export function StaffStatus({
           : "Waiting for fresh stock";
   return (
     <section className="mp-staff-status">
+      <p className="mp-eyebrow">LUNAR CAMEO · {person.fullName}</p>
       <div className="mp-staff-intro">
-        <img src={`/art/${person.image}-v3.webp`} alt={person.name} />
+        <img src={person.image} alt={person.name} />
         <div>
           <strong>{person.business}</strong>
           <p>{status}</p>
+          <small>{person.tagline}</small>
         </div>
       </div>
       {role === "nia" ? (
         <>
           <p>
-            Nia’s park robots handle repairs automatically. Build a Lunar Care
-            Depot to give them a base.
+            Haseeb’s park robots handle repairs automatically. Build a Lunar
+            Care Depot to give them a base.
           </p>
           <dl>
             <div>

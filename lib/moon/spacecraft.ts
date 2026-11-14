@@ -20,6 +20,8 @@ import {
 
 export function rocket() {
   const g = new T.Group();
+  g.name = "near-lunar-passenger-liner";
+  g.scale.setScalar(1.4);
   const hull = new T.Mesh(
     new T.LatheGeometry(
       [
@@ -55,6 +57,58 @@ export function rocket() {
   nose.position.y = 6.45;
   nose.castShadow = true;
   g.add(nose);
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2;
+    const panel = new T.Mesh(
+      new T.LatheGeometry(
+        [
+          new T.Vector2(0.955, 1.02),
+          new T.Vector2(1.025, 1.4),
+          new T.Vector2(1.025, 3.9),
+          new T.Vector2(1.02, 4.25),
+        ],
+        24,
+        angle + 0.08,
+        Math.PI / 2 - 0.16,
+      ),
+      material("#e4e7de"),
+    );
+    panel.castShadow = panel.receiveShadow = true;
+    g.add(panel);
+    const fin = new T.Group();
+    fin.rotation.y = angle + Math.PI / 4;
+    const profile = new T.Shape();
+    profile.moveTo(0.96, 4.4);
+    profile.bezierCurveTo(1.15, 4.1, 1.45, 2.9, 2.04, 1.65);
+    profile.lineTo(2.04, 1.08);
+    profile.lineTo(1.46, 1.26);
+    profile.lineTo(1.01, 2.3);
+    profile.closePath();
+    const wing = new T.Mesh(
+      new T.ExtrudeGeometry(profile, {
+        depth: 0.13,
+        bevelEnabled: true,
+        bevelSegments: 2,
+        bevelThickness: 0.025,
+        bevelSize: 0.025,
+      }),
+      material("#2a4d55"),
+    );
+    wing.position.z = -0.065;
+    wing.castShadow = true;
+    fin.add(wing);
+    beam(
+      fin,
+      new T.Vector3(1.08, 3.85, 0.08),
+      new T.Vector3(1.91, 1.7, 0.08),
+      0.026,
+      "#afdfcf",
+    ).material = glow("#a2dec9");
+    g.add(fin);
+  }
+  for (const y of [1.0, 4.3, 5.95]) {
+    ring(g, "#d7b875", 1.027, 0.025, 0, y).material = metal("#d7b875");
+  }
   for (let i = 0; i < 17; i++) {
     const y = 1.12 + i * 0.31;
     ring(
@@ -162,14 +216,23 @@ export function rocket() {
   }
   const brand = new T.Group();
   nearMark(brand, "#142c37", 0.66).position.set(0, 3.95, 1.027);
-  const name = label("N E A R", "#d8e9e5", 1.15);
+  const name = label("N E A R", "#152f39", 1.15);
   name.position.set(0, 3.23, 1.035);
   brand.add(name);
-  const transit = label("LUNAR TRANSIT", "#8bdecd", 1.12);
+  const transit = label("LUNAR TRANSIT", "#275858", 1.12);
   transit.position.set(0, 2.9, 1.035);
   transit.scale.y *= 0.5;
   brand.add(transit);
   g.add(brand);
+  for (const side of [-1, 1]) {
+    const identity = new T.Group();
+    identity.rotation.y = (side * Math.PI) / 2;
+    nearMark(identity, "#183b43", 0.52).position.set(0, 3.2, 1.04);
+    const route = label("MOONPARK", "#173b43", 0.9);
+    route.position.set(0, 2.63, 1.04);
+    identity.add(route);
+    g.add(identity);
+  }
   const engine = new T.Group();
   for (let i = 0; i < 5; i++) {
     const a = (i * Math.PI * 2) / 5;

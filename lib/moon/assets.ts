@@ -72,7 +72,14 @@ export function createBuilding(
     ...selected,
     primary: chosen === 0 ? primary : selected.primary,
   };
-  foundation(model, w, h, colors, b.design.style);
+  if (b.kind === "coaster" && b.design.map_track && b.design.track?.length) {
+    const [a, c] = b.design.track;
+    const platform = new T.Group();
+    platform.position.set((a.x+c.x)/20*SCALE-w/2, 0, (a.z+c.z)/20*SCALE-h/2);
+    platform.rotation.y = -Math.atan2(c.z-a.z, c.x-a.x);
+    foundation(platform, 8*SCALE, 3*SCALE, colors, b.design.style);
+    model.add(platform);
+  } else foundation(model, w, h, colors, b.design.style);
   let rig: RideRig | undefined;
   switch (b.kind) {
     case "coaster":
@@ -110,7 +117,7 @@ export function createBuilding(
     }
   }
   if (b.kind === "coaster" && !b.design.track_w) model.scale.y = [0.72, 1, 1.22][b.design.height];
-  if (b.design.lights > 0) {
+  if (b.design.lights > 0 && !b.design.map_track) {
     const lampColor = b.design.lights === 1 ? "#ffd18b" : colors.primary;
     for (const x of [-1, 1])
       for (const z of [-1, 1]) {

@@ -239,7 +239,7 @@ export function NearEconomy({
         </p>
       ) : assets.length === 0 ? (
         <p className="mp-subtle">
-          Back Omar, Mina or Nia during your opening day. Their concession and
+          Back Illia, Mert or Haseeb during your opening day. Their concession and
           earnings will appear here.
         </p>
       ) : (

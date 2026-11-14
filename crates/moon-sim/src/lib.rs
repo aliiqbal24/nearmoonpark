@@ -1,11 +1,13 @@
 pub mod catalog;
 pub mod partnerships;
+mod track;
 use catalog::{item, ride, tenant};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::cell::OnceCell;
 use std::collections::VecDeque;
 
-pub const VERSION: &str = "moonpark-v8";
+pub const VERSION: &str = "moonpark-v9";
 pub const WIDTH: u16 = 48;
 pub const HEIGHT: u16 = 48;
 pub const LANDING: u32 = 10;
@@ -18,6 +20,10 @@ pub const GATE: u16 = 47 * WIDTH + 23;
     derive(borsh::BorshDeserialize, borsh::BorshSerialize)
 )]
 pub struct Design {
+    #[serde(default)]
+    pub map_track: bool,
+    #[serde(default = "default_bounce_height")]
+    pub bounce_height: u8,
     #[serde(default)]
     pub track_w: u8,
     #[serde(default)]
@@ -43,6 +49,8 @@ pub struct TrackPoint {
 impl Default for Design {
     fn default() -> Self {
         Self {
+            map_track: false,
+            bounce_height: 8,
             track: vec![],
             track_w: 0,
             track_h: 0,
@@ -57,6 +65,7 @@ impl Default for Design {
 impl Design {
     pub fn starter() -> Self {
         Self {
+            map_track: true,
             track_w: 16,
             track_h: 21,
             track: vec![
@@ -111,8 +120,12 @@ impl Design {
             || self.style > 2
             || self.lights > 2
             || self.height > 2
+            || ![8, 14, 22].contains(&self.bounce_height)
         {
             return Err("Choose a valid name, palette and design.".into());
+        }
+        if self.map_track {
+            return self.validate_map_track();
         }
         if !self.track.is_empty() {
             if !(4..=32).contains(&self.track.len())
@@ -248,6 +261,10 @@ pub struct Score {
 }
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Run {
+    #[serde(skip)]
+    ground_occupancy: OnceCell<Vec<bool>>,
+    #[serde(skip)]
+    building_occupancy: OnceCell<Vec<bool>>,
     pub version: String,
     #[serde(default)]
     pub opening_stage: u8,
@@ -305,9 +322,16 @@ pub struct Command {
     pub variant: u8,
     #[serde(default)]
     pub value: i64,
+    #[serde(default)]
+    pub relocate: bool,
+    #[serde(default)]
+    pub cells: Vec<u16>,
 }
 fn default_bookings() -> Vec<u8> {
     vec![8; 12]
+}
+fn default_bounce_height() -> u8 {
+    8
 }
 fn default_height() -> u8 {
     1
@@ -329,6 +353,9 @@ impl Building {
         }
     }
     pub fn entry(&self) -> u16 {
+        if self.design.map_track {
+            return self.map_entry().unwrap_or(WIDTH * HEIGHT);
+        }
         let (w, h) = self.footprint();
         match self.rotation % 4 {
             0 => (self.z as u16 + h as u16) * WIDTH + self.x as u16 + w as u16 / 2,
@@ -342,7 +369,22 @@ impl Building {
         n + n * self.level as usize / 2
     }
     fn thrill(&self) -> i32 {
-        if self.kind == "coaster" {
+        if self.kind == "bounce" {
+            match self.design.bounce_height {
+                8 => 1,
+                14 => 2,
+                _ => 4,
+            }
+        } else if self.kind == "coaster" && self.design.map_track {
+            let peak = self.design.track.iter().map(|p| p.y).max().unwrap_or(12);
+            (if peak <= 150 {
+                2
+            } else if peak <= 300 {
+                3
+            } else {
+                4
+            }) + i32::from(self.launch == 3)
+        } else if self.kind == "coaster" {
             self.launch as i32
                 + self.design.height as i32
                 + i32::from(self.design.track.iter().any(|p| p.y >= 80))
@@ -352,17 +394,19 @@ impl Building {
     }
     fn duration(&self) -> u16 {
         if self.kind == "coaster" {
-            let length: u16 = self
+            let length: u32 = self
                 .design
                 .track
                 .iter()
                 .enumerate()
                 .map(|(i, p)| {
                     let q = &self.design.track[(i + 1) % self.design.track.len()];
-                    (p.x - q.x).unsigned_abs() + (p.z - q.z).unsigned_abs() + p.y.abs_diff(q.y)
+                    (p.x - q.x).unsigned_abs() as u32
+                        + (p.z - q.z).unsigned_abs() as u32
+                        + p.y.abs_diff(q.y) as u32
                 })
                 .sum();
-            [36, 30, 24][(self.launch - 1) as usize] + (length / 100).min(12)
+            [36, 30, 24][(self.launch - 1) as usize] + (length / 100).min(12) as u16
         } else {
             item(&self.kind).unwrap().cycle
         }
@@ -422,6 +466,8 @@ fn make_building(
 impl Run {
     pub fn new() -> Self {
         let mut r = Self {
+            ground_occupancy: OnceCell::new(),
+            building_occupancy: OnceCell::new(),
             version: VERSION.into(),
             opening_stage: 0,
             palette: 0,
@@ -450,7 +496,11 @@ impl Run {
                     43 * WIDTH + 27,
                 ])
                 .collect(),
-            buildings: vec![],
+            buildings: vec![
+                make_building(1, "food", 17, 41, 0, 0, 0),
+                make_building(2, "drink", 27, 41, 0, 0, 0),
+                make_building(3, "depot", 35, 40, 0, 0, 0),
+            ],
             guests: vec![],
             trades: vec![],
             trade_count: 0,
@@ -466,7 +516,7 @@ impl Run {
             b.ready_at = 0;
             r.supplier_cash -= b.cash;
             if tenant(&b.kind) {
-                r.supplies[0] -= b.stock;
+                r.supplies[if b.kind == "drink" { 1 } else { 0 }] -= b.stock;
             }
         }
         for id in 0..96 {
@@ -493,10 +543,13 @@ impl Run {
                 thought: "My rocket leaves soon. This had better be good.".into(),
             });
         }
+        for id in 1..=3 {
+            r.connect_building(id, false).unwrap();
+        }
         r.money_supply = r.total_money();
         r.opening_equity = r.equity();
         r.refresh_connections();
-        r.event("Welcome to Moonpark. Design your mass driver, then open a kitchen. The first rocket will wait for you.");
+        r.event("Welcome to Moonpark. Your kitchen, drinks stall and maintenance depot are ready. Draw your mass driver. The first rocket will wait for you.");
         r.rehash();
         r
     }
@@ -573,16 +626,113 @@ impl Run {
             Ok(())
         }
     }
+    fn occupancy(&self, for_paths: bool, except: Option<u32>) -> Vec<bool> {
+        if except.is_none() {
+            let cache = if for_paths {
+                &self.ground_occupancy
+            } else {
+                &self.building_occupancy
+            };
+            return cache
+                .get_or_init(|| self.compute_occupancy(for_paths, None))
+                .clone();
+        }
+        self.compute_occupancy(for_paths, except)
+    }
+    fn invalidate_occupancy(&mut self) {
+        self.ground_occupancy.take();
+        self.building_occupancy.take();
+    }
+    fn compute_occupancy(&self, for_paths: bool, except: Option<u32>) -> Vec<bool> {
+        let mut cells = vec![false; (WIDTH * HEIGHT) as usize];
+        for b in self
+            .buildings
+            .iter()
+            .filter(|b| !b.sold && Some(b.id) != except)
+        {
+            for cell in b.occupied_cells(for_paths) {
+                if (cell as usize) < cells.len() {
+                    cells[cell as usize] = true;
+                }
+            }
+        }
+        cells
+    }
     fn occupied(&self, c: u16) -> bool {
-        let (x, z) = (c % WIDTH, c / WIDTH);
-        self.buildings.iter().any(|b| {
-            let (w, h) = b.footprint();
-            !b.sold
-                && x >= b.x as u16
-                && x < b.x as u16 + w as u16
-                && z >= b.z as u16
-                && z < b.z as u16 + h as u16
-        })
+        self.occupancy(true, None)
+            .get(c as usize)
+            .copied()
+            .unwrap_or(true)
+    }
+    fn check_space(&self, building: &Building, except: Option<u32>) -> Result<(), String> {
+        let (w, h) = building.footprint();
+        let outside = if building.design.map_track {
+            building.rotation != 0
+                || building.x as u16 + w as u16 > WIDTH
+                || building.z as u16 + h as u16 > HEIGHT
+                || building.map_entry().is_none()
+        } else {
+            building.x == 0
+                || building.z == 0
+                || building.x as u16 + w as u16 >= WIDTH
+                || building.z as u16 + h as u16 >= HEIGHT
+        };
+        if outside {
+            return Err("Keep the track, station and entrance inside the park.".into());
+        }
+        let occupied = self.occupancy(false, except);
+        if building
+            .occupied_cells(false)
+            .iter()
+            .any(|c| occupied.get(*c as usize).copied().unwrap_or(true))
+        {
+            return Err("The track or station would overlap another attraction.".into());
+        }
+        if building
+            .occupied_cells(true)
+            .iter()
+            .any(|c| self.paths.contains(c))
+        {
+            return Err("The station or low track would cover a path. Raise the crossing or choose a clear tile.".into());
+        }
+        Ok(())
+    }
+    fn paint_paths(&mut self, cells: &[u16], erase: bool) -> Result<(), String> {
+        if cells.is_empty() || cells.len() > (WIDTH * HEIGHT) as usize {
+            return Err("Draw a path inside the park.".into());
+        }
+        let occupied = self.occupancy(true, None);
+        let mut requested = vec![false; (WIDTH * HEIGHT) as usize];
+        let mut existing = requested.clone();
+        for cell in &self.paths {
+            existing[*cell as usize] = true;
+        }
+        for cell in cells {
+            if *cell >= WIDTH * HEIGHT
+                || (erase && *cell == GATE)
+                || (!erase && occupied[*cell as usize])
+            {
+                return Err(if erase {
+                    "Keep the park gate connected."
+                } else {
+                    "Paths cannot cross a station, building or low track."
+                }
+                .into());
+            }
+            requested[*cell as usize] = true;
+        }
+        if erase {
+            self.paths.retain(|c| !requested[*c as usize]);
+        } else {
+            let fresh: Vec<u16> = requested
+                .iter()
+                .enumerate()
+                .filter_map(|(i, used)| (*used && !existing[i]).then_some(i as u16))
+                .collect();
+            self.spend(fresh.len() as i64 * 200)?;
+            self.paths.extend(fresh);
+        }
+        Ok(())
     }
     fn neighbours(c: u16) -> Vec<u16> {
         let (x, z) = (c % WIDTH, c / WIDTH);
@@ -605,6 +755,11 @@ impl Run {
         if from >= WIDTH * HEIGHT || to >= WIDTH * HEIGHT {
             return None;
         }
+        let occupied = if build {
+            self.occupancy(true, None)
+        } else {
+            vec![]
+        };
         let mut prev = vec![u16::MAX; (WIDTH * HEIGHT) as usize];
         let mut distance = vec![u16::MAX; (WIDTH * HEIGHT) as usize];
         let mut q = VecDeque::from([from]);
@@ -630,7 +785,7 @@ impl Run {
                 let candidate = distance[c as usize] + cost;
                 if candidate < distance[n as usize]
                     && (if build {
-                        !self.occupied(n)
+                        !occupied[n as usize]
                     } else {
                         self.paths.contains(&n)
                     })
@@ -699,7 +854,7 @@ impl Run {
             next.command(c)?;
             next.actions += 1;
             next.refresh_connections();
-            if c.kind == "erase_path" {
+            if c.kind == "erase_path" || c.kind == "erase_paths" {
                 next.repair_routes();
             }
         }
@@ -713,7 +868,7 @@ impl Run {
                 .any(|b| b.kind == "food" && b.served > 0)
         {
             next.opening_stage = 3;
-            next.event("First meal sold. Omar keeps his working capital, buys ingredients and pays your park a 10% share. NEAR settles the wallets automatically.");
+            next.event("First meal sold. Illia keeps his working capital, buys ingredients and pays your park a 10% share. NEAR settles the wallets automatically.");
         }
         next.settle_partnerships();
         next.revision += 1;
@@ -775,41 +930,25 @@ impl Run {
                 if self.buildings[i].kind != "coaster" && !design.track.is_empty() {
                     return Err("Track editing is available on the mass driver.".into());
                 }
+                if self.buildings[i].kind == "bounce"
+                    && design.bounce_height != self.buildings[i].design.bounce_height
+                {
+                    return Err("Choose Lunar Bounce height before construction.".into());
+                }
                 let structural = design.height != self.buildings[i].design.height
-                    || design.track != self.buildings[i].design.track;
+                    || design.track != self.buildings[i].design.track
+                    || design.map_track != self.buildings[i].design.map_track
+                    || c.relocate;
                 let mut preview = self.buildings[i].clone();
                 preview.design = design.clone();
-                let (w, h) = preview.footprint();
-                if preview.x as u16 + w as u16 >= WIDTH || preview.z as u16 + h as u16 >= HEIGHT {
-                    return Err(
-                        "This design reaches outside the park. Use a smaller footprint.".into(),
-                    );
-                }
-                for other in self
-                    .buildings
-                    .iter()
-                    .filter(|b| !b.sold && b.id != preview.id)
-                {
-                    let (ow, oh) = other.footprint();
-                    if preview.x < other.x + ow
-                        && preview.x + w > other.x
-                        && preview.z < other.z + oh
-                        && preview.z + h > other.z
-                    {
-                        return Err("This track would overlap another attraction.".into());
+                if c.relocate {
+                    if preview.kind != "coaster" || !design.map_track {
+                        return Err("Only a drawn coaster can change its route bounds.".into());
                     }
+                    preview.x = c.x;
+                    preview.z = c.z;
                 }
-                if structural
-                    && self.paths.iter().any(|cell| {
-                        let (x, z) = (cell % WIDTH, cell / WIDTH);
-                        x >= preview.x as u16
-                            && x < preview.x as u16 + w as u16
-                            && z >= preview.z as u16
-                            && z < preview.z as u16 + h as u16
-                    })
-                {
-                    return Err("This track would cover a path. Keep its current footprint or clear the path first.".into());
-                }
+                self.check_space(&preview, Some(preview.id))?;
                 let cost = design.construction_cost();
                 let extra = cost.saturating_sub(self.buildings[i].design_paid).max(0);
                 self.spend(extra)?;
@@ -825,7 +964,10 @@ impl Run {
                 }
                 let reconnect = structural && self.buildings[i].connected;
                 let old_duration = self.buildings[i].duration();
+                self.buildings[i].x = preview.x;
+                self.buildings[i].z = preview.z;
                 self.buildings[i].design = design;
+                self.invalidate_occupancy();
                 let new_duration = self.buildings[i].duration();
                 self.buildings[i].cycle_left =
                     (self.buildings[i].cycle_left as u32 * new_duration as u32
@@ -840,7 +982,7 @@ impl Run {
                     return Err("Start by designing your mass-driver coaster.".into());
                 }
                 if self.opening_stage == 1 && c.item != "food" {
-                    return Err("Next, open Moon Pie Kitchen for your first guests.".into());
+                    return Err("Next, open Attention Kitchen for your first guests.".into());
                 }
                 if c.item == "coaster" && c.design.as_ref().is_none_or(|d| d.track.is_empty()) {
                     return Err("Design a closed coaster track before building it.".into());
@@ -870,24 +1012,7 @@ impl Run {
                     b.launch = c.value as u8;
                 }
                 b.blueprint_id = c.blueprint_id.clone();
-                let (w, h) = b.footprint();
-                if c.x == 0
-                    || c.z == 0
-                    || c.x as u16 + w as u16 >= WIDTH
-                    || c.z as u16 + h as u16 >= HEIGHT
-                {
-                    return Err("Keep the footprint and entrance inside the park.".into());
-                }
-                for z in c.z..c.z + h {
-                    for x in c.x..c.x + w {
-                        let cell = z as u16 * WIDTH + x as u16;
-                        if self.occupied(cell) || self.paths.contains(&cell) {
-                            return Err(
-                                "That space is occupied. Rotate or move the blueprint.".into()
-                            );
-                        }
-                    }
-                }
+                self.check_space(&b, None)?;
                 self.spend(b.invested)?;
                 if tenant(&c.item) {
                     let good = if c.item == "drink" {
@@ -908,13 +1033,14 @@ impl Run {
                     a.name
                 ));
                 self.buildings.push(b);
+                self.invalidate_occupancy();
                 if self.opening_stage < 2 {
                     self.connect_building(id, false)?;
                     self.buildings.last_mut().unwrap().ready_at = self.tick;
-                    self.opening_stage += 1;
+                    self.opening_stage = 2;
                     if self.opening_stage == 2 {
                         self.event(
-                            "Your coaster and kitchen are ready. The first rocket is coming in!",
+                            "Your coaster and starter stores are ready. The first rocket is coming in!",
                         );
                     }
                 }
@@ -932,6 +1058,8 @@ impl Run {
                     self.paths.push(p);
                 }
             }
+            "paint_paths" => self.paint_paths(&c.cells, false)?,
+            "erase_paths" => self.paint_paths(&c.cells, true)?,
             "connect" => self.connect_building(c.building, true)?,
             "erase_path" => {
                 let cell = c.z as u16 * WIDTH + c.x as u16;
@@ -1010,6 +1138,7 @@ impl Run {
         self.cash += refund;
         self.builder_cash -= refund;
         self.buildings[i].sold = true;
+        self.invalidate_occupancy();
         self.buildings[i].pending_sale = false;
         if self.opening_stage < 2
             && !self
@@ -1467,7 +1596,7 @@ impl Run {
                 1,
             );
             self.event(format!(
-                "Nia's park robot serviced {}.",
+                "Haseeb's park robot serviced {}.",
                 item(&self.buildings[j].kind).unwrap().name
             ));
         }
@@ -1483,7 +1612,12 @@ impl Run {
         }
         let (parents, distances) = self.walk_tree(g.cell);
         let mut best: Option<(i32, u32, u16, String)> = None;
+        let mut too_high = false;
+        let mut too_expensive = false;
         for b in &self.buildings {
+            if b.powered && ride(&b.kind) && b.price > g.cash {
+                too_expensive = true;
+            }
             if !b.powered
                 || (!ride(&b.kind) && !matches!(b.kind.as_str(), "food" | "drink"))
                 || b.price > g.cash
@@ -1501,6 +1635,10 @@ impl Run {
             let utility = if ride(&b.kind) {
                 let thrill = b.thrill();
                 let wanted = [1, 2, 4][g.group as usize];
+                if thrill > wanted + 1 {
+                    too_high = true;
+                    continue;
+                }
                 105 - (thrill - wanted).abs() * 18
                     - if g.rides.contains(&b.kind) { 48 } else { 0 }
                     - b.price as i32 / 60
@@ -1561,8 +1699,14 @@ impl Run {
             }
         } else {
             self.guests[gi].timer = 5;
-            self.guests[gi].thought =
-                "Looking for something affordable with a shorter queue.".into();
+            self.guests[gi].thought = if too_expensive {
+                "Too expensive for my remaining budget."
+            } else if too_high {
+                "Too high for me. I'd like a gentler ride."
+            } else {
+                "Looking for something affordable with a shorter queue."
+            }
+            .into();
             if self.tick - self.guests[gi].arrival > 110 {
                 self.leave(gi);
             }

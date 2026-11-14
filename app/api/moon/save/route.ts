@@ -5,6 +5,7 @@ import type { Credentials } from "@/lib/moon/near";
 import type { Park } from "@/lib/moon/parks";
 import type { CloudRecovery } from "@/lib/moon/cloud";
 import current from "@/public/moon-config.json";
+import v8 from "@/public/moon-v8-config.json";
 import v7 from "@/public/moon-v7-config.json";
 import v6 from "@/public/moon-v6-config.json";
 import { view } from "@/lib/moon/near";
@@ -41,11 +42,13 @@ export async function GET(request: Request) {
   const sql = getSql();
   const version = new URL(request.url).searchParams.get("version");
   const preferred =
-    version === "moonpark-v7"
-      ? v7.contractId
-      : version === "moonpark-v6"
-        ? v6.contractId
-        : current.contractId;
+    version === "moonpark-v8"
+      ? v8.contractId
+      : version === "moonpark-v7"
+        ? v7.contractId
+        : version === "moonpark-v6"
+          ? v6.contractId
+          : current.contractId;
   const [row] =
     await sql`SELECT contract_id, recovery FROM moon_cloud_save WHERE user_id=${signed.user.id} ORDER BY (contract_id = ${preferred}) DESC, updated_at DESC LIMIT 1`;
   return Response.json(
@@ -79,7 +82,7 @@ export async function PUT(request: Request) {
     const text = await request.text();
     if (text.length > 16384) throw Error();
     const body = JSON.parse(text) as CloudRecovery;
-    const config = [current, v7, v6].find(
+    const config = [current, v8, v7, v6].find(
       (c) => c.contractId === body.config?.contractId,
     );
     if (

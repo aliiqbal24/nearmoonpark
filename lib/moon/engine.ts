@@ -12,6 +12,7 @@ export async function engine(version = VERSION) {
     version !== VERSION &&
     version !== "moonpark-v6" &&
     version !== "moonpark-v7" &&
+    version !== "moonpark-v8" &&
     version !== "moonpark-v4" &&
     version !== "moonpark-v5"
   )

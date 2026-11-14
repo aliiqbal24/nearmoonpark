@@ -23,7 +23,7 @@ try {
       KeyPairSigner.fromSecretKey(DEFAULT_PRIVATE_KEY),
     );
   const accounts = [];
-  for (const name of ["moon", "alice", "bob", "charlie"]) {
+  for (const name of ["moon", "alice", "bob", "charlie", "designer"]) {
     const key = KeyPair.fromRandom("ed25519"),
       id = `${name}.${root.accountId}`;
     await root.createAccount({
@@ -33,7 +33,7 @@ try {
     });
     accounts.push(new Account(id, p, new KeyPairSigner(key)));
   }
-  const [contract, alice, bob, charlie] = accounts;
+  const [contract, alice, bob, charlie, designer] = accounts;
   await contract.deployContract(
     new Uint8Array(
       await readFile(
@@ -53,7 +53,7 @@ try {
   await call(root, "new", { sponsor: root.accountId });
   for (const role of ["omar", "mina", "logistics"]) {
     const key = KeyPair.fromRandom("ed25519"),
-      id = `${role}.${root.accountId}`;
+      id = `${{ omar: "illia", mina: "mert" }[role] ?? role}.${root.accountId}`;
     await root.createAccount({
       newAccountId: id,
       publicKey: key.getPublicKey(),
@@ -62,7 +62,7 @@ try {
     await call(
       new Account(id, p, new KeyPairSigner(key)),
       "accept_vendor_policy",
-      { policy_id: "moonpark-v8-persistent-vendors-1" },
+      { policy_id: "moonpark-v9-persistent-vendors-1" },
     );
   }
   await call(root, "fund_prizes", {}, 500000000000000000000000n);
@@ -73,13 +73,13 @@ try {
   });
   await call(root, "open_challenge", {});
   let state = await call(alice, "create_run", {
-    challenge_id: "moonpark-v8",
+    challenge_id: "moonpark-v9",
     request_id: "sandbox",
   });
   assert.deepEqual(
     state,
     await call(alice, "create_run", {
-      challenge_id: "moonpark-v8",
+      challenge_id: "moonpark-v9",
       request_id: "sandbox",
     }),
   );
@@ -98,7 +98,7 @@ try {
       alice,
       "mt_transfer",
       {
-        receiver_id: `omar.${root.accountId}`,
+        receiver_id: `illia.${root.accountId}`,
         token_id: `${state.run_id}:credits`,
         amount: "1",
         approval: null,
@@ -217,7 +217,7 @@ try {
   });
   assert.equal(board.entries[0].score.total, state.run.score.total);
   const design = {
-    ...state.run.buildings[0].design,
+    ...state.run.buildings[3].design,
     name: "Earthskimmer",
     palette: 3,
     style: 1,
@@ -227,7 +227,7 @@ try {
     run_id: state.run_id,
     expected_revision: state.run.revision,
     request_id: "cosmetics",
-    commands: [{ kind: "design", building: 1, design }],
+    commands: [{ kind: "design", building: 4, design }],
     ticks: 0,
   });
   const mine = await p.callFunction({
@@ -245,7 +245,7 @@ try {
   const bp = await call(alice, "publish_blueprint", {
     park_id: mine.id,
     run_id: state.run_id,
-    building_id: 1,
+    building_id: 4,
     name: "Earthskimmer",
   });
   await call(alice, "nominate_park_owner", {
@@ -262,7 +262,7 @@ try {
     display_name: "Bob",
   });
   const buyer = await call(bob, "create_run", {
-    challenge_id: "moonpark-v8",
+    challenge_id: "moonpark-v9",
     request_id: "buyer",
   });
   await assert.rejects(() =>
@@ -308,7 +308,7 @@ try {
     ],
     ticks: 0,
   });
-  assert.equal(built.run.buildings[0].blueprint_id, bp.id);
+  assert.equal(built.run.buildings[3].blueprint_id, bp.id);
   const beforeCreator = (await charlie.getState()).balance.total;
   assert.equal(await call(charlie, "claim_creator_earnings", {}), true);
   assert.ok((await charlie.getState()).balance.total > beforeCreator);
@@ -322,11 +322,91 @@ try {
     published,
     blueprint: bp,
     claimed,
-    licensedBuilding: built.run.buildings[0],
+    licensedBuilding: built.run.buildings[3],
     creatorEarnings: earned,
     privateCallbackRejected: true,
     duplicateLicenseRefunded: true,
   };
+  // A long freeform loop exercises whole-map geometry and bulk paths on the actual VM.
+  await call(root, "register_player", {
+    account_id: designer.accountId,
+    player_id: "guest:designer",
+    display_name: "Map drawing proof",
+  });
+  let drawing = await call(designer, "create_run", {
+    challenge_id: "moonpark-v9",
+    request_id: "drawn-map",
+  });
+  const points = [
+    { x: 30, y: 12, z: 415 },
+    { x: 90, y: 12, z: 415 },
+    { x: 115, y: 120, z: 375 },
+  ];
+  for (let row = 0; row < 16; row++) {
+    for (let column = 0; column < 15; column++) {
+      points.push({
+        x: 125 + (row % 2 ? 14 - column : column) * 25,
+        y: row === 0 ? 120 : 220,
+        z: 355 - row * 20,
+      });
+    }
+  }
+  points.push(
+    { x: 5, y: 120, z: 35 },
+    { x: 5, y: 120, z: 375 },
+    { x: 20, y: 60, z: 395 },
+  );
+  const mapDesign = {
+    name: "Full-map workshop",
+    palette: 0,
+    style: 1,
+    lights: 1,
+    height: 1,
+    track_w: 48,
+    track_h: 43,
+    map_track: true,
+    bounce_height: 8,
+    track: points,
+  };
+  const drawingCommands = [
+    { kind: "build", item: "coaster", x: 0, z: 0, design: mapDesign },
+    {
+      kind: "paint_paths",
+      cells: [38 * 48 + 33, 38 * 48 + 34, 38 * 48 + 35, 38 * 48 + 35],
+    },
+  ];
+  const drawingExpected = simulate(drawing.run, drawingCommands, 0);
+  const drawingRaw = await designer.callFunctionRaw({
+    contractId: contract.accountId,
+    methodName: "apply_actions",
+    args: {
+      run_id: drawing.run_id,
+      expected_revision: 0,
+      request_id: "map-stroke",
+      commands: drawingCommands,
+      ticks: 0,
+    },
+    gas: 250000000000000n,
+    waitUntil: "FINAL",
+  });
+  drawing = await p.callFunction({
+    contractId: contract.accountId,
+    method: "get_run",
+    args: { run_id: drawing.run_id },
+  });
+  assert.deepEqual(drawing.run, drawingExpected);
+  await verifyEconomy(p, contract.accountId, drawing);
+  const drawingGas = drawingRaw.receipts_outcome.reduce(
+    (sum, r) => sum + BigInt(r.outcome.gas_burnt),
+    0n,
+  );
+  assert.ok(drawingGas < 250000000000000n);
+  const mapGeometryProof = {
+    mapTurns: points.length,
+    mapTrackTGas: Number(drawingGas) / 1e12,
+    atomicPathStroke: true,
+  };
+  console.log(JSON.stringify(mapGeometryProof));
   const sealedScore = structuredClone(state.run.score);
   const publishedSnapshot = await p.callFunction({
     contractId: contract.accountId,
@@ -492,6 +572,7 @@ try {
         ownershipProof,
         economyProof,
         transferProof,
+        mapGeometryProof,
       },
       null,
       2,

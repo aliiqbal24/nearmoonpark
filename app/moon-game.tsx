@@ -57,6 +57,7 @@ import { MoonAudio } from "@/lib/moon/audio";
 import {
   VERSION,
   isPersistent,
+  workshopRules,
   parkClosed,
   parkWidth,
   type Building,
@@ -79,9 +80,11 @@ import {
 import type { MoonWorld as World } from "@/lib/moon/world";
 import { LegacyCoasterEditor } from "./components/legacy-coaster-editor";
 import { BuildDesigner } from "./components/build-designer";
+import { MapCoasterDesigner } from "./components/map-coaster-designer";
 import { BuildCatalogue } from "./components/build-catalogue";
 import openingStory from "@/public/video/moonpark-opening-v7-story.json";
 import archivedV5 from "@/public/moon-v5-config.json";
+import archivedV8 from "@/public/moon-v8-config.json";
 import archivedV7 from "@/public/moon-v7-config.json";
 import archivedV6 from "@/public/moon-v6-config.json";
 import archivedV4 from "@/public/moon-v4-config.json";
@@ -226,6 +229,7 @@ export default function Game() {
           setResumeAvailable(
             [
               VERSION,
+              "moonpark-v8",
               "moonpark-v7",
               "moonpark-v6",
               "moonpark-v5",
@@ -669,13 +673,16 @@ export default function Game() {
     if (!s || screen !== "playing") return;
     const width = parkWidth(s.state.run);
     try {
-      await s.actions(
-        cells.map((cell) => ({
-          kind: erase ? "erase_path" : "path",
-          x: cell % width,
-          z: Math.floor(cell / width),
-        })),
-      );
+      if (s.state.run.version === VERSION) {
+        await s.action({ kind: erase ? "erase_paths" : "paint_paths", cells });
+      } else
+        await s.actions(
+          cells.map((cell) => ({
+            kind: erase ? "erase_path" : "path",
+            x: cell % width,
+            z: Math.floor(cell / width),
+          })),
+        );
       audio.current?.effect("build");
     } catch (error) {
       setToast(
@@ -730,7 +737,7 @@ export default function Game() {
       (g) => !["upcoming", "gone", "cancelled"].includes(g.status),
     ).length ?? 0;
   const legacyPower = useMemo(() => {
-    if (!run || run.version === VERSION) return null;
+    if (!run || workshopRules(run.version)) return null;
     return {
       used: run.buildings
         .filter((b) => b.powered)
@@ -758,15 +765,17 @@ export default function Game() {
   const openingStage = run?.opening_stage ?? 3;
   const hint =
     openingStage === 0
-      ? "Your first attraction starts on the drawing board. Design a mass-driver loop, then choose its spot."
+      ? run?.version === VERSION
+        ? "Choose a station on the map, then draw your first mass-driver loop. Illia, Mert and Haseeb are ready for opening day."
+        : "Your first attraction starts on the drawing board. Design a mass-driver loop, then choose its spot."
       : openingStage === 1
-        ? "Every great day needs lunch. Design Moon Pie Kitchen and Omar will take care of his business."
+        ? "Every great day needs lunch. Design Attention Kitchen and Illia will take care of his business."
         : openingStage === 2
-          ? "The first rocket is arriving. Watch a guest buy a meal. Omar pays your park a share and buys fresh stock through NEAR."
+          ? "The first rocket is arriving. Watch a guest buy a meal. Illia pays your park a share and buys fresh stock through NEAR."
           : run?.buildings.some((b) => !b.sold && !b.connected)
             ? "Connect each new entrance to a boardwalk so visitors can find it."
             : !run?.buildings.some((b) => b.kind === "drink" && !b.sold)
-              ? "Guests are getting thirsty. Give Mina a place for Crater Coolers."
+              ? "Guests are getting thirsty. Give Mert a place for Finality Fizz."
               : "Keep an eye on your visitors. Add variety, design another wild ride or visit a friend’s park.";
   const spokenLine = openingStory.segments.find(
     (line) => introTime >= line.start && introTime < line.end + 0.3,
@@ -788,9 +797,11 @@ export default function Game() {
         ? (archivedV5 as Config)
         : snapshot?.run.version === "moonpark-v6"
           ? (archivedV6 as Config)
-          : snapshot?.run.version === "moonpark-v7"
-            ? (archivedV7 as Config)
-            : cfg;
+          : snapshot?.run.version === "moonpark-v8"
+            ? (archivedV8 as Config)
+            : snapshot?.run.version === "moonpark-v7"
+              ? (archivedV7 as Config)
+              : cfg;
   return (
     <main
       className="moonpark"
@@ -1198,7 +1209,7 @@ export default function Game() {
               {snapshot?.mode === "near"
                 ? snapshot.pending
                   ? `NEAR Protocol · ${snapshot.pending} saving`
-                  : snapshot.record?.ranked
+                  : snapshot.record?.ranked && run.version === VERSION
                     ? "NEAR Protocol · RANKED"
                     : "NEAR Protocol · LIVE ECONOMY"
                 : "LOCAL PRACTICE"}
@@ -1209,7 +1220,7 @@ export default function Game() {
             !designingKind &&
             !editingCoaster && (
               <div className="mp-archive-notice">
-                Earlier park · {run.version.replace("moonpark-", "")} rules{" "}
+                Your earlier park is saved.
                 <button
                   onClick={() =>
                     start(
@@ -1218,11 +1229,16 @@ export default function Game() {
                     )
                   }
                 >
-                  Start the new workshop
+                  Start a new park
                 </button>
               </div>
             )}
           {screen === "playing" &&
+            !(
+              run.version === VERSION &&
+              openingStage === 3 &&
+              !economyUnderstood
+            ) &&
             !selection &&
             !placement &&
             !rideId &&
@@ -1250,6 +1266,7 @@ export default function Game() {
           {run.version === VERSION &&
             openingStage === 3 &&
             !economyUnderstood &&
+            !placement &&
             !panel &&
             !designingKind &&
             !editingCoaster &&
@@ -1259,8 +1276,9 @@ export default function Game() {
                   <NearMark /> YOUR FIRST MEAL, REAL VENDOR WALLETS
                 </strong>
                 <p>
-                  A guest paid Omar for a meal. He keeps the business cash, buys
-                  fresh ingredients and sends 10% of each sale to your park.
+                  A guest paid Illia for a meal. He keeps the business cash,
+                  buys fresh ingredients and sends 10% of each sale to your
+                  park.
                 </p>
                 <p>
                   {snapshot?.mode === "near"
@@ -1321,7 +1339,47 @@ export default function Game() {
               <Home size={19} />
             </button>
           </nav>
-          {run.version !== VERSION && designingKind === "coaster" && (
+          {run.version === VERSION &&
+            (designingKind === "coaster" || editingCoaster) && (
+              <MapCoasterDesigner
+                key={editingCoaster?.id ?? "new-map-track"}
+                run={run}
+                building={editingCoaster ?? undefined}
+                world={worldRef}
+                draftKey={`moonpark-draft:${snapshot?.localId}:${editingCoaster ? `building:${editingCoaster.id}` : "map-coaster"}`}
+                onCancel={() => {
+                  setDesigningKind(null);
+                  setEditingCoaster(null);
+                }}
+                onApply={async (plan) => {
+                  const s = session.current;
+                  if (!s) throw Error("Your park is still loading.");
+                  await s.action(
+                    editingCoaster
+                      ? {
+                          kind: "design",
+                          building: editingCoaster.id,
+                          ...plan,
+                          relocate: true,
+                        }
+                      : { kind: "build", item: "coaster", ...plan },
+                  );
+                  audio.current?.effect("build");
+                  localStorage.removeItem(
+                    `moonpark-draft:${s.state.localId}:map-coaster`,
+                  );
+                  setDesigningKind(null);
+                  setEditingCoaster(null);
+                  setSelection(null);
+                  setToast(
+                    editingCoaster
+                      ? "Your new track is ready. Take the front seat to try it."
+                      : "Your coaster is built. The entrance connects automatically when there is a clear route.",
+                  );
+                }}
+              />
+            )}
+          {!workshopRules(run.version) && designingKind === "coaster" && (
             <LegacyCoasterEditor
               building={previewBuilding("coaster", draftDesign)}
               cash={run.cash}
@@ -1339,7 +1397,7 @@ export default function Game() {
             />
           )}
           {designingKind &&
-            (run.version === VERSION || designingKind !== "coaster") && (
+            (designingKind !== "coaster" || run.version === "moonpark-v8") && (
               <BuildDesigner
                 key={designingKind}
                 kind={designingKind}
@@ -1364,7 +1422,7 @@ export default function Game() {
                 }}
               />
             )}
-          {editingCoaster && run.version === VERSION && (
+          {editingCoaster && run.version === "moonpark-v8" && (
             <BuildDesigner
               kind="coaster"
               draftKey={`moonpark-draft:${snapshot?.localId}:building:${editingCoaster.id}`}
@@ -1394,7 +1452,7 @@ export default function Game() {
               }}
             />
           )}
-          {editingCoaster && run.version !== VERSION && (
+          {editingCoaster && !workshopRules(run.version) && (
             <LegacyCoasterEditor
               building={editingCoaster}
               cash={run.cash}
@@ -1433,7 +1491,7 @@ export default function Game() {
               onEditCoaster={
                 isPersistent(run)
                   ? async (b) => {
-                      if (run.version === VERSION) {
+                      if (workshopRules(run.version)) {
                         setEditingCoaster(b);
                         return;
                       }
@@ -1457,7 +1515,7 @@ export default function Game() {
               }}
             />
           )}
-          {openingStage >= 2 &&
+          {(openingStage >= 2 || run.version === VERSION) &&
             !rideId &&
             !editingCoaster &&
             !designingKind && (
@@ -1482,7 +1540,9 @@ export default function Game() {
                     </span>
                     <small>
                       {openingStage < 2
-                        ? "Design it first. Place it next. Paths are included for your first two buildings."
+                        ? run.version === VERSION
+                          ? "Choose a station and draw a loop. Its first entrance connects automatically."
+                          : "Design it first. Place it next. Paths are included for your first two buildings."
                         : "Design an attraction, then choose its spot. Scroll for more."}
                     </small>
                   </span>
@@ -1739,7 +1799,7 @@ export default function Game() {
                 >
                   <Trophy size={16} /> Rankings & prize escrow
                 </button>
-                <a href="/archive/v7">Earlier parks & earnings</a>
+                <a href="/archive/v8">Earlier parks & earnings</a>
                 <a href="/legacy-claims">Earlier concession claims</a>
                 <a
                   href={
@@ -1823,11 +1883,12 @@ export default function Game() {
               <ol>
                 <li>
                   <strong>Build a reason to visit.</strong> Design your mass
-                  driver before placing it, then open a kitchen. Your first two
-                  entrances connect automatically. Guests arrive by shuttle
-                  every 40 simulation seconds. Watch them disembark and catch
-                  their ride home. Your opening cohort begins at the first
-                  landing.
+                  driver directly over the park’s tiles and close its loop. Your
+                  kitchen, drinks stall and garage are ready from the start. The
+                  first coaster entrance connects automatically. Guests arrive
+                  by shuttle every 40 simulation seconds. Watch them disembark
+                  and catch their ride home. Your opening cohort begins at the
+                  first landing.
                 </li>
                 <li>
                   <strong>Watch what people do.</strong> Queues, thirst, budgets

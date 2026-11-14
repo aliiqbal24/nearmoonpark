@@ -20,7 +20,7 @@ Only basic identity scopes are requested, including email and profile. The publi
 
 Verify a fresh sign-in, refresh, sign-out and return visit. Check that anonymous requests cannot obtain ranked sponsorship and that the same verified identity retains its public player ID.
 
-Once gameplay is approved and the final rules and build are frozen, the contract sponsor can explicitly call `open_challenge`. This is a one-time operation. The current playtest deployment has not opened it. Preserve an opened prize contract and deploy a new ruleset for later changes.
+Once gameplay is approved and the final rules and build are frozen, the contract sponsor can explicitly call `open_challenge`. This is a one-time operation. The live challenge status is recorded in `public/moon-build.json` and verified with `get_challenge`. Preserve an opened prize contract and deploy a new ruleset for later changes.
 
 ## Cross-device recovery
 

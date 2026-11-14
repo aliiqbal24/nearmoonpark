@@ -17,7 +17,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import {
-  VERSION,
+  workshopRules,
   blueprint,
   coasterDuration,
   parkClosed,
@@ -194,7 +194,7 @@ export function Inspector({
               : !b.powered
                 ? b.condition <= 0
                   ? "Needs maintenance"
-                  : run.version === VERSION
+                  : workshopRules(run.version)
                     ? "Preparing to open"
                     : "Needs more power"
                 : "Open for business";
@@ -209,7 +209,7 @@ export function Inspector({
         </button>
       </div>
       <div className="mp-building-icon" style={{ color: a.color }}>
-        <img src={`/art/${b.kind}-s${b.design?.style ?? 0}-v4.webp`} alt="" />
+        <img src={`/art/${b.kind}-s${b.design?.style ?? 0}-v5.webp`} alt="" />
       </div>
       <h2>{b.design?.name || a.name}</h2>
       {!readOnly && (
@@ -329,8 +329,8 @@ export function Inspector({
         <>
           <div className="mp-shop-update">
             <img
-              src={`/art/owner-${b.kind}-v3.webp`}
-              alt={b.kind === "food" ? "Omar" : "Mina"}
+              src={`/art/cameo-${b.kind === "food" ? "illia" : "mert"}-v1.webp`}
+              alt={b.kind === "food" ? "Illia" : "Mert"}
             />
             <blockquote>“{b.reason}”</blockquote>
           </div>
@@ -354,13 +354,13 @@ export function Inspector({
               rel="noreferrer"
               href={`https://testnet.nearblocks.io/address/${config.vendors[b.kind === "food" ? "omar" : "mina"]}`}
             >
-              <NearMark /> {b.kind === "food" ? "Omar’s" : "Mina’s"} testnet
+              <NearMark /> {b.kind === "food" ? "Illia’s" : "Mert’s"} testnet
               wallet <ExternalLink size={12} />
             </a>
           )}
         </>
       )}
-      {b.kind === "solar" && run.version === VERSION && (
+      {b.kind === "solar" && workshopRules(run.version) && (
         <p className="mp-fine">
           Earns 5 credits every 20 seconds while connected. NEAR records energy
           export payments from Lunar Logistics to your park.
@@ -368,16 +368,16 @@ export function Inspector({
       )}
       {b.kind === "depot" && (
         <div className="mp-shop-update">
-          <img src="/art/owner-depot-v3.webp" alt="Nia" />
+          <img src="/art/cameo-haseeb-v1.webp" alt="Haseeb" />
           <p className="mp-fine">
-            Nia’s park robots automatically repair connected rides. Parts and
+            Haseeb’s park robots automatically repair connected rides. Parts and
             service cost 10 credits per repair, paid only when needed.
           </p>
         </div>
       )}
       {!disabled && (
         <div className="mp-inspector-bottom">
-          {run.version !== VERSION && (
+          {!workshopRules(run.version) && (
             <button onClick={() => action({ kind: "toggle", building: b.id })}>
               {b.enabled ? "Close" : "Open"}
             </button>
@@ -576,8 +576,8 @@ export function Leaderboard({
         )}
         <p className="mp-fine">
           Prize scores close November 18, 2026 · 23:59 UTC. The live leaderboard
-          continues afterward. Gameplay rules freeze before the public prize
-          challenge opens.
+          continues afterward. Only results under the finished game’s current
+          rules count toward this giveaway.
         </p>
         {prizeEntries.length > 0 && (
           <p className="mp-fine">
@@ -609,7 +609,7 @@ export function ScoreBreakdown({ run }: { run: Run }) {
         </div>
       ))}
       <p className="mp-fine">
-        {run.version === VERSION
+        {workshopRules(run.version)
           ? "Profit counts your cash and construction investment, compared with your starting budget. Selling returns half the construction credits."
           : "Profit measures cash plus resale value, adjusted for ride condition, compared with opening equity."}{" "}
         Full finance credit requires a gain of 1,500 credits.

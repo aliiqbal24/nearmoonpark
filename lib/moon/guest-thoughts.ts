@@ -3,6 +3,7 @@ import type { Guest, Run } from "./model";
 
 export function guestEmotion(guest: Guest, run: Run): string | null {
   const thought = guest.thought.toLowerCase();
+  if (/too expensive/.test(thought)) return "Too expensive";
   if (/gentler launch|too high|too intense/.test(thought)) return "Too high!";
   if (/little tame|bigger launch/.test(thought)) return "More thrills!";
   if (/worth the trip|best day/.test(thought)) return "Amazing!";

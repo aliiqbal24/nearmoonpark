@@ -1,44 +1,49 @@
 # Moonpark submission preparation
 
-Track: **Games With Real Economies** (`games`). Title: **MOONPARK — A NEAR Future**.
+Project name **MOONPARK — A NEAR Future**. Track **Games With Real Economies**, ID `games`.
+
+- [Hosted game](https://nearmoonpark.vercel.app)
+- [Public source](https://github.com/aliiqbal24/nearmoonpark)
+- [Integration and custody details](NEAR-ECONOMY.md)
+- [Verification evidence](MOONPARK-VERIFICATION.md)
 
 ## Description draft
 
-Build the Moon's best day out. Rockets deliver tourists with finite wallets. You build mass-driver coasters, tune tickets and launch speeds, connect paths and customize signature rides. Guests arrive and return on recurring shuttles, walk, queue, spend and form opinions; businesses buy stock, adapt prices, deliver supplies and struggle when cash runs short. Departing visitors’ recommendations influence the next rocket’s bookings. Publish your park and its guest-tested signature rides. Other parks can license a design and pay its creator through a NEAR contract. Make a thriving little lunar economy in one nine-minute opening day.
+Build a theme park on the Moon. Draw a mass-driver coaster directly across the map, welcome rocket-borne tourists and grow a park that belongs to its player. NPC visitors have finite budgets and preferences. Autonomous food and drink businesses set prices, buy stock and pay the park a share. Illustrated cameos run Attention Kitchen, Finality Fizz and Dragonfly Garage.
 
-NEAR enforces the economic simulation and calculates the score. A shared Rust engine runs in browser WebAssembly for smooth prediction and inside the contract for authoritative settlement. Sponsored testnet accounts and restricted session keys remove wallet extensions and gas prompts. Persistent park ownership can be claimed through signed NEAR wallet acceptance. Ride blueprints preserve attributed designs, permanent paid licenses and deposit-backed creator income. A separate funded competition escrow allocates payouts from frozen standings. The keyless contract has no upgrade key or general withdrawal. It protects payout reserves from game-storage costs. Inspect actual transfers, ride the mass driver, then compare the top five.
+NEAR makes the economy and ownership verifiable. Separately created vendor accounts sign deterministic spending policies. NEP-245 credits and inventory clear atomically with gameplay. A shared Rust engine runs in browser WASM for prediction and in a keyless contract for settlement. Sponsored accounts and restricted session keys remove gas prompts from ordinary play. Optional Google sign-in restores the same park across devices.
 
-NPC treasuries are contract-managed virtual balances. No independent NPC wallet custody, NEAR Intents, NEP-245 tokens or live AI dialogue is claimed. The conditional creator-funded giveaway is disclosed as unfunded and dependent on a hackathon win; prize eligibility opens only after gameplay review, rules freeze and verified sign-in.
+Players publish parks for public visits and guest-tested ride designs for paid licensing. A license credits 90% of its actual testnet payment to the creator park's owner. The first 96 visitors seal a comparable opening score, while later income funds continued building. The game uses free testnet assets. Its conditional USD giveaway is separately disclosed as unfunded.
 
-## Demo sequence
+## Short demo sequence
 
-1. Start with the rocket arrival and the lunar park reveal; cut to the founder's first opening day.
-2. Place the mass-driver blueprint and connect its entrance. Guests walk over and queue.
-3. Show the front-seat camera, then adjust launch speed and ticket price to demonstrate throughput, wear and affordability.
-4. Add a drink concession. Follow a real stock purchase, delivery rover, customer sale and revenue-share transfer in the ledger.
-5. Show the first restaurant purchase and the confirmed Omar/park wallet transfers. Add a solar canopy for automatic export income.
-6. Drag a coaster turn, raise a hill, customize its look and place the design. Publish the park and its guest-tested ride, copy the share link and take the front seat on the public page.
-7. In a second park, license the ride and place its attributed design. Show the actual NEAR license receipt and creator income. Demonstrate signed wallet claiming of persistent park ownership.
-8. Show the contract-calculated result, signed-in competition, separate funded testnet escrow and precise conditional USD pledge. Explain that its allocation follows frozen standings, with human confirmation of the external award condition.
+1. Briefly show the lunar resort reveal, then skip into construction.
+2. Choose a station, drag an unusual coaster loop over the park, raise a turn and build. Show the first rocket landing.
+3. Follow one visitor walking, paying and riding. Click Illia's portrait to show stock, business cash, automatic pricing reasoning and its confirmed NEAR wallet.
+4. Drag a path through the coaster's interior and add a different ride. Show a visitor's reaction and the coaster's front-seat camera.
+5. Publish the park and open its public link in a second browser. Show the visitor camera and the immutable snapshot.
+6. License its guest-tested ride in a second park. Show the attributed build, NEAR payment receipt and backed creator earnings.
+7. Show the sealed first-96 score and continuing park construction. State the testnet and conditional-giveaway boundaries clearly.
 
-Keep the demonstration focused on the park and a visible consequence of a decision. Explain the shared-engine proof briefly after showing the game.
+Use one continuous action-to-consequence moment before explaining architecture.
 
-## Draft public post
+## Public post draft
 
-The Moon needs a day off.
+Design a lunar theme park that actually belongs to you.
 
-We built MOONPARK for NEAR HACKATHON: a lunar theme park with mass-driver coasters, rocket arrivals and NPC businesses running on finite cash and stock. One opening day. An economy and score enforced on NEAR.
+Built MOONPARK at NEAR HACKATHON. Draw coasters across the Moon, welcome rocket-borne guests and watch NPC businesses buy stock and share revenue through real testnet wallets. Publish your park and license your best rides to other players.
 
-Play: https://last-signal-mars.ajiqbal1.chatgpt.site
-
-[Add the public source repository and final demo video.]
+Play https://nearmoonpark.vercel.app
+Code https://github.com/aliiqbal24/nearmoonpark
 
 @NEARProtocol #NEARHackathon
 
-## Release milestones
+Attach the final gameplay demonstration before publication.
 
-Human gameplay review; verify the platform social sign-in handoff; review the new rendered/narrated opening and remaining character/ride artwork; frozen prize rules/build and explicit challenge opening; public source repository; recorded demo; owner-published public post; team/contact/payout details; exact submission review. No social post or hackathon submission has been sent.
+## Remaining owner steps
 
-The recorded organizer deadline is November 14, 2026 at 23:59 UTC. Recheck the live rules before submission and keep the hosted game and public source available through judging. The giveaway cutoff is separately November 18, 2026 at 23:59 UTC.
+The demo post, team/contact details, mainnet payout address, consent and final submission review remain with the owner. The repository and website can be reviewed independently while these are prepared.
 
-The earlier Martian game's preparation is archived in `MARS-SUBMISSION.md`.
+The organizer currently lists **November 14, 2026 at 23:59 UTC** as the development/submission deadline. Public source and a public X demo post are required. The track prompt is an example, and an original NEAR contract is allowed. Testnet projects are eligible. Recheck the live rules when preparing the final submission. [Official rules](https://nearhackathon.com/HACKATHON.md)
+
+The game's giveaway cutoff is separately **November 18, 2026 at 23:59 UTC**. Only the finished ruleset's eligible scores count toward the conditional USD pledge. Earlier parks and historical records remain accessible through account tools.

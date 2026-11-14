@@ -6,7 +6,7 @@ use near_sdk::{assert_one_yocto, json_types::U128, Gas, NearToken, Promise};
 
 pub const VENDORS: [&str; 3] = ["omar", "mina", "logistics"];
 pub const ASSETS: [&str; 4] = ["credits", "food", "drink", "parts"];
-const POLICY: &str = "moonpark-v8-persistent-vendors-1";
+const POLICY: &str = "moonpark-v9-persistent-vendors-1";
 const SLOT_BYTES: u128 = 240;
 type Holdings = [[u128; 4]; 5];
 
@@ -93,9 +93,17 @@ impl Moonpark {
         }
     }
     pub(crate) fn vendor_id(&self, vendor: &str) -> AccountId {
-        format!("{vendor}.{}", self.sponsor)
-            .parse()
-            .expect("Invalid vendor account")
+        format!(
+            "{}.{}",
+            match vendor {
+                "omar" => "illia",
+                "mina" => "mert",
+                role => role,
+            },
+            self.sponsor
+        )
+        .parse()
+        .expect("Invalid vendor account")
     }
     fn economy_accounts(&self, owner: &AccountId) -> [AccountId; 5] {
         [

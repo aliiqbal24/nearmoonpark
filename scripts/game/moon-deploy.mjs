@@ -1,6 +1,7 @@
 import {
   Account,
   JsonRpcProvider,
+  FailoverRpcProvider,
   KeyPair,
   KeyPairSigner,
   actions,
@@ -9,8 +10,13 @@ import {
 import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { createHash, randomBytes } from "node:crypto";
 import assert from "node:assert/strict";
+import { failoverRpc } from "../../lib/moon/rpc.ts";
+const missingAccount = (error) =>
+  Array.isArray(error?.errors)
+    ? error.errors.some(missingAccount)
+    : /does not exist|UNKNOWN_ACCOUNT|not found/i.test(String(error));
 await mkdir(".near-local", { recursive: true });
-const keyPath = ".near-local/moon-v8-deployer.json";
+const keyPath = ".near-local/moon-v9-deployer.json";
 let key;
 try {
   key = JSON.parse(await readFile(keyPath, "utf8"));
@@ -30,13 +36,16 @@ if (process.argv.includes("--upgrade"))
   throw Error(
     "The economy contract is immutable. Deploy a separate version instead.",
   );
-const provider = new JsonRpcProvider({ url: "https://test.rpc.fastnear.com" }),
+const provider = failoverRpc({ FailoverRpcProvider, JsonRpcProvider }, [
+    "https://test.rpc.fastnear.com",
+    "https://rpc.testnet.near.org",
+  ]),
   pair = KeyPair.fromString(key.secretKey),
   sponsor = new Account(key.accountId, provider, new KeyPairSigner(pair));
 try {
   await sponsor.getState();
 } catch (e) {
-  if (!/does not exist|UNKNOWN_ACCOUNT|not found/i.test(String(e))) throw e;
+  if (!missingAccount(e)) throw e;
   const r = await fetch("https://helper.nearprotocol.com/account", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -58,7 +67,7 @@ try {
   await provider.viewAccount({ accountId: contractId });
   exists = true;
 } catch (e) {
-  if (!/does not exist|UNKNOWN_ACCOUNT|not found/i.test(String(e))) throw e;
+  if (!missingAccount(e)) throw e;
 }
 if (!exists) {
   // The official faucet supplies 10 tNEAR per account. Contract code storage
@@ -66,7 +75,7 @@ if (!exists) {
   // supplies deployment fees and the first sponsored play sessions.
   const balance = await sponsor.getState();
   if (balance.balance.available < 11500000000000000000000000n) {
-    const treasuryPath = `.near-local/moon-v8-${key.accountId}-treasury.json`;
+    const treasuryPath = `.near-local/moon-v9-${key.accountId}-treasury.json`;
     let treasuryKey;
     try {
       treasuryKey = JSON.parse(await readFile(treasuryPath, "utf8"));
@@ -89,8 +98,7 @@ if (!exists) {
     try {
       await treasury.getState();
     } catch (error) {
-      if (!/does not exist|UNKNOWN_ACCOUNT|not found/i.test(String(error)))
-        throw error;
+      if (!missingAccount(error)) throw error;
       const response = await fetch("https://helper.nearprotocol.com/account", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -149,7 +157,8 @@ const call = (methodName, args = {}, deposit = 0n) =>
 // NEAR, attach deposits, call another contract or arbitrarily transfer game assets.
 key.vendors ??= {};
 for (const role of ["omar", "mina", "logistics"]) {
-  const accountId = `${role}.${key.accountId}`;
+  const alias = { omar: "illia", mina: "mert" }[role] ?? role;
+  const accountId = `${alias}.${key.accountId}`;
   if (!key.vendors[role]) {
     key.vendors[role] = {
       accountId,
@@ -162,8 +171,7 @@ for (const role of ["omar", "mina", "logistics"]) {
   try {
     account = await provider.viewAccount({ accountId });
   } catch (error) {
-    if (!/does not exist|UNKNOWN_ACCOUNT|not found/i.test(String(error)))
-      throw error;
+    if (!missingAccount(error)) throw error;
     await sponsor.signAndSendTransaction({
       receiverId: accountId,
       actions: [
@@ -222,7 +230,7 @@ let challenge = await provider.callFunction({
   method: "get_challenge",
   args: {},
 });
-assert.equal(challenge.id, "moonpark-v8");
+assert.equal(challenge.id, "moonpark-v9");
 if (process.argv.includes("--open") && !challenge.open) {
   await call("open_challenge");
   challenge = await provider.callFunction({
@@ -275,7 +283,7 @@ await writeFile(
   "public/moon-build.json",
   JSON.stringify(
     {
-      version: "moonpark-v8",
+      version: "moonpark-v9",
       contractSha256: createHash("sha256").update(code).digest("hex"),
       engineSha256: createHash("sha256")
         .update(await readFile("public/engine/moon.wasm"))

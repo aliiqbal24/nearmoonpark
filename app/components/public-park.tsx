@@ -61,7 +61,7 @@ export default function PublicPark({
   version,
 }: {
   accountId: string;
-  version?: "v4" | "v5" | "v6" | "v7" | "v8";
+  version?: "v4" | "v5" | "v6" | "v7" | "v8" | "v9";
 }) {
   const [data, setData] = useState<{
       cfg: Config;

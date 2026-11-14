@@ -273,13 +273,125 @@ export function lunarTerrain(scene: T.Scene, compact = false) {
     );
   }
   const plotMaterial = material.clone();
-  plotMaterial.vertexColors = false;
-  plotMaterial.color.set("#abc5ec");
+  const plotColors = new Float32Array(plotUv.count * 3);
+  for (let i = 0; i < plotUv.count; i++) {
+    const p = plotGeometry.attributes.position;
+    const x = p.getX(i),
+      z = p.getY(i);
+    const broad = noise(x * 0.16 + 47, z * 0.16 - 19);
+    const fine = noise(x * 1.7, z * 1.7);
+    p.setZ(i, (fine - 0.5) * 0.035);
+    shade.setRGB(0.69 + broad * 0.27, 0.72 + broad * 0.24, 0.76 + broad * 0.2);
+    shade.toArray(plotColors, i * 3);
+  }
+  plotGeometry.setAttribute("color", new T.BufferAttribute(plotColors, 3));
+  plotGeometry.computeVertexNormals();
+  plotMaterial.color.set("#bec9dd");
+  plotMaterial.normalScale.set(1.15, 1.15);
   const plot = new T.Mesh(plotGeometry, plotMaterial);
   plot.rotation.x = -Math.PI / 2;
   plot.position.y = 0.025;
   plot.receiveShadow = true;
   deck.add(plot);
+  // Geological marks stay below paths and foundations, so every tile remains usable.
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = compact ? 1024 : 2048;
+  const ctx = canvas.getContext("2d")!;
+  const px = canvas.width / width;
+  for (let i = 0; i < 58; i++) {
+    const x = random() * canvas.width,
+      z = random() * canvas.height;
+    const radius = (0.12 + random() ** 2 * 1.6) * px;
+    const hollow = ctx.createRadialGradient(
+      x - radius * 0.12,
+      z - radius * 0.16,
+      0,
+      x,
+      z,
+      radius,
+    );
+    hollow.addColorStop(0, "rgba(23,32,48,.19)");
+    hollow.addColorStop(0.59, "rgba(34,40,55,.12)");
+    hollow.addColorStop(0.79, "rgba(197,207,220,.035)");
+    hollow.addColorStop(0.89, "rgba(224,224,222,.055)");
+    hollow.addColorStop(1, "rgba(180,192,210,0)");
+    ctx.fillStyle = hollow;
+    ctx.fillRect(x - radius, z - radius, radius * 2, radius * 2);
+  }
+  // Soft parallel grading tracks give the cleared site a human history.
+  ctx.save();
+  ctx.translate(canvas.width * 0.5, canvas.height * 0.5);
+  ctx.rotate(-0.23);
+  for (let i = -26; i < 27; i++) {
+    const y = i * px * 1.6;
+    ctx.strokeStyle = "rgba(29,39,54,.045)";
+    ctx.lineWidth = px * 0.075;
+    ctx.beginPath();
+    ctx.moveTo(-canvas.width, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  for (let i = 0; i < (compact ? 9000 : 26000); i++) {
+    const value = random();
+    ctx.fillStyle =
+      value > 0.75 ? "rgba(229,229,220,.15)" : "rgba(25,34,47,.11)";
+    ctx.fillRect(
+      random() * canvas.width,
+      random() * canvas.height,
+      0.7 + random() * 1.4,
+      0.7 + random() * 1.4,
+    );
+  }
+  const detailMap = new T.CanvasTexture(canvas);
+  detailMap.colorSpace = T.SRGBColorSpace;
+  detailMap.anisotropy = 8;
+  const geologicalMarks = new T.Mesh(
+    new T.PlaneGeometry(width, depth),
+    new T.MeshBasicMaterial({
+      map: detailMap,
+      transparent: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      toneMapped: true,
+    }),
+  );
+  geologicalMarks.name = "graded-lunar-foundation";
+  geologicalMarks.rotation.x = -Math.PI / 2;
+  geologicalMarks.position.y = 0.05;
+  deck.add(geologicalMarks);
+  const grit = new T.InstancedMesh(
+    new T.IcosahedronGeometry(1, 0),
+    metal("#8a919e"),
+    compact ? 280 : 800,
+  );
+  grit.name = "foundation-mineral-grit";
+  const grain = new T.Object3D();
+  for (let i = 0; i < grit.count; i++) {
+    const size = 0.02 + random() ** 3 * 0.07;
+    grain.position.set(
+      (random() - 0.5) * width,
+      0.035,
+      (random() - 0.5) * depth,
+    );
+    grain.rotation.set(
+      random() * Math.PI,
+      random() * Math.PI,
+      random() * Math.PI,
+    );
+    grain.scale.set(size * 1.4, size * 0.45, size);
+    grain.updateMatrix();
+    grit.setMatrixAt(i, grain.matrix);
+  }
+  grit.receiveShadow = true;
+  deck.add(grit);
+  for (const x of [-25, -12.5, 0, 12.5, 25]) {
+    for (const z of [-25, -12.5, 0, 12.5, 25]) {
+      box(deck, "#7d8d9b", x, 0.055, z, 0.32, 0.012, 0.035);
+      box(deck, "#7d8d9b", x, 0.055, z, 0.035, 0.012, 0.32);
+    }
+  }
   deck.position.z = -15;
   for (const side of [-1, 1]) {
     for (let x = -width / 2; x < width / 2; x += 2.5) {

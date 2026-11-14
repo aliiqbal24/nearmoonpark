@@ -22,8 +22,7 @@ fn build(kind: &str, x: u8, z: u8) -> Command {
 }
 fn opened() -> Run {
     let mut run = Run::new();
-    run.apply(&[build("coaster", 2, 16), build("food", 26, 41)], 0)
-        .unwrap();
+    run.apply(&[build("coaster", 2, 16)], 0).unwrap();
     run
 }
 fn assert_conservation(r: &Run) {
@@ -45,21 +44,17 @@ fn assert_conservation(r: &Run) {
     }
 }
 #[test]
-fn opening_waits_for_designed_coaster_and_kitchen() {
+fn opening_has_ready_stores_and_waits_for_designed_coaster() {
     let mut r = Run::new();
     assert_eq!(r.cash, 320000);
-    assert!(r.buildings.is_empty());
+    assert_eq!(r.buildings.len(), 3);
     r.apply(&[], 20).unwrap();
     assert_eq!(r.tick, 0);
     assert!(r.apply(&[build("wheel", 30, 29)], 0).is_err());
-    r.apply(&[build("coaster", 2, 16)], 20).unwrap();
-    assert_eq!(r.opening_stage, 1);
-    assert_eq!(r.tick, 0);
-    assert!(r.buildings[0].connected);
-    assert!(r.apply(&[build("drink", 31, 41)], 0).is_err());
-    r.apply(&[build("food", 26, 41)], 0).unwrap();
+    assert!(r.buildings.iter().all(|b| b.connected && b.ready_at == 0));
+    r.apply(&[build("coaster", 2, 16)], 0).unwrap();
     assert_eq!(r.opening_stage, 2);
-    assert!(r.buildings[1].connected);
+    assert!(r.buildings[3].connected);
     r.apply(&[], 11).unwrap();
     assert_eq!(r.tick, 11);
     assert_eq!(
@@ -78,7 +73,7 @@ fn first_meal_advances_the_near_economy_lesson() {
         }
     }
     assert_eq!(r.opening_stage, 3);
-    assert!(r.buildings[1].served > 0);
+    assert!(r.buildings[0].served > 0);
     assert!(r.trade_count > 0);
     assert_conservation(&r);
 }
@@ -90,7 +85,7 @@ fn starter_design_matches_browser_geometry() {
     assert_eq!((d.track_w, d.track_h), (16, 21));
 }
 #[test]
-fn thirty_by_thirty_tracks_can_reach_sixty_metres() {
+fn map_tracks_can_cross_more_than_thirty_tiles_and_reach_sixty_metres() {
     let mut d = Design::starter();
     d.track_w = 30;
     d.track_h = 30;
@@ -109,7 +104,9 @@ fn thirty_by_thirty_tracks_can_reach_sixty_metres() {
     d.track[3].y = 601;
     assert!(d.validate().is_err());
     d.track[3].y = 600;
-    d.track_w = 31;
+    d.track_w = 48;
+    assert!(d.validate().is_ok());
+    d.track_w = 49;
     assert!(d.validate().is_err());
 }
 #[test]
@@ -130,7 +127,7 @@ fn track_control_point_count_is_bounded() {
     d.track.truncate(3);
     assert!(d.validate().is_err());
     d = Design::starter();
-    while d.track.len() < 33 {
+    while d.track.len() < 257 {
         d.track.push(d.track[3].clone());
     }
     assert!(d.validate().is_err());
@@ -141,23 +138,108 @@ fn construction_requires_a_designed_loop() {
     let mut c = build("coaster", 2, 16);
     c.design = None;
     assert!(r.apply(&[c], 0).is_err());
-    assert!(r.buildings.is_empty());
+    assert_eq!(r.buildings.len(), 3);
 }
 #[test]
-fn full_footprint_is_reserved_and_rotates() {
+fn only_station_and_track_reserve_space() {
     let mut r = opened();
-    assert_eq!(r.buildings[0].footprint(), (16, 21));
-    assert!(r.apply(&[build("wheel", 10, 20)], 0).is_err());
-    let mut b = r.buildings[0].clone();
-    b.rotation = 1;
-    assert_eq!(b.footprint(), (21, 16));
+    let coaster = r.buildings[3].clone();
+    assert_eq!(coaster.footprint(), (16, 21));
+    assert!(coaster.occupied_cells(false).len() < 16 * 21);
+    r.apply(&[build("bounce", 9, 24)], 0).unwrap();
+    assert!(r.apply(&[build("wheel", 3, 16)], 0).is_err());
+}
+#[test]
+fn elevated_track_leaves_paths_clear_and_low_track_blocks_them() {
+    let r = opened();
+    let coaster = &r.buildings[3];
+    let elevated = coaster.occupied_cells(false);
+    let ground = coaster.occupied_cells(true);
+    let clear = *elevated.iter().find(|cell| !ground.contains(cell)).unwrap();
+    let mut drawing = r.clone();
+    drawing
+        .apply(
+            &[Command {
+                kind: "paint_paths".into(),
+                cells: vec![clear],
+                ..Default::default()
+            }],
+            0,
+        )
+        .unwrap();
+    assert!(drawing.paths.contains(&clear));
+    let blocked = ground[0];
+    let before = drawing.hash.clone();
+    assert!(drawing
+        .apply(
+            &[Command {
+                kind: "paint_paths".into(),
+                cells: vec![blocked],
+                ..Default::default()
+            }],
+            0
+        )
+        .is_err());
+    assert_eq!(drawing.hash, before);
+}
+#[test]
+fn path_strokes_deduplicate_and_commit_atomically() {
+    let mut r = opened();
+    let cash = r.cash;
+    r.apply(
+        &[Command {
+            kind: "paint_paths".into(),
+            cells: vec![1800, 1801, 1801],
+            ..Default::default()
+        }],
+        0,
+    )
+    .unwrap();
+    assert_eq!(r.cash, cash - 400);
+    let before = r.hash.clone();
+    assert!(r
+        .apply(
+            &[Command {
+                kind: "paint_paths".into(),
+                cells: vec![1802, WIDTH * HEIGHT],
+                ..Default::default()
+            }],
+            0
+        )
+        .is_err());
+    assert_eq!(r.hash, before);
+    assert!(!r.paths.contains(&1802));
+    assert_conservation(&r);
+}
+#[test]
+fn bounce_height_is_chosen_before_construction_and_controls_appeal() {
+    for (height, thrill) in [(8, 1), (14, 2), (22, 4)] {
+        let mut r = opened();
+        let mut c = build("bounce", 25, 30);
+        c.design.as_mut().unwrap().bounce_height = height;
+        r.apply(&[c], 0).unwrap();
+        assert_eq!(r.buildings[4].thrill(), thrill);
+        let mut design = r.buildings[4].design.clone();
+        design.bounce_height = if height == 8 { 14 } else { 8 };
+        let before = r.hash.clone();
+        assert!(r
+            .apply(
+                &[Command {
+                    design: Some(design),
+                    ..cmd("design", 5)
+                }],
+                0
+            )
+            .is_err());
+        assert_eq!(r.hash, before);
+    }
 }
 #[test]
 fn invalid_batch_is_atomic() {
     let mut r = Run::new();
     let before = serde_json::to_string(&r).unwrap();
     assert!(r
-        .apply(&[build("coaster", 2, 16), build("wheel", 30, 29)], 0)
+        .apply(&[build("coaster", 2, 16), build("food", 17, 41)], 0)
         .is_err());
     assert_eq!(before, serde_json::to_string(&r).unwrap());
 }
@@ -165,9 +247,9 @@ fn invalid_batch_is_atomic() {
 fn placement_and_connectivity() {
     let mut r = opened();
     r.apply(&[build("wheel", 30, 29)], 0).unwrap();
-    assert!(!r.buildings[2].connected);
-    r.apply(&[cmd("connect", 3)], 0).unwrap();
-    assert!(r.buildings[2].connected);
+    assert!(!r.buildings[4].connected);
+    r.apply(&[cmd("connect", 5)], 0).unwrap();
+    assert!(r.buildings[4].connected);
     assert!(r.apply(&[build("wheel", 30, 29)], 0).is_err());
 }
 #[test]
@@ -175,7 +257,7 @@ fn tickets_and_opening_are_automatic() {
     let mut r = opened();
     for kind in ["price", "toggle", "rent", "invest"] {
         let before = r.hash.clone();
-        let mut c = cmd(kind, 1);
+        let mut c = cmd(kind, 4);
         c.value = 2000;
         assert!(r.apply(&[c], 0).is_err());
         assert_eq!(r.hash, before);
@@ -184,28 +266,28 @@ fn tickets_and_opening_are_automatic() {
 #[test]
 fn sale_always_returns_half_investment_despite_wear() {
     let mut r = opened();
-    r.buildings[0].condition = 1;
+    r.buildings[3].condition = 1;
     let before = r.cash;
-    let invested = r.buildings[0].invested;
-    r.apply(&[cmd("sell", 1)], 0).unwrap();
+    let invested = r.buildings[3].invested;
+    r.apply(&[cmd("sell", 4)], 0).unwrap();
     assert_eq!(r.cash, before + invested / 2);
-    assert!(r.buildings[0].sold);
+    assert!(r.buildings[3].sold);
     assert_conservation(&r);
 }
 #[test]
 fn occupied_rides_sell_after_their_passengers_finish() {
     let mut r = opened();
     r.guests[0].status = "riding".into();
-    r.guests[0].target = Some(1);
-    r.buildings[0].riders = vec![0];
-    r.buildings[0].cycle_left = 2;
+    r.guests[0].target = Some(4);
+    r.buildings[3].riders = vec![0];
+    r.buildings[3].cycle_left = 2;
     let before = r.cash;
-    r.apply(&[cmd("sell", 1)], 0).unwrap();
-    assert!(r.buildings[0].pending_sale);
-    assert!(!r.buildings[0].sold);
+    r.apply(&[cmd("sell", 4)], 0).unwrap();
+    assert!(r.buildings[3].pending_sale);
+    assert!(!r.buildings[3].sold);
     assert_eq!(r.cash, before);
     r.apply(&[], 2).unwrap();
-    assert!(r.buildings[0].sold);
+    assert!(r.buildings[3].sold);
     assert_eq!(r.cash, before + 60000);
     assert_eq!(r.guests[0].status, "walking");
     assert_conservation(&r);
@@ -213,31 +295,31 @@ fn occupied_rides_sell_after_their_passengers_finish() {
 #[test]
 fn redesign_is_free_and_preserves_passengers() {
     let mut r = opened();
-    r.buildings[0].riders = vec![0];
-    r.buildings[0].cycle_left = 10;
-    let mut d = r.buildings[0].design.clone();
+    r.buildings[3].riders = vec![0];
+    r.buildings[3].cycle_left = 10;
+    let mut d = r.buildings[3].design.clone();
     d.track[3].y = 600;
     d.name = "Skyline".into();
     let cash = r.cash;
     r.apply(
         &[Command {
             design: Some(d.clone()),
-            ..cmd("design", 1)
+            ..cmd("design", 4)
         }],
         0,
     )
     .unwrap();
     assert_eq!(r.cash, cash);
-    assert_eq!(r.buildings[0].riders, vec![0]);
-    assert!(r.buildings[0].cycle_left > 0);
-    assert_eq!(r.buildings[0].design, d);
+    assert_eq!(r.buildings[3].riders, vec![0]);
+    assert!(r.buildings[3].cycle_left > 0);
+    assert_eq!(r.buildings[3].design, d);
     assert_conservation(&r);
 }
 #[test]
 fn expansions_cannot_cover_other_rides_or_paths() {
     let mut r = opened();
     r.apply(&[build("wheel", 30, 29)], 0).unwrap();
-    let mut d = r.buildings[0].design.clone();
+    let mut d = r.buildings[3].design.clone();
     d.track_w = 30;
     d.track_h = 30;
     d.track[0] = TrackPoint {
@@ -254,7 +336,7 @@ fn expansions_cannot_cover_other_rides_or_paths() {
         .apply(
             &[Command {
                 design: Some(d),
-                ..cmd("design", 1)
+                ..cmd("design", 4)
             }],
             0
         )
@@ -263,15 +345,15 @@ fn expansions_cannot_cover_other_rides_or_paths() {
 #[test]
 fn solar_exports_pay_from_logistics_without_minting() {
     let mut r = opened();
-    r.apply(&[build("solar", 24, 34), cmd("connect", 3)], 0)
+    r.apply(&[build("solar", 24, 34), cmd("connect", 5)], 0)
         .unwrap();
-    r.buildings[2].ready_at = 0;
+    r.buildings[4].ready_at = 0;
     let before = r.cash;
     let supplier = r.supplier_cash;
     r.apply(&[], 20).unwrap();
     assert_eq!(r.cash, before + 500);
     assert_eq!(r.supplier_cash, supplier - 500);
-    assert_eq!(r.buildings[2].revenue, 500);
+    assert_eq!(r.buildings[4].revenue, 500);
     assert_conservation(&r);
 }
 #[test]
@@ -279,7 +361,7 @@ fn every_connected_ready_ride_operates_without_a_power_budget() {
     let mut r = opened();
     r.cash += 500000;
     r.supplier_cash -= 500000;
-    for (id, x) in [(3, 30), (4, 35), (5, 40)] {
+    for (id, x) in [(5, 30), (6, 35), (7, 40)] {
         r.apply(&[build("wheel", x, 29), cmd("connect", id)], 0)
             .unwrap();
     }
@@ -306,7 +388,7 @@ fn money_and_goods_are_conserved_through_opening_and_returning_visits() {
 fn score_is_not_created_by_resale() {
     let mut r = opened();
     let equity = r.equity();
-    r.apply(&[cmd("sell", 1)], 0).unwrap();
+    r.apply(&[cmd("sell", 4)], 0).unwrap();
     assert!(r.equity() <= equity);
     assert_eq!(r.score.finance, 0);
     assert_conservation(&r);
@@ -328,7 +410,7 @@ fn batching_does_not_change_economics() {
 #[test]
 fn paths_can_be_removed_without_changing_money_supply() {
     let mut r = opened();
-    let cell = r.buildings[1].entry();
+    let cell = r.buildings[0].entry();
     let cash = r.cash;
     r.apply(
         &[Command {
@@ -340,10 +422,10 @@ fn paths_can_be_removed_without_changing_money_supply() {
         0,
     )
     .unwrap();
-    assert!(!r.buildings[1].connected);
+    assert!(!r.buildings[0].connected);
     assert_eq!(r.cash, cash);
-    r.apply(&[cmd("connect", 2)], 0).unwrap();
-    assert!(r.buildings[1].connected);
+    r.apply(&[cmd("connect", 1)], 0).unwrap();
+    assert!(r.buildings[0].connected);
     assert_conservation(&r);
 }
 #[test]
@@ -358,9 +440,8 @@ fn eight_types_have_two_automatic_vendor_businesses() {
 #[test]
 fn maintenance_uses_parts_and_preserves_money() {
     let mut r = opened();
-    r.apply(&[build("depot", 35, 41), cmd("connect", 3)], 0)
-        .unwrap();
-    r.buildings[0].condition = 40;
+
+    r.buildings[3].condition = 40;
     r.apply(&[], 15).unwrap();
     assert_eq!(r.buildings[2].served, 1);
     assert_eq!(r.consumed[2], 1);
@@ -383,7 +464,7 @@ fn invalid_design_does_not_change_park_or_theme() {
                         palette: 254,
                         ..Default::default()
                     }),
-                    ..cmd("design", 1)
+                    ..cmd("design", 4)
                 }
             ],
             0

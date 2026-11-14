@@ -12,31 +12,27 @@ fn new_contract() -> Moonpark {
     let time = env::block_timestamp();
     let mut contract = Moonpark::new("sponsor.testnet".parse().unwrap());
     for name in economy::VENDORS {
-        context(&format!("{name}.sponsor.testnet"), time);
-        contract.accept_vendor_policy("moonpark-v8-persistent-vendors-1".into());
+        let alias = match name {
+            "omar" => "illia",
+            "mina" => "mert",
+            role => role,
+        };
+        context(&format!("{alias}.sponsor.testnet"), time);
+        contract.accept_vendor_policy("moonpark-v9-persistent-vendors-1".into());
     }
     context(&caller, time);
     contract
 }
 
 fn opening_commands() -> Vec<Command> {
-    vec![
-        Command {
-            kind: "build".into(),
-            item: "coaster".into(),
-            x: 2,
-            z: 16,
-            design: Some(moonpark_sim::Design::starter()),
-            ..Default::default()
-        },
-        Command {
-            kind: "build".into(),
-            item: "food".into(),
-            x: 26,
-            z: 41,
-            ..Default::default()
-        },
-    ]
+    vec![Command {
+        kind: "build".into(),
+        item: "coaster".into(),
+        x: 2,
+        z: 16,
+        design: Some(moonpark_sim::Design::starter()),
+        ..Default::default()
+    }]
 }
 fn prepared_run() -> Run {
     let mut run = Run::new();
@@ -102,12 +98,12 @@ fn asset_context(who: &str, deposit: u128) {
 fn vendor_tokens_clear_atomically_conserve_supply_and_isolate_rounds() {
     let mut c = economy_fixture();
     assert_eq!(
-        c.mt_balance_of("omar.sponsor.testnet".parse().unwrap(), "1:credits".into())
+        c.mt_balance_of("illia.sponsor.testnet".parse().unwrap(), "1:credits".into())
             .0,
         6000
     );
     assert_eq!(
-        c.mt_balance_of("omar.sponsor.testnet".parse().unwrap(), "1:food".into())
+        c.mt_balance_of("illia.sponsor.testnet".parse().unwrap(), "1:food".into())
             .0,
         12
     );
@@ -125,7 +121,7 @@ fn vendor_tokens_clear_atomically_conserve_supply_and_isolate_rounds() {
     c.create_run(VERSION.into(), "another-day".into(), None);
     assert_eq!(closing, c.get_run_economy("1".into()));
     assert_eq!(
-        c.mt_balance_of("omar.sponsor.testnet".parse().unwrap(), "2:food".into())
+        c.mt_balance_of("illia.sponsor.testnet".parse().unwrap(), "2:food".into())
             .0,
         0
     );
@@ -134,7 +130,7 @@ fn vendor_tokens_clear_atomically_conserve_supply_and_isolate_rounds() {
 #[should_panic(expected = "Vendor account only")]
 fn a_player_cannot_authorize_a_vendor_wallet() {
     let mut c = economy_fixture();
-    c.accept_vendor_policy("moonpark-v8-persistent-vendors-1".into());
+    c.accept_vendor_policy("moonpark-v9-persistent-vendors-1".into());
 }
 #[test]
 #[should_panic(expected = "Vendor policy is awaiting")]
@@ -155,7 +151,7 @@ fn active_game_assets_cannot_be_moved_out_of_the_economy() {
     let mut c = economy_fixture();
     asset_context("alice.testnet", 1);
     c.mt_transfer(
-        "omar.sponsor.testnet".parse().unwrap(),
+        "illia.sponsor.testnet".parse().unwrap(),
         "1:credits".into(),
         near_sdk::json_types::U128(100),
         None,
@@ -168,7 +164,7 @@ fn operating_assets_remain_committed_after_opening_score() {
     let mut c = economy_fixture();
     finish_economy(&mut c);
     let alice: AccountId = "alice.testnet".parse().unwrap();
-    let omar: AccountId = "omar.sponsor.testnet".parse().unwrap();
+    let omar: AccountId = "illia.sponsor.testnet".parse().unwrap();
     let before = c.mt_balance_of(alice.clone(), "1:credits".into()).0;
     asset_context("alice.testnet", 1);
     c.mt_transfer(
@@ -198,7 +194,7 @@ fn operating_transfer_calls_cannot_bypass_the_vendor_policy() {
     let mut c = economy_fixture();
     finish_economy(&mut c);
     let alice: AccountId = "alice.testnet".parse().unwrap();
-    let omar: AccountId = "omar.sponsor.testnet".parse().unwrap();
+    let omar: AccountId = "illia.sponsor.testnet".parse().unwrap();
     let before = c.mt_balance_of(alice.clone(), "1:credits".into()).0;
     let supply = c.mt_supply("1:credits".into());
     asset_context("alice.testnet", 1);
@@ -623,10 +619,10 @@ fn park_fixture() -> Moonpark {
     while !r.finished {
         r.apply(&[], 10).unwrap();
     }
-    r.buildings[0].served = 10;
+    r.buildings[3].served = 10;
     record["run"] = serde_json::to_value(r).unwrap();
     c.runs.insert(&"1".into(), &record.to_string());
-    c.publish_blueprint("1".into(), "1".into(), 1, "Moonbeam".into());
+    c.publish_blueprint("1".into(), "1".into(), 4, "Moonbeam".into());
     c
 }
 #[test]
@@ -663,7 +659,7 @@ fn license_is_deposit_backed_idempotent_and_pays_current_creator_owner() {
     context("bob.testnet", 1);
     c.create_run(VERSION.into(), "bob".into(), None);
     deposit("bob.testnet", parks::LICENSE_FEE, 1);
-    c.license_blueprint("2".into(), "1:1:0".into());
+    c.license_blueprint("2".into(), "1:4:0".into());
     let amount = parks::LICENSE_FEE * 90 / 100;
     assert_eq!(c.creator_obligations, amount);
     assert_eq!(
@@ -673,11 +669,11 @@ fn license_is_deposit_backed_idempotent_and_pays_current_creator_owner() {
             .available,
         amount
     );
-    c.license_blueprint("2".into(), "1:1:0".into());
+    c.license_blueprint("2".into(), "1:4:0".into());
     assert_eq!(c.creator_obligations, amount);
-    assert_eq!(c.get_blueprint("1:1:0".into()).unwrap().licenses, 1);
-    assert!(c.has_license("2".into(), "1:1:0".into()));
-    let bp = c.get_blueprint("1:1:0".into()).unwrap();
+    assert_eq!(c.get_blueprint("1:4:0".into()).unwrap().licenses, 1);
+    assert!(c.has_license("2".into(), "1:4:0".into()));
+    let bp = c.get_blueprint("1:4:0".into()).unwrap();
     c.validate_licenses(
         &"bob.testnet".parse().unwrap(),
         &[Command {
@@ -714,7 +710,7 @@ fn license_provenance_cannot_be_forged() {
     let mut c = park_fixture();
     context("bob.testnet", 1);
     c.create_run(VERSION.into(), "bob".into(), None);
-    let bp = c.get_blueprint("1:1:0".into()).unwrap();
+    let bp = c.get_blueprint("1:4:0".into()).unwrap();
     c.validate_licenses(
         &"bob.testnet".parse().unwrap(),
         &[Command {
@@ -797,7 +793,7 @@ fn track_construction_continues_after_the_old_deadline() {
         "late-height".into(),
         vec![Command {
             kind: "design".into(),
-            building: 1,
+            building: 4,
             design: Some(moonpark_sim::Design {
                 name: "Skyline".into(),
                 ..moonpark_sim::Design::starter()
@@ -828,7 +824,7 @@ fn deadline_keeps_free_cosmetic_edits_available() {
         "paint".into(),
         vec![Command {
             kind: "design".into(),
-            building: 1,
+            building: 4,
             design: Some(moonpark_sim::Design {
                 palette: 3,
                 ..moonpark_sim::Design::starter()
@@ -838,7 +834,7 @@ fn deadline_keeps_free_cosmetic_edits_available() {
         0,
     );
     assert_eq!(r["run"]["cash"], before);
-    assert_eq!(r["run"]["buildings"][0]["design"]["palette"], 3);
+    assert_eq!(r["run"]["buildings"][3]["design"]["palette"], 3);
 }
 
 #[test]

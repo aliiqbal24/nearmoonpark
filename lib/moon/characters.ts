@@ -30,11 +30,26 @@ const visorMaterial = new T.MeshPhysicalMaterial({
 });
 
 /** Shared shoulder, hip and head anchors keep saved visitors and ride rigs compatible. */
-export function astronaut(color: string, size = 1, variant = 0) {
+export function astronaut(
+  color: string,
+  size = 1,
+  variant = 0,
+  cameo?: "illia" | "mert" | "haseeb",
+) {
   const g = new T.Group();
   g.userData.animated = true;
-  const skin = SKIN[variant % SKIN.length],
-    hair = HAIR[variant % HAIR.length];
+  const skin =
+      cameo === "illia"
+        ? "#d1b199"
+        : cameo
+          ? "#b08361"
+          : SKIN[variant % SKIN.length],
+    hair =
+      cameo === "illia"
+        ? "#806b54"
+        : cameo
+          ? "#25242a"
+          : HAIR[variant % HAIR.length];
   const torso = ellipsoid(g, "#c9d1d4", 0, 0.83, 0, 0.205, 0.29, 0.15);
   torso.material = fabric("#c9d1d4");
   shapedBox(g, palette.navy, 0, 0.63, 0, 0.38, 0.1, 0.29, 0.025);
@@ -109,7 +124,26 @@ export function astronaut(color: string, size = 1, variant = 0) {
   );
   cap.position.set(0, 0.044, 0.008);
   cap.scale.y = 0.8;
+  if (cameo === "haseeb") cap.visible = false;
+  if (cameo === "mert") {
+    cap.scale.y = 0.35;
+    cap.position.y = 0.1;
+  }
   head.add(cap);
+  if (cameo === "mert" || cameo === "haseeb") {
+    ellipsoid(
+      head,
+      hair,
+      0,
+      -0.092,
+      0.09,
+      0.113,
+      cameo === "mert" ? 0.064 : 0.042,
+      0.073,
+    ).material = fabric(hair);
+    ellipsoid(head, skin, 0, -0.065, 0.141, 0.042, 0.021, 0.009).material =
+      fabric(skin);
+  }
   for (const side of [-1, 1]) {
     ellipsoid(head, "#302c2a", side * 0.05, 0.026, 0.131, 0.012, 0.017, 0.007);
     ellipsoid(head, hair, side * 0.052, 0.062, 0.127, 0.028, 0.007, 0.006);
@@ -130,7 +164,7 @@ export function astronaut(color: string, size = 1, variant = 0) {
     0.005,
     "#6c4b40",
   );
-  if (variant % 6 === 4) {
+  if (!cameo && variant % 6 === 4) {
     ellipsoid(head, hair, 0, -0.058, 0.139, 0.044, 0.011, 0.008);
   }
   const rim = ring(head, palette.navy, 0.211, 0.02, 0, 0, 0.047, false);

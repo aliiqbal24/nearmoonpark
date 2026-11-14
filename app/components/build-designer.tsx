@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import {
   VERSION,
+  workshopRules,
   blueprint,
   defaultDesign,
   money,
@@ -107,10 +108,17 @@ export function BuildDesigner({
       return null;
     }
   });
-  const [design, setDesign] = useState<Design>(
-    () =>
-      restored?.design ?? building?.design ?? initialDesign ?? defaultDesign(),
-  );
+  const [design, setDesign] = useState<Design>(() => ({
+    ...(restored?.design ??
+      building?.design ??
+      initialDesign ??
+      defaultDesign()),
+    bounce_height:
+      version === VERSION
+        ? ((restored?.design ?? building?.design ?? initialDesign)
+            ?.bounce_height ?? 8)
+        : undefined,
+  }));
   const [route, setRoute] = useState<RouteState>(
     () =>
       restored?.route ?? {
@@ -590,7 +598,7 @@ export function BuildDesigner({
             </>
           ) : (
             <p className="mp-subtle">
-              {kind === "solar" && version !== VERSION
+              {kind === "solar" && !workshopRules(version)
                 ? "Four extra units of clean power for this earlier park."
                 : a.description}{" "}
               Choose its look before it joins your park.
@@ -608,6 +616,27 @@ export function BuildDesigner({
             design={routeProblem ? design : packed}
             palette={palette}
           />
+          {kind === "bounce" && version === VERSION && (
+            <>
+              <label>Choose tower height before building</label>
+              <div className="mp-segments" aria-label="Lunar Bounce height">
+                {[8, 14, 22].map((height) => (
+                  <button
+                    key={height}
+                    disabled={!!building}
+                    aria-pressed={(design.bounce_height ?? 8) === height}
+                    onClick={() => change({ bounce_height: height })}
+                  >
+                    {height} m
+                  </button>
+                ))}
+              </div>
+              <p className="mp-fine">
+                Taller towers draw thrill-seekers. This height stays fixed after
+                construction.
+              </p>
+            </>
+          )}
           {coaster && (
             <div className="mp-plan-dimensions">
               <span>
@@ -647,7 +676,7 @@ export function BuildDesigner({
                 aria-pressed={design.style === style}
                 onClick={() => change({ style })}
               >
-                <img src={`/art/${kind}-s${style}-v4.webp`} alt="" />
+                <img src={`/art/${kind}-s${style}-v5.webp`} alt="" />
                 <span>{name}</span>
               </button>
             ))}

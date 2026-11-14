@@ -1,6 +1,7 @@
 import type { Run } from "./model";
 import { config, view, type Config, type Credentials } from "./near";
 import archivedV5 from "@/public/moon-v5-config.json";
+import archivedV8 from "@/public/moon-v8-config.json";
 import archivedV7 from "@/public/moon-v7-config.json";
 import archivedV6 from "@/public/moon-v6-config.json";
 import archivedV4 from "@/public/moon-v4-config.json";
@@ -277,7 +278,7 @@ export async function parkSnapshot(cfg: Config, park: Park) {
   const record = await view<RecordState>(cfg, "get_run", {
     run_id: park.run_id,
   });
-  if (!cfg.archivedVersion || ["v6", "v7"].includes(cfg.archivedVersion)) {
+  if (!cfg.archivedVersion || ["v6", "v7", "v8"].includes(cfg.archivedVersion)) {
     const snapshot = await view<Run | null>(cfg, "get_park_snapshot", {
       park_id: park.id,
     });
@@ -287,7 +288,7 @@ export async function parkSnapshot(cfg: Config, park: Park) {
 }
 export async function publicPark(
   accountId: string,
-  version?: "v4" | "v5" | "v6" | "v7" | "v8",
+  version?: "v4" | "v5" | "v6" | "v7" | "v8" | "v9",
 ) {
   const current = await config();
   const candidates =
@@ -300,12 +301,15 @@ export async function publicPark(
           : version === "v7"
             ? [archivedV7 as Config]
             : version === "v8"
-              ? [current]
+              ? [archivedV8 as Config]
+              : version === "v9"
+                ? [current]
               : [
                   archivedV4 as Config,
                   archivedV5 as Config,
                   archivedV6 as Config,
                   archivedV7 as Config,
+                  archivedV8 as Config,
                   current,
                 ];
   for (const cfg of candidates) {

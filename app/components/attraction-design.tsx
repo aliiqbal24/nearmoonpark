@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Palette } from "lucide-react";
 import {
   VERSION,
+  workshopRules,
   defaultDesign,
   type Building,
   type Command,
@@ -124,7 +125,7 @@ export function AttractionDesign({
               aria-pressed={design.style === style}
               onClick={() => change({ style })}
             >
-              <img src={`/art/${building.kind}-s${style}-v4.webp`} alt="" />
+              <img src={`/art/${building.kind}-s${style}-v5.webp`} alt="" />
               <span>{name}</span>
             </button>
           ))}
@@ -141,7 +142,7 @@ export function AttractionDesign({
             </button>
           ))}
         </div>
-        {building.kind === "coaster" && version !== VERSION && (
+        {building.kind === "coaster" && !workshopRules(version) && (
           <>
             <label>Coaster height</label>
             <div className="mp-segments">

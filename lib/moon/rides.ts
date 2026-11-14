@@ -162,13 +162,26 @@ export function massDriver(
         )
       : coordinates.map(([x, y, z]) => new T.Vector3(x * w, y, z * h)),
     true,
-    b.design.track?.length ? "centripetal" : "catmullrom",
-    0.36,
+    b.design.map_track
+      ? "catmullrom"
+      : b.design.track?.length
+        ? "centripetal"
+        : "catmullrom",
+    b.design.map_track ? 0.25 : 0.36,
   );
   if (b.design.track?.length) {
     const evaluate = curve.getPoint.bind(curve);
     curve.getPoint = (t, target) => {
       const p = evaluate(t, target);
+      if (b.design.map_track && t >= 0 && t < 1 / b.design.track!.length) {
+        const [a, c] = b.design.track!;
+        const u = t * b.design.track!.length;
+        p.set(
+          T.MathUtils.lerp(a.x, c.x, u) * 0.125 - w / 2,
+          1.2,
+          T.MathUtils.lerp(a.z, c.z, u) * 0.125 - h / 2,
+        );
+      }
       p.y = Math.max(1.2, Math.min(60, p.y));
       if (authored) {
         p.x = T.MathUtils.clamp(p.x, -w / 2 + 0.4, w / 2 - 0.4);
@@ -178,7 +191,7 @@ export function massDriver(
     };
   }
   // Smooth the roll through near-vertical track, where a world-up frame is ambiguous.
-  const segments = 512;
+  const segments = Math.max(512, (b.design.track?.length ?? 0) * 8);
   const frames = curve.computeFrenetFrames(segments, true);
   const rolls = frames.normals.map((normal, i) =>
     Math.atan2(frames.binormals[i].y, normal.y),
@@ -226,8 +239,9 @@ export function massDriver(
   };
   const railPoints = [[], []] as T.Vector3[][];
   const spinePoints: T.Vector3[] = [];
-  for (let i = 0; i <= 240; i++) {
-    const u = i / 240,
+  const railSamples = Math.max(240, (b.design.track?.length ?? 0) * 12);
+  for (let i = 0; i <= railSamples; i++) {
+    const u = i / railSamples,
       p = curve.getPointAt(u),
       right = curve.getTangentAt(u).cross(upAt(u)).normalize();
     spinePoints.push(p.clone().addScaledVector(upAt(u), -0.22));
@@ -238,7 +252,7 @@ export function massDriver(
     const rail = new T.Mesh(
       new T.TubeGeometry(
         new T.CatmullRomCurve3(points, false, "catmullrom", 0.3),
-        480,
+        railSamples * 2,
         0.09,
         8,
         false,
@@ -251,7 +265,7 @@ export function massDriver(
   const spine = new T.Mesh(
     new T.TubeGeometry(
       new T.CatmullRomCurve3(spinePoints),
-      480,
+      railSamples * 2,
       0.13,
       8,
       false,
@@ -433,9 +447,17 @@ export function massDriver(
     batch(collar);
     g.add(collar);
   }
-  const stationWidth = authored ? 7.5 : w;
+  const stationWidth = b.design.map_track ? 9.8 : authored ? 7.5 : w;
   const station = new T.Group();
-  station.position.set(-0.03 * w, 0, h * 0.34);
+  if (b.design.map_track) {
+    const [a, c] = b.design.track!;
+    station.position.set(
+      ((a.x + c.x) / 20) * 1.25 - w / 2,
+      0,
+      ((a.z + c.z) / 20) * 1.25 - h / 2,
+    );
+    station.rotation.y = -Math.atan2(c.z - a.z, c.x - a.x);
+  } else station.position.set(-0.03 * w, 0, h * 0.34);
   shapedBox(station, c.dark, 0, 0.6, 0, stationWidth * 0.77, 0.2, 1.47, 0.15);
   for (const x of [-stationWidth * 0.32, stationWidth * 0.32]) {
     box(station, c.light, x, 1.42, 0, 0.12, 1.75, 1.3);
@@ -697,6 +719,8 @@ export function lunarBounce(
   h: number,
 ): RideRig {
   const style = b.design.style;
+  const towerHeight = b.design.bounce_height ?? 3.4;
+  const travel = Math.max(1.22, towerHeight - 2.2);
   for (const side of [-1, 1]) {
     const controls = equipmentPanel(g, 0.6, 0.49);
     controls.position.set(side * 1.1, 0.72, -0.82);
@@ -736,17 +760,17 @@ export function lunarBounce(
     platform.add(seat);
     batch(seat);
   }
-  cylinder(g, c.dark, 0, 2.08, 0, 0.13, 2.5);
-  for (const y of [1.2, 1.65, 2.1, 2.55])
+  cylinder(g, c.dark, 0, (towerHeight + 0.85) / 2, 0, 0.16, towerHeight - 0.85);
+  for (let y = 1.2; y < towerHeight - 0.4; y += 0.65)
     cylinder(g, c.accent, 0, y, 0, 0.17, 0.14).material = metal(c.accent);
-  ellipsoid(g, c.light, 0, 3.58, 0, 0.55, 0.55, 0.55);
+  ellipsoid(g, c.light, 0, towerHeight + 0.18, 0, 0.55, 0.55, 0.55);
   for (let i = 0; i < 8; i++) {
     const a = i * 2.4;
     const crater = ellipsoid(
       g,
       "#d3c7ad",
       Math.sin(a) * 0.4,
-      3.58 + Math.cos(a) * 0.35,
+      towerHeight + 0.18 + Math.cos(a) * 0.35,
       0.35,
       0.1,
       0.07,
@@ -754,19 +778,19 @@ export function lunarBounce(
     );
     crater.rotation.z = a;
   }
-  const orbit = ring(g, c.accent, 0.8, 0.04, 0, 3.55);
+  const orbit = ring(g, c.accent, 0.8, 0.04, 0, towerHeight + 0.15);
   orbit.rotation.z = 0.35;
   orbit.material = metal(c.accent);
   if (style === 1) {
-    const halo = ring(g, c.primary, 1.45, 0.06, 0, 2.68);
+    const halo = ring(g, c.primary, 1.45, 0.06, 0, towerHeight * 0.8);
     halo.rotation.z = 0.18;
     for (const x of [-1.32, 1.32])
       line(
         g,
         [
           new T.Vector3(x, 0.45, 0),
-          new T.Vector3(x * 1.18, 1.9, 0),
-          new T.Vector3(x * 0.75, 3.0, 0),
+          new T.Vector3(x * 1.18, towerHeight * 0.55, 0),
+          new T.Vector3(x * 0.75, towerHeight - 0.4, 0),
         ],
         0.09,
         c.light,
@@ -778,7 +802,7 @@ export function lunarBounce(
       beam(
         g,
         foot,
-        new T.Vector3(0, 3.05, 0),
+        new T.Vector3(0, towerHeight - 0.35, 0),
         style === 2 ? 0.09 : 0.06,
         c.light,
       );
@@ -786,7 +810,11 @@ export function lunarBounce(
         beam(
           g,
           foot,
-          new T.Vector3(-Math.sin(a) * 0.55, 1.8, -Math.cos(a) * 0.55),
+          new T.Vector3(
+            -Math.sin(a) * 0.55,
+            towerHeight * 0.52,
+            -Math.cos(a) * 0.55,
+          ),
           0.03,
           c.accent,
         );
@@ -807,7 +835,7 @@ export function lunarBounce(
       platform.position.y =
         1.02 +
         (state.riders.length
-          ? Math.pow(Math.sin(progress * Math.PI * 8), 4) * 1.22
+          ? Math.pow(Math.sin(progress * Math.PI * 8), 4) * travel
           : 0);
       showRiders(people, state);
     },

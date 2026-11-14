@@ -10,6 +10,7 @@ import {
 import { identity } from "@/lib/moon/auth";
 import { failoverRpc } from "@/lib/moon/rpc";
 import { renewalMessage, type RenewalProof } from "@/lib/moon/sponsorship";
+import archivedV8 from "@/public/moon-v8-config.json";
 import archivedV7 from "@/public/moon-v7-config.json";
 import archivedV6 from "@/public/moon-v6-config.json";
 export const dynamic = "force-dynamic";
@@ -59,11 +60,13 @@ export async function POST(request: Request) {
       : e.MOON_CONTRACT_ID);
   if (contractId !== e.MOON_CONTRACT_ID) {
     const prefix =
-      contractId === archivedV6.contractId
-        ? "MOON_V6"
-        : contractId === archivedV7.contractId
-          ? "MOON_V7"
-          : null;
+      contractId === archivedV8.contractId
+        ? "MOON_V8"
+        : contractId === archivedV6.contractId
+          ? "MOON_V6"
+          : contractId === archivedV7.contractId
+            ? "MOON_V7"
+            : null;
     if (!prefix)
       return Response.json(
         { error: "Unsupported park contract." },
@@ -235,7 +238,9 @@ export async function POST(request: Request) {
       BigInt(safety.storage_buffer_yocto) < 1000000000000000000000000n
     ) {
       const reserve = await root.getState();
-      if (reserve.balance.available < 2800000000000000000000000n)
+      const storageTopUp =
+        2000000000000000000000000n - BigInt(safety.storage_buffer_yocto);
+      if (reserve.balance.available < storageTopUp + 750000000000000000000000n)
         return Response.json(
           {
             error:
@@ -247,7 +252,7 @@ export async function POST(request: Request) {
         contractId: e.MOON_CONTRACT_ID!,
         methodName: "fund_storage",
         args: {},
-        deposit: 2000000000000000000000000n,
+        deposit: storageTopUp,
         gas: 30000000000000n,
         waitUntil: "EXECUTED",
       });

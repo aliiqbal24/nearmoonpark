@@ -1,13 +1,13 @@
 {
-  "contractId": "game.moonpark-mwgh000n.testnet",
+  "contractId": "game.moonpark-mwguq289.testnet",
   "rpcUrl": "https://test.rpc.fastnear.com",
   "fallbackRpcUrl": "https://rpc.testnet.near.org",
-  "codeHash": "8iTkztBYZvA3CecctfCPgZuEgteyaiF9eP5EcXY9EBgk",
+  "codeHash": "HKk1DwrdrWRg6oZ2joaJ64UgZzKCgHRbXHMnTWnxZMjP",
   "network": "testnet",
   "immutable": true,
   "vendors": {
-    "omar": "omar.moonpark-mwgh000n.testnet",
-    "mina": "mina.moonpark-mwgh000n.testnet",
-    "logistics": "logistics.moonpark-mwgh000n.testnet"
+    "omar": "illia.moonpark-mwguq289.testnet",
+    "mina": "mert.moonpark-mwguq289.testnet",
+    "logistics": "logistics.moonpark-mwguq289.testnet"
   }
 }

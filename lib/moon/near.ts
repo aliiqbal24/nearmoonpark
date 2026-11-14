@@ -9,7 +9,7 @@ export type Config = {
   fallbackRpcUrl: string;
   network: string;
   codeHash: string;
-  archivedVersion?: "v4" | "v5" | "v6" | "v7";
+  archivedVersion?: "v4" | "v5" | "v6" | "v7" | "v8";
   vendors?: { omar: string; mina: string; logistics: string };
 };
 export type Credentials = {

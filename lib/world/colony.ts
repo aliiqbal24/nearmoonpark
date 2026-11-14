@@ -1032,8 +1032,8 @@ export function createColony(
     dragged = false,
     downX = 0,
     downY = 0,
-    hoverKey = "",
-    pointer = new T.Vector2(-5, -5);
+    hoverKey = "";
+  const pointer = new T.Vector2(-5, -5);
   const raycaster = new T.Raycaster();
 
   const resize = () => {

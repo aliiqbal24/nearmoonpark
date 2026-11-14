@@ -1,4 +1,7 @@
-export const VERSION = "moonpark-v8";
+import { mapTrackCells, mapTrackEntry } from "./map-track";
+export const VERSION = "moonpark-v9";
+export const workshopRules = (version: string) =>
+  [VERSION, "moonpark-v8"].includes(version);
 export const LANDING = 10;
 export const END = 550;
 export const DAY_SECONDS = END - LANDING;
@@ -83,7 +86,7 @@ export const CATALOG: Blueprint[] = [
   },
   {
     kind: "food",
-    name: "Moon Pie Kitchen",
+    name: "Attention Kitchen",
     cost: 15000,
     w: 2,
     h: 2,
@@ -92,11 +95,11 @@ export const CATALOG: Blueprint[] = [
     price: 500,
     power: 1,
     color: "#f2ad6b",
-    description: "Omar buys his own ingredients and runs the kitchen.",
+    description: "Illia buys his own ingredients and runs the kitchen.",
   },
   {
     kind: "drink",
-    name: "Crater Coolers",
+    name: "Finality Fizz",
     cost: 15000,
     w: 2,
     h: 2,
@@ -105,11 +108,11 @@ export const CATALOG: Blueprint[] = [
     price: 400,
     power: 1,
     color: "#7ad7f1",
-    description: "Mina sets prices from stock and demand.",
+    description: "Mert sets prices from stock and demand.",
   },
   {
     kind: "depot",
-    name: "Lunar Care Depot",
+    name: "Dragonfly Garage",
     cost: 25000,
     w: 3,
     h: 2,
@@ -118,7 +121,7 @@ export const CATALOG: Blueprint[] = [
     price: 1000,
     power: 1,
     color: "#ea91ba",
-    description: "Nia's robots automatically service connected rides.",
+    description: "Haseeb's robots automatically service connected rides.",
   },
   {
     kind: "solar",
@@ -153,7 +156,7 @@ export const isRide = (kind: string) =>
   ["bounce", "wheel", "rover", "coaster"].includes(kind);
 export const isTenant = (kind: string) => ["food", "drink"].includes(kind);
 export const resaleValue = (b: Building, version = VERSION) =>
-  version === VERSION
+  workshopRules(version)
     ? Math.floor(b.invested / 2)
     : Math.floor(
         (b.invested *
@@ -185,7 +188,13 @@ export function tileLine(from: Tile, to: Tile): Tile[] {
   }
   return cells;
 }
-export function buildingCells(b: Building, width = WIDTH): number[] {
+export function buildingCells(
+  b: Building,
+  width = WIDTH,
+  forPaths = false,
+): number[] {
+  if (b.kind === "coaster" && b.design?.map_track)
+    return mapTrackCells(b, forPaths, width);
   const f = footprint(b),
     cells: number[] = [];
   for (let z = b.z; z < b.z + f.h; z++)
@@ -193,7 +202,7 @@ export function buildingCells(b: Building, width = WIDTH): number[] {
   return cells;
 }
 export const isPersistent = (run: Run) =>
-  [VERSION, "moonpark-v7", "moonpark-v6"].includes(run.version);
+  [VERSION, "moonpark-v8", "moonpark-v7", "moonpark-v6"].includes(run.version);
 export const parkWidth = (run: Run) => (isPersistent(run) ? WIDTH : 32);
 export const parkHeight = (run: Run) => (isPersistent(run) ? HEIGHT : 24);
 export const parkOriginZ = (run: Run) => (isPersistent(run) ? 36 : 12);
@@ -201,6 +210,8 @@ export const parkGate = (run: Run) =>
   isPersistent(run) ? 47 * WIDTH + 23 : 23 * 32 + 15;
 export const parkClosed = (run: Run) => run.finished && !isPersistent(run);
 export type Design = {
+  map_track?: boolean;
+  bounce_height?: number;
   track_w?: number;
   track_h?: number;
   track?: TrackPoint[];
@@ -212,6 +223,7 @@ export type Design = {
 };
 export const defaultDesign = (): Design => ({
   name: "",
+  bounce_height: 8,
   palette: 255,
   style: 0,
   lights: 0,
@@ -344,6 +356,8 @@ export type Command = {
   kind:
     | "build"
     | "path"
+    | "paint_paths"
+    | "erase_paths"
     | "erase_path"
     | "connect"
     | "price"
@@ -355,6 +369,8 @@ export type Command = {
     | "theme"
     | "sell";
   blueprint_id?: string;
+  cells?: number[];
+  relocate?: boolean;
   design?: Design;
   building?: number;
   item?: Kind;
@@ -374,7 +390,8 @@ export function isCosmeticCommand(run: Run, command: Command): boolean {
   return !!building && command.design.height === (building.design?.height ?? 1);
 }
 export const merchantOwner = (kind: string) =>
-  ({ food: "Omar", drink: "Mina", depot: "Nia" })[kind] ?? "Lunar Logistics";
+  ({ food: "Illia", drink: "Mert", depot: "Haseeb" })[kind] ??
+  "Lunar Logistics";
 export const partnershipGoal = (p: Partnership) =>
   p.kind === "depot"
     ? `${p.target} ride repair${p.target === 1 ? "" : "s"}`
@@ -461,6 +478,7 @@ export function entrance(
     design?: Design;
   },
 ) {
+  if (b.design?.map_track) return mapTrackEntry(b);
   const { w, h } = footprint(b);
   return b.rotation % 4 === 0
     ? { x: b.x + Math.floor(w / 2), z: b.z + h }
@@ -481,8 +499,8 @@ export const guestName = (id: number) =>
     "Kai",
     "Amara",
     "Leo",
-    "Mina",
-    "Omar",
+    "Mert",
+    "Illia",
     "Ada",
     "Niko",
     "Zoe",
@@ -504,9 +522,7 @@ export function gridRoute(
   if (build)
     for (const b of run.buildings) {
       if (b.sold) continue;
-      const f = footprint(b);
-      for (let z = b.z; z < b.z + f.h; z++)
-        for (let x = b.x; x < b.x + f.w; x++) occupied.add(z * WIDTH + x);
+      for (const cell of buildingCells(b, WIDTH, true)) occupied.add(cell);
     }
   if (
     from < 0 ||

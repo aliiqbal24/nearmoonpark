@@ -156,6 +156,7 @@ export class ParkSession {
     if (
       ![
         VERSION,
+        "moonpark-v8",
         "moonpark-v7",
         "moonpark-v6",
         "moonpark-v5",

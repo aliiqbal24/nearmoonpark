@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowRight, Radio, Volume2, VolumeX } from "lucide-react";
 import * as T from "three";
 
@@ -21,8 +21,10 @@ export default function Opening({
     progress = useRef<HTMLDivElement>(null);
   const readyRef = useRef(ready),
     onCompleteRef = useRef(onComplete);
-  readyRef.current = ready;
-  onCompleteRef.current = onComplete;
+  useLayoutEffect(() => {
+    readyRef.current = ready;
+    onCompleteRef.current = onComplete;
+  }, [ready, onComplete]);
   const sound = (impact = false) => {
     if (muted) return;
     const ctx = (audio.current ??= new AudioContext());
@@ -56,9 +58,11 @@ export default function Opening({
         powerPreference: "high-performance",
       });
     } catch {
-      setFailed(true);
-      setFinished(true);
-      return;
+      const frame = requestAnimationFrame(() => {
+        setFailed(true);
+        setFinished(true);
+      });
+      return () => cancelAnimationFrame(frame);
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.outputColorSpace = T.SRGBColorSpace;

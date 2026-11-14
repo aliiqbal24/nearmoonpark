@@ -435,7 +435,7 @@ export function label(
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.fillStyle = color;
-  ctx.font = "600 72px sans-serif";
+  ctx.font = `600 ${Math.min(182, Math.max(72, Math.floor(1450 / Math.max(1, text.length))))}px sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, 512, 133, 934);

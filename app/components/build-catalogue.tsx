@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Coins, Route } from "lucide-react";
 import {
-  VERSION,
+  workshopRules,
   CATALOG,
   money,
   type Kind,
@@ -114,7 +114,7 @@ export function BuildCatalogue({
               if (e.pointerType === "mouse")
                 show(
                   e.currentTarget,
-                  a.kind === "solar" && run.version !== VERSION
+                  a.kind === "solar" && !workshopRules(run.version)
                     ? "Four extra units of clean power for this earlier park."
                     : a.description,
                   a.kind,
@@ -128,7 +128,7 @@ export function BuildCatalogue({
               });
               show(
                 e.currentTarget,
-                a.kind === "solar" && run.version !== VERSION
+                a.kind === "solar" && !workshopRules(run.version)
                   ? "Four extra units of clean power for this earlier park."
                   : a.description,
                 a.kind,
@@ -137,7 +137,7 @@ export function BuildCatalogue({
             onBlur={() => setTip(null)}
           >
             <span className="mp-blueprint-art" style={{ color: a.color }}>
-              <img src={`/art/${a.kind}-s0-v4.webp`} alt="" draggable={false} />
+              <img src={`/art/${a.kind}-s0-v5.webp`} alt="" draggable={false} />
             </span>
             <strong>{a.name}</strong>
             <small>

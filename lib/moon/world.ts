@@ -1,5 +1,11 @@
 import { resortDistrict } from "./resort-district";
 import { GuestThoughts } from "./guest-thoughts";
+import {
+  stationBounds,
+  stationPoints,
+  type MapTrackDraft,
+  type TrackGesture,
+} from "./map-track";
 import { configureArt } from "./art-kit";
 import { createSky, lunarEnvironment, SUN_DIRECTION } from "./sky";
 import { PALETTES } from "./parks";
@@ -127,6 +133,36 @@ export class MoonWorld {
   private strokeCells: number[] = [];
   private strokeLast = { x: 0, z: 0 };
   private strokePreview: T.InstancedMesh;
+  private trackDraft: MapTrackDraft | null = null;
+  private trackGesture: ((event: TrackGesture) => void) | null = null;
+  private trackDragging: {
+    mode: MapTrackDraft["mode"];
+    node: number | null;
+  } | null = null;
+  private trackOverlay = new T.Group();
+  private touchPointers = new Set<number>();
+  private multiTouch = false;
+  private trackLines = new T.Group();
+  private trackHandles = new T.InstancedMesh(
+    new T.SphereGeometry(0.36, 12, 8),
+    new T.MeshBasicMaterial({
+      color: "#ffffff",
+      depthTest: false,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.95,
+    }),
+    256,
+  );
+  private stationOutline = new T.LineSegments(
+    new T.EdgesGeometry(new T.BoxGeometry(1, 1, 1)),
+    new T.LineBasicMaterial({ color: "#f6db9a" }),
+  );
+  private beforeDrawing: {
+    position: T.Vector3;
+    target: T.Vector3;
+    maxDistance: number;
+  } | null = null;
   private cell = { x: 0, z: 0 };
   private hovered: Detail | null = null;
   private selected: number | null = null;
@@ -293,6 +329,14 @@ export class MoonWorld {
     );
     this.strokePreview.count = 0;
     this.scene.add(this.strokePreview);
+    this.trackOverlay.add(
+      this.trackLines,
+      this.trackHandles,
+      this.stationOutline,
+    );
+    this.trackOverlay.visible = false;
+    this.trackHandles.renderOrder = 20;
+    this.scene.add(this.trackOverlay);
     this.grid = new T.GridHelper(
       this.width * SCALE,
       this.width,
@@ -417,7 +461,8 @@ export class MoonWorld {
     el.addEventListener("pointermove", this.pointerMove);
     el.addEventListener("pointerup", this.pointerUp);
     el.addEventListener("pointerleave", this.pointerLeave);
-    el.addEventListener("pointercancel", this.cancelStroke);
+    el.addEventListener("pointercancel", this.cancelPointer);
+    window.addEventListener("blur", this.cancelPointer);
     el.addEventListener("contextmenu", this.contextMenu);
     window.addEventListener("keydown", this.keyDown);
     window.addEventListener("keyup", this.keyUp);
@@ -481,8 +526,17 @@ export class MoonWorld {
       this.parkPeak = Math.max(
         0,
         ...run.buildings
-          .filter((b) => !b.sold && b.kind === "coaster" && b.design?.track_w)
-          .flatMap((b) => b.design?.track?.map((p) => p.y / 10) ?? []),
+          .filter(
+            (b) =>
+              !b.sold &&
+              ((b.kind === "coaster" && b.design?.track_w) ||
+                (b.kind === "bounce" && !!b.design?.bounce_height)),
+          )
+          .flatMap((b) =>
+            b.kind === "bounce"
+              ? [b.design!.bounce_height!]
+              : (b.design?.track?.map((p) => p.y / 10) ?? []),
+          ),
       );
       if (this.lastTick !== run.tick) {
         if (run.tick < this.lastTick) this.visualTick = run.tick;
@@ -497,22 +551,39 @@ export class MoonWorld {
     const b = run.buildings.find((b) => b.id === selected && !b.sold);
     this.selection.visible = !!b;
     if (b) {
-      const { w, h } = footprint(b);
-      this.selection.scale.set(w * SCALE, 1, h * SCALE);
+      const { w, h } = b.design?.map_track ? { w: 8, h: 3 } : footprint(b);
+      const station = b.design?.map_track
+        ? stationBounds(b.design.track ?? [])
+        : null;
+      const offsetX = station ? (station.left + station.right) / 20 : w / 2;
+      const offsetZ = station ? (station.top + station.bottom) / 20 : h / 2;
+      if (station)
+        this.selection.scale.set(
+          ((station.right - station.left) / 10) * SCALE,
+          1,
+          ((station.bottom - station.top) / 10) * SCALE,
+        );
+      else this.selection.scale.set(w * SCALE, 1, h * SCALE);
       this.selection.position.set(
-        (b.x + w / 2 - this.width / 2) * SCALE,
+        (b.x + offsetX - this.width / 2) * SCALE,
         0.23,
-        (b.z + h / 2 - this.originZ) * SCALE,
+        (b.z + offsetZ - this.originZ) * SCALE,
       );
     }
     if (JSON.stringify(placement) !== JSON.stringify(this.placement)) {
       this.cancelStroke();
       this.placement = placement;
       this.configureDrawingControls();
-      this.previewPeak = placement?.design?.track_w
-        ? Math.max(0, ...(placement.design.track ?? []).map((p) => p.y / 10))
-        : 0;
-      this.grid.visible = !!placement;
+      this.previewPeak =
+        placement?.kind === "bounce"
+          ? (placement.design?.bounce_height ?? 0)
+          : placement?.design?.track_w
+            ? Math.max(
+                0,
+                ...(placement.design.track ?? []).map((p) => p.y / 10),
+              )
+            : 0;
+      this.grid.visible = !!placement || !!this.trackDraft;
       for (const child of [...this.ghost.children]) {
         child.removeFromParent();
         disposeObject(child);
@@ -539,6 +610,7 @@ export class MoonWorld {
           }),
         );
         this.ghost.add(m);
+        m.visible = !placement.design?.map_track;
         if (placement.kind !== "path" && placement.kind !== "erase") {
           const preview = createBuilding(
             {
@@ -574,7 +646,11 @@ export class MoonWorld {
           this.ghost.add(entry);
         }
         this.moveGhost();
-        if (placement.kind === "coaster" && placement.design?.track_w)
+        if (
+          (placement.kind === "coaster" && placement.design?.track_w) ||
+          (placement.kind === "bounce" &&
+            (placement.design?.bounce_height ?? 0) > 18)
+        )
           this.home();
       }
     }
@@ -666,6 +742,11 @@ export class MoonWorld {
             )[b.kind] ?? "#a9e4d3",
             1.05,
             b.kind === "food" ? 4 : b.kind === "drink" ? 3 : 2,
+            b.kind === "food"
+              ? "illia"
+              : b.kind === "drink"
+                ? "mert"
+                : "haseeb",
           );
           owner.name = "merchant-owner";
           owner.position.set(
@@ -702,26 +783,53 @@ export class MoonWorld {
       this.cell.z >= 0 &&
       this.cell.x + size.w <= this.width &&
       this.cell.z + size.h <= this.height;
-    const occupied = (x: number, z: number) =>
-      this.run?.buildings.some((b) => {
-        const f = footprint(b);
-        return (
-          !b.sold && x >= b.x && x < b.x + f.w && z >= b.z && z < b.z + f.h
-        );
-      });
+    const cells = new Set(
+      this.run?.buildings
+        .filter((b) => !b.sold)
+        .flatMap((b) =>
+          buildingCells(
+            b,
+            this.width,
+            this.placement?.kind === "path" || this.placement?.kind === "erase",
+          ),
+        ),
+    );
+    const occupied = (x: number, z: number) => cells.has(z * this.width + x);
     let valid = this.ghost.visible;
-    for (let z = this.cell.z; z < this.cell.z + size.h; z++)
-      for (let x = this.cell.x; x < this.cell.x + size.w; x++)
-        if (
-          occupied(x, z) ||
-          (this.placement.kind !== "path" &&
-            this.placement.kind !== "erase" &&
-            this.run?.paths.includes(z * this.width + x))
+    if (this.placement.kind === "coaster" && this.placement.design?.map_track) {
+      const candidate = {
+        ...previewBuilding("coaster", this.placement.design),
+        ...this.cell,
+      };
+      if (
+        buildingCells(candidate, this.width).some((cell) => cells.has(cell)) ||
+        buildingCells(candidate, this.width, true).some((cell) =>
+          this.run?.paths.includes(cell),
         )
-          valid = false;
+      )
+        valid = false;
+      const entry = entrance(candidate);
+      if (
+        entry.x < 0 ||
+        entry.z < 0 ||
+        entry.x >= this.width ||
+        entry.z >= this.height
+      )
+        valid = false;
+    } else
+      for (let z = this.cell.z; z < this.cell.z + size.h; z++)
+        for (let x = this.cell.x; x < this.cell.x + size.w; x++)
+          if (
+            occupied(x, z) ||
+            (this.placement.kind !== "path" &&
+              this.placement.kind !== "erase" &&
+              this.run?.paths.includes(z * this.width + x))
+          )
+            valid = false;
     if (
       this.placement.kind !== "path" &&
       this.placement.kind !== "erase" &&
+      !this.placement.design?.map_track &&
       (this.cell.x < 1 ||
         this.cell.z < 1 ||
         this.cell.x + size.w >= this.width ||
@@ -729,22 +837,212 @@ export class MoonWorld {
     )
       valid = false;
     const mesh = this.ghost.children[0] as
-      T.Mesh<T.BoxGeometry, T.MeshBasicMaterial> | undefined;
+      | T.Mesh<T.BoxGeometry, T.MeshBasicMaterial>
+      | undefined;
     mesh?.material.color.set(valid ? "#a5f6dd" : "#ed9b91");
   }
   private configureDrawingControls() {
     const drawing =
       this.placement?.kind === "path" || this.placement?.kind === "erase";
+    const drawingMap = drawing || !!this.trackDraft;
     this.controls.mouseButtons.LEFT =
-      drawing && !this.spacePan ? undefined : T.MOUSE.PAN;
-    this.controls.mouseButtons.MIDDLE = drawing ? T.MOUSE.PAN : T.MOUSE.DOLLY;
-    this.controls.touches.ONE = drawing ? undefined : T.TOUCH.PAN;
+      drawingMap && !this.spacePan ? undefined : T.MOUSE.PAN;
+    this.controls.mouseButtons.MIDDLE = drawingMap
+      ? T.MOUSE.PAN
+      : T.MOUSE.DOLLY;
+    this.controls.touches.ONE = drawingMap ? undefined : T.TOUCH.PAN;
+  }
+  setTrackDesigner(
+    draft: MapTrackDraft,
+    handler: (event: TrackGesture) => void,
+  ) {
+    if (!this.trackDraft) {
+      this.beforeDrawing = {
+        position: this.camera.position.clone(),
+        target: this.controls.target.clone(),
+        maxDistance: this.controls.maxDistance,
+      };
+      this.camera.position.set(28, 72, 58);
+      this.controls.target.set(0, 0, -15);
+      this.controls.maxDistance =
+        this.camera.position.distanceTo(this.controls.target) * 1.1;
+      this.controls.update();
+      this.cell = { x: 10, z: 38 };
+    }
+    this.trackDraft = draft;
+    this.trackGesture = handler;
+    this.grid.visible = true;
+    this.trackOverlay.visible = true;
+    this.previewPeak = Math.max(0, ...draft.points.map((p) => p.y / 10));
+    this.controls.maxDistance = Math.min(
+      320,
+      Math.max(
+        115,
+        this.previewPeak * 2.97 * Math.max(1, 0.9 / this.camera.aspect),
+      ),
+    );
+    this.configureDrawingControls();
+    this.drawTrackDraft();
+  }
+  endTrackDesigner(committed = false) {
+    if (committed) this.parkPeak = Math.max(this.parkPeak, this.previewPeak);
+    this.trackDraft = null;
+    this.trackGesture = null;
+    this.trackDragging = null;
+    this.trackOverlay.visible = false;
+    this.previewPeak = 0;
+    this.grid.visible = !!this.placement;
+    this.configureDrawingControls();
+    if (committed) this.home();
+    else if (this.beforeDrawing) {
+      this.camera.position.copy(this.beforeDrawing.position);
+      this.controls.target.copy(this.beforeDrawing.target);
+      this.controls.maxDistance = this.beforeDrawing.maxDistance;
+      this.controls.update();
+    }
+    this.beforeDrawing = null;
+  }
+  private drawTrackDraft() {
+    const draft = this.trackDraft;
+    if (!draft) return;
+    for (const child of [...this.trackLines.children]) {
+      child.removeFromParent();
+      disposeObject(child);
+    }
+    const points =
+      draft.mode === "station"
+        ? stationPoints(this.cell, draft.rotation)
+        : draft.points;
+    const station = stationBounds(points);
+    this.stationOutline.visible = !!station;
+    if (station) {
+      this.stationOutline.position.set(
+        ((station.left + station.right) / 20 - this.width / 2) * SCALE,
+        0.3,
+        ((station.top + station.bottom) / 20 - this.originZ) * SCALE,
+      );
+      this.stationOutline.scale.set(
+        (station.right - station.left) * 0.125,
+        0.16,
+        (station.bottom - station.top) * 0.125,
+      );
+    }
+    const position = (p: { x: number; y: number; z: number }) =>
+      new T.Vector3(
+        (p.x / 10 - this.width / 2) * SCALE,
+        p.y / 10 + 0.2,
+        (p.z / 10 - this.originZ) * SCALE,
+      );
+    if (points.length >= 2) {
+      const curve = new T.CatmullRomCurve3(
+        points.map(position),
+        draft.closed,
+        "catmullrom",
+        0.25,
+      );
+      const segments = Math.max(32, points.length * 8);
+      const route = curve.getPoints(segments).map((p, i) => {
+        if (i / segments < 1 / points.length)
+          p.lerpVectors(
+            position(points[0]),
+            position(points[1]),
+            (i / segments) * points.length,
+          );
+        return p;
+      });
+      for (const elevated of [false, true]) {
+        const geometry = new T.BufferGeometry().setFromPoints(
+          route.map((p) => (elevated ? p : new T.Vector3(p.x, 0.27, p.z))),
+        );
+        this.trackLines.add(
+          new T.Line(
+            geometry,
+            new T.LineBasicMaterial({
+              color: draft.invalid
+                ? "#f38b78"
+                : elevated
+                  ? "#fff0b2"
+                  : "#79e3ca",
+              transparent: true,
+              opacity: elevated ? 0.95 : 0.8,
+              depthWrite: false,
+            }),
+          ),
+        );
+      }
+      const elevated = new T.Mesh(
+        new T.TubeGeometry(
+          new T.CatmullRomCurve3(route, draft.closed),
+          segments,
+          0.075,
+          5,
+          draft.closed,
+        ),
+        new T.MeshBasicMaterial({
+          color: draft.invalid ? "#f38b78" : "#fff0b2",
+          transparent: true,
+          opacity: 0.9,
+        }),
+      );
+      this.trackLines.add(elevated);
+    }
+    const matrix = new T.Matrix4();
+    points.forEach((p, i) => {
+      matrix.makeTranslation(
+        (p.x / 10 - this.width / 2) * SCALE,
+        0.34,
+        (p.z / 10 - this.originZ) * SCALE,
+      );
+      const scale = i === draft.selected || i === 0 ? 1.7 : 1;
+      matrix.scale(new T.Vector3(scale, scale, scale));
+      this.trackHandles.setMatrixAt(i, matrix);
+      this.trackHandles.setColorAt(
+        i,
+        new T.Color(
+          i < 2 ? "#f5cd78" : i === draft.selected ? "#ffffff" : "#71d8c0",
+        ),
+      );
+    });
+    this.trackHandles.count = points.length;
+    this.trackHandles.instanceMatrix.needsUpdate = true;
+    if (this.trackHandles.instanceColor)
+      this.trackHandles.instanceColor.needsUpdate = true;
+    this.trackHandles.computeBoundingSphere();
+  }
+  private trackNodeAt(e: PointerEvent) {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    let nearest: number | null = null,
+      distance = 15;
+    this.trackDraft?.points.forEach((p, i) => {
+      const point = new T.Vector3(
+        (p.x / 10 - this.width / 2) * SCALE,
+        0.34,
+        (p.z / 10 - this.originZ) * SCALE,
+      ).project(this.camera);
+      const d = Math.hypot(
+        rect.left + ((point.x + 1) * rect.width) / 2 - e.clientX,
+        rect.top + ((1 - point.y) * rect.height) / 2 - e.clientY,
+      );
+      if (d < distance) {
+        distance = d;
+        nearest = i;
+      }
+    });
+    return nearest;
   }
   private cancelStroke = () => {
     this.painting = false;
+    this.trackDragging = null;
     this.strokeCells = [];
     if (this.strokePreview) this.strokePreview.count = 0;
     this.opts.onPathPreview?.(null);
+  };
+  private cancelPointer = () => {
+    this.cancelStroke();
+    this.touchPointers.clear();
+    this.multiTouch = false;
+    this.spacePan = false;
+    this.configureDrawingControls();
   };
   private extendStroke() {
     if (
@@ -762,7 +1060,7 @@ export class MoonWorld {
     const occupied = new Set(
       this.run?.buildings
         .filter((b) => !b.sold)
-        .flatMap((b) => buildingCells(b, this.width)),
+        .flatMap((b) => buildingCells(b, this.width, true)),
     );
     const existing = new Set(this.run?.paths);
     const erase = this.placement?.kind === "erase";
@@ -800,7 +1098,29 @@ export class MoonWorld {
     });
   }
   private pointerDown = (e: PointerEvent) => {
+    if (e.pointerType === "touch") {
+      this.touchPointers.add(e.pointerId);
+      if (this.touchPointers.size > 1) {
+        this.multiTouch = true;
+        this.cancelStroke();
+        return;
+      }
+    }
     this.down = { x: e.clientX, y: e.clientY };
+    if (this.trackDraft && !this.spacePan && e.button === 0) {
+      this.pointerMove(e);
+      this.trackDragging = {
+        mode: this.trackDraft.mode,
+        node: this.trackNodeAt(e),
+      };
+      this.trackGesture?.({
+        phase: "start",
+        cell: { ...this.cell },
+        node: this.trackDragging.node,
+      });
+      this.renderer.domElement.setPointerCapture(e.pointerId);
+      return;
+    }
     if (
       e.button !== 0 ||
       this.spacePan ||
@@ -815,6 +1135,7 @@ export class MoonWorld {
     this.renderer.domElement.setPointerCapture(e.pointerId);
   };
   private pointerMove = (e: PointerEvent) => {
+    if (this.multiTouch) return;
     const r = this.renderer.domElement.getBoundingClientRect();
     this.mouse.set(
       ((e.clientX - r.left) / r.width) * 2 - 1,
@@ -828,9 +1149,19 @@ export class MoonWorld {
       };
       this.moveGhost();
       if (this.painting) this.extendStroke();
+      if (this.trackDraft) {
+        if (this.trackDragging && this.trackDragging.mode !== "station")
+          this.trackGesture?.({
+            phase: "move",
+            cell: { ...this.cell },
+            node: this.trackDragging.node,
+          });
+        else if (this.trackDraft.mode === "station") this.drawTrackDraft();
+      }
     }
-    if (this.placement) {
+    if (this.placement || this.trackDraft) {
       this.opts.onHover(null);
+      this.renderer.domElement.style.cursor = "crosshair";
       return;
     }
     const candidates = [...this.models.values()]
@@ -855,6 +1186,20 @@ export class MoonWorld {
     this.renderer.domElement.style.cursor = detail ? "pointer" : "grab";
   };
   private pointerUp = (e: PointerEvent) => {
+    if (e.pointerType === "touch") {
+      this.touchPointers.delete(e.pointerId);
+      if (this.multiTouch) {
+        if (!this.touchPointers.size) this.multiTouch = false;
+        return;
+      }
+    }
+    if (this.trackDragging && e.button === 0) {
+      this.pointerMove(e);
+      const node = this.trackDragging.node;
+      this.trackDragging = null;
+      this.trackGesture?.({ phase: "end", cell: { ...this.cell }, node });
+      return;
+    }
     if (this.painting && e.button === 0) {
       this.pointerMove(e);
       const cells = [...this.strokeCells];
@@ -863,6 +1208,7 @@ export class MoonWorld {
       if (cells.length) this.opts.onPathStroke?.(cells, erase);
       return;
     }
+    if (this.trackDraft) return;
     if (
       Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y) > 7 ||
       e.button !== 0
@@ -873,7 +1219,7 @@ export class MoonWorld {
     else this.opts.onPick(this.hovered);
   };
   private pointerLeave = () => {
-    if (this.painting) return;
+    if (this.painting || this.trackDragging) return;
     this.opts.onHover(null);
     this.ghost.visible = false;
   };
@@ -887,13 +1233,18 @@ export class MoonWorld {
       return;
     if (
       e.code === "Space" &&
-      this.placement &&
-      ["path", "erase"].includes(this.placement.kind)
+      (this.trackDraft ||
+        (this.placement && ["path", "erase"].includes(this.placement.kind)))
     ) {
       e.preventDefault();
       this.spacePan = true;
       this.configureDrawingControls();
     }
+    if (
+      this.trackDraft &&
+      ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)
+    )
+      return;
     const step = 1.5;
     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
       e.preventDefault();
@@ -1123,6 +1474,7 @@ export class MoonWorld {
         this.host.clientHeight,
         this.time,
         this.speed > 0 &&
+          !this.trackDraft &&
           this.cinematic === null &&
           this.rideId === null &&
           !this.placement &&
@@ -1473,7 +1825,11 @@ export class MoonWorld {
       0.1 + y,
       22,
     );
-    this.lander.visible = phase < 38;
+    this.lander.visible =
+      phase < 38 &&
+      (this.attractMode ||
+        this.cinematic !== null ||
+        (this.run?.opening_stage ?? 3) >= 2);
     this.gangway.visible = phase >= 10 && phase < 30;
     const status =
       phase < 10
@@ -1563,7 +1919,8 @@ export class MoonWorld {
     el.removeEventListener("pointermove", this.pointerMove);
     el.removeEventListener("pointerup", this.pointerUp);
     el.removeEventListener("pointerleave", this.pointerLeave);
-    el.removeEventListener("pointercancel", this.cancelStroke);
+    el.removeEventListener("pointercancel", this.cancelPointer);
+    window.removeEventListener("blur", this.cancelPointer);
     el.removeEventListener("contextmenu", this.contextMenu);
     window.removeEventListener("keydown", this.keyDown);
     window.removeEventListener("keyup", this.keyUp);

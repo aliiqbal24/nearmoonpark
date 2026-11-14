@@ -29,11 +29,12 @@ export default function Terms() {
         Prize-eligible runs must belong to the published, opened Moonpark
         challenge and be completed onchain by November 18, 2026 at 23:59 UTC.
         Internal playtests, offline practice and guest runs are not eligible.
-        One best score per signed-in player is ranked; one prize per eligible
-        person. Automated play, duplicate-person entries, identity abuse and
-        exploited runs are ineligible. Winners are reviewed before manual
-        payment. The creator will request proof of account ownership and arrange
-        payment after the qualifying hackathon award is received.
+        Only the finished game’s current challenge counts toward this USD
+        giveaway. One best score per signed-in player is ranked; one prize per
+        eligible person. Automated play, duplicate-person entries, identity
+        abuse and exploited runs are ineligible. Winners are reviewed before
+        manual payment. The creator will request proof of account ownership and
+        arrange payment after the qualifying hackathon award is received.
       </p>
       <p>
         The live top five continues after the cutoff. Separate eligible records
@@ -61,24 +62,21 @@ export default function Terms() {
         Owners can publish newer revisions as their parks grow.
       </p>
       <p>
-        New parks start with 3,200 lunar credits on the Moonpark v7 NEAR testnet
-        contract. A generated game account initially owns its park. Claiming
-        requires the nominated wallet account to sign acceptance onchain. The
-        authorized game account may update the park, publish designs and rotate
-        its sponsored session. Its owner can replace that operator. Private
-        browser keys must be backed up for account recovery. Each blueprint
-        license costs 0.005 testnet NEAR, funded from the buyer’s sponsored
-        account. The creator park’s owner at purchase receives 90%, and 10%
-        supports storage. A permanent license records attribution for that park.
-        Accrued earnings stay with their recipient when park ownership changes.
-        These testnet tokens have no cash value. Earlier v3 concession ownership
-        and funded claims remain accessible through the earlier-claims page. At
-        the v4 transition, the v3 eligible prize board was empty. Earlier v4 and
-        v5 parks, licenses and earnings remain accessible through the
-        earlier-parks desk. Saved unfinished v4 and v5 rounds use their original
-        engine and contract. Earlier v6 permanent parks use their original
-        contract and saved engine. The current giveaway uses the separate v7
-        challenge and its published rules.
+        New parks start with 3,200 lunar credits and a connected kitchen, drinks
+        stall and maintenance garage on NEAR testnet. A generated game account
+        initially owns its park. Claiming requires the nominated wallet account
+        to sign acceptance onchain. The authorized game account may update the
+        park, publish designs and rotate its sponsored session. Its owner can
+        replace that operator. Private browser keys must be backed up for
+        account recovery. Each blueprint license costs 0.005 testnet NEAR,
+        funded from the buyer’s sponsored account. The creator park’s owner at
+        purchase receives 90%, and 10% supports storage. A permanent license
+        records attribution for that park. Accrued earnings stay with their
+        recipient when park ownership changes. These testnet tokens have no cash
+        value. Earlier parks, licenses, earnings and historical records remain
+        accessible through the account archive using their original engines and
+        contracts. The current giveaway uses the challenge linked in the game’s
+        NEAR panel.
       </p>
       <Link href="/">Return to Moonpark</Link>
     </main>

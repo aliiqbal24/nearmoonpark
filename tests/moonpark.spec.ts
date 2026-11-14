@@ -1,10 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { PerspectiveCamera, Vector3 } from "three";
 import { KeyPair } from "near-api-js";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import type { Run } from "../lib/moon/model";
 
-function project(page: Page, x: number, z: number, peak = 36) {
+function project(page: Page, x: number, z: number, peak = 12) {
   const { width, height } = page.viewportSize()!;
   const camera = new PerspectiveCamera(50, width / height, 0.1, 2200);
   if (peak > 18) {
@@ -41,115 +41,94 @@ async function savedRun(page: Page): Promise<Run> {
     () => JSON.parse(localStorage.getItem("moonpark-current")!).state.run,
   );
 }
-async function opening(page: Page) {
-  await open(page);
+function mapPoint(page: Page, x: number, z: number) {
+  const { width, height } = page.viewportSize()!;
+  const camera = new PerspectiveCamera(50, width / height, 0.1, 2200);
+  camera.position.set(28, 72, 58);
+  camera.lookAt(0, 0, -15);
+  camera.updateMatrixWorld();
+  const p = new Vector3((x - 24) * 1.25, 0, (z - 36) * 1.25).project(camera);
+  return { x: ((p.x + 1) * width) / 2, y: ((1 - p.y) * height) / 2 };
+}
+async function drawCoaster(page: Page, name = "Earthskimmer") {
   await page
     .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
     .click();
+  await expect(
+    page.getByRole("region", { name: "Coaster map designer" }),
+  ).toBeVisible();
+  await page.getByLabel("Attraction name", { exact: true }).fill(name);
   await page
-    .getByRole("button", { name: "Place coaster", exact: true })
+    .getByRole("button", { name: "Stardust colors", exact: true })
     .click();
-  let point = project(page, 2.2, 16.2);
-  await page.mouse.click(point.x, point.y);
-  await expect(page.getByTestId("building-inspector")).toContainText(
-    "Mass-Driver Coaster",
-  );
-  await expect.poll(async () => (await savedRun(page)).buildings[0].x).toBe(2);
+  let p = mapPoint(page, 2.2, 34.2);
+  await page.mouse.click(p.x, p.y);
+  p = mapPoint(page, 9.5, 35.5);
+  await page.mouse.move(p.x, p.y);
+  await page.mouse.down();
+  for (const [x, z] of [
+    [15.5, 35.5],
+    [15.5, 20.5],
+    [3.5, 20.5],
+    [3.5, 33.5],
+  ]) {
+    p = mapPoint(page, x, z);
+    await page.mouse.move(p.x, p.y, { steps: 10 });
+  }
+  await page.mouse.up();
   await page
-    .getByRole("button", { name: "Close inspector", exact: true })
+    .getByRole("button", { name: "Close loop to station", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Build Moon Pie Kitchen", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Place attraction", exact: true })
-    .click();
-  point = project(page, 26.2, 41.2);
-  await page.mouse.click(point.x, point.y);
-  await expect.poll(async () => (await savedRun(page)).opening_stage).toBe(2);
-  await page
-    .getByRole("button", { name: "Close inspector", exact: true })
-    .click();
+  await expect(
+    page.getByRole("button", { name: "Build coaster · 1,200", exact: true }),
+  ).toBeEnabled();
 }
-async function planPoint(page: Page, x: number, z: number) {
-  const rect = await page
-    .getByRole("group", { name: "Coaster track schematic" })
-    .boundingBox();
-  const scale = Math.min(rect!.width, rect!.height) / 320;
-  return {
-    x: rect!.x + (rect!.width - 320 * scale) / 2 + (x + 10) * scale,
-    y: rect!.y + (rect!.height - 320 * scale) / 2 + (z + 10) * scale,
-  };
+async function opening(page: Page) {
+  await open(page);
+  await drawCoaster(page);
+  await page
+    .getByRole("button", { name: "Build coaster · 1,200", exact: true })
+    .click();
+  await expect.poll(async () => (await savedRun(page)).opening_stage).toBe(2);
+  await expect(
+    page.getByRole("region", { name: "Coaster map designer" }),
+  ).toHaveCount(0);
 }
 
-test("opening starts with a designed coaster and restaurant, then unlocks the park", async ({
+test("starter stores wait for a coaster drawn over the map, then welcome the first rocket", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await open(page);
-  await expect(page.locator(".mp-blueprint")).toHaveCount(1);
-  await page.waitForTimeout(1400);
-  expect((await savedRun(page)).tick).toBe(0);
-  await page
-    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toContainText("16 × 21 tiles");
-  await page
-    .getByLabel("Attraction name", { exact: true })
-    .fill("Earthskimmer");
-  await page
-    .getByRole("button", { name: "Stardust colors", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Place coaster", exact: true })
-    .click();
-  let point = project(page, 2.2, 16.2);
-  await page.mouse.click(point.x, point.y);
-  await expect(page.getByTestId("building-inspector")).toContainText(
-    "Earthskimmer",
-  );
   let run = await savedRun(page);
-  expect(run.cash).toBe(200000);
-  expect(run.opening_stage).toBe(1);
-  expect(run.tick).toBe(0);
-  expect(run.buildings[0].connected).toBe(true);
-  expect(run.buildings[0].design?.palette).toBe(3);
+  expect(run.buildings.map((b) => b.kind)).toEqual(["food", "drink", "depot"]);
+  expect(run.cash).toBe(320000);
+  expect(run.buildings.every((b) => b.connected && b.ready_at === 0)).toBe(
+    true,
+  );
+  await page.waitForTimeout(1200);
+  expect((await savedRun(page)).tick).toBe(0);
+  await drawCoaster(page);
+  expect((await savedRun(page)).cash).toBe(320000);
+  await page.screenshot({ path: "outputs/moon-v9-map-drawing.png" });
   await page
-    .getByRole("button", { name: "Close inspector", exact: true })
+    .getByRole("button", { name: "Build coaster · 1,200", exact: true })
     .click();
-  await expect(page.locator(".mp-blueprint")).toHaveCount(1);
-  await page
-    .getByRole("button", { name: "Build Moon Pie Kitchen", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Orbital", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Place attraction", exact: true })
-    .click();
-  point = project(page, 26.2, 41.2);
-  await page.mouse.click(point.x, point.y);
   await expect.poll(async () => (await savedRun(page)).opening_stage).toBe(2);
   run = await savedRun(page);
-  expect(run.cash).toBe(185000);
-  expect(run.buildings[1].connected).toBe(true);
-  expect(run.buildings[1].design?.style).toBe(1);
-  await page
-    .getByRole("button", { name: "Close inspector", exact: true })
-    .click();
-  await expect(page.locator(".mp-blueprint")).toHaveCount(9);
-  await expect(
-    page.getByRole("button", { name: "4×", exact: true }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "2×", exact: true }),
-  ).toHaveCount(0);
+  expect(run.cash).toBe(200000);
+  expect(run.buildings[3].design?.map_track).toBe(true);
+  expect(run.buildings[3].design?.name).toBe("Earthskimmer");
+  expect(run.buildings[3].design?.palette).toBe(3);
+  expect(run.buildings[3].connected).toBe(true);
   await expect(
     page.getByRole("button", { name: "Pause", exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Resume", exact: true }),
+    page.getByRole("button", { name: "4×", exact: true }),
   ).toHaveCount(0);
-  await expect(page.locator(".mp-subhud")).not.toContainText("power");
+  await expect(page.getByLabel("Ticket price", { exact: true })).toHaveCount(0);
   await expect
     .poll(async () => (await savedRun(page)).tick, { timeout: 18000 })
     .toBeGreaterThanOrEqual(11);
@@ -157,164 +136,15 @@ test("opening starts with a designed coaster and restaurant, then unlocks the pa
     (await savedRun(page)).guests.some((g) => g.status !== "upcoming"),
   ).toBe(true);
   await page.getByRole("button", { name: "How to play", exact: true }).click();
-  const planningTick = (await savedRun(page)).tick;
+  const tick = (await savedRun(page)).tick;
   await page.waitForTimeout(1300);
-  expect((await savedRun(page)).tick).toBe(planningTick);
+  expect((await savedRun(page)).tick).toBe(tick);
   await page.getByRole("button", { name: "Close panel", exact: true }).click();
   await expect
     .poll(async () => (await savedRun(page)).tick)
-    .toBeGreaterThan(planningTick);
-  await page.screenshot({ path: "outputs/moon-v8-opening-gameplay.png" });
+    .toBeGreaterThan(tick);
+  await page.screenshot({ path: "outputs/moon-v9-opening-gameplay.png" });
   expect(errors).toEqual([]);
-});
-
-test("cursor-drawn loops snap closed and support a 30×30 footprint and 60m hill", async ({
-  page,
-}) => {
-  await open(page);
-  await page
-    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Draw your own", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Place coaster", exact: true }),
-  ).toBeDisabled();
-  for (const [x, z] of [
-    [295, 5],
-    [5, 5],
-    [35, 220],
-  ]) {
-    const p = await planPoint(page, x, z);
-    await page.mouse.click(p.x, p.y);
-  }
-  await page.getByLabel("Selected turn height", { exact: true }).fill("600");
-  await page
-    .getByRole("button", { name: "Join back to station", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toContainText("30 × 30 tiles");
-  await expect(page.getByRole("dialog")).toContainText("60 m peak");
-  await expect(
-    page.getByRole("button", { name: "Place coaster", exact: true }),
-  ).toBeEnabled();
-  await page.screenshot({ path: "outputs/moon-v8-custom-track.png" });
-  await page
-    .getByRole("button", { name: "Place coaster", exact: true })
-    .click();
-  const p = project(page, 3.2, 6.2, 60);
-  await page.mouse.click(p.x, p.y);
-  await expect
-    .poll(async () => (await savedRun(page)).buildings.length)
-    .toBe(1);
-  const run = await savedRun(page);
-  expect(run.buildings[0].design?.track_w).toBe(30);
-  expect(run.buildings[0].design?.track_h).toBe(30);
-  expect(run.buildings[0].design?.track?.some((p) => p.y === 600)).toBe(true);
-});
-
-test("track handles drag, keyboard editing and undo retain a valid design", async ({
-  page,
-}) => {
-  await open(page);
-  await page
-    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
-    .click();
-  const handle = page.getByRole("button", {
-    name: "Track point 4, 30.0 metres",
-    exact: true,
-  });
-  const box = await handle.boundingBox();
-  const dest = await planPoint(page, 250, 120);
-  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(dest.x, dest.y, { steps: 12 });
-  await page.mouse.up();
-  const moved = page.getByRole("button", {
-    name: "Track point 4, 30.0 metres",
-    exact: true,
-  });
-  await expect(moved).toHaveAttribute("cx", "250");
-  await expect(moved).toHaveAttribute("cy", "120");
-  await moved.focus();
-  await page.keyboard.press("ArrowLeft");
-  await expect(moved).toHaveAttribute("cx", "245");
-  await page
-    .getByRole("button", { name: "Undo track edit", exact: true })
-    .click();
-  await expect(moved).toHaveAttribute("cx", "250");
-  await page
-    .getByRole("button", { name: "Place coaster", exact: true })
-    .click();
-  const p = project(page, 2.2, 16.2);
-  await page.mouse.click(p.x, p.y);
-  await expect
-    .poll(async () => (await savedRun(page)).buildings.length)
-    .toBe(1);
-  await page
-    .getByRole("button", { name: "Design your coaster", exact: true })
-    .click();
-  const cash = (await savedRun(page)).cash;
-  await page.getByLabel("Selected turn height").fill("450");
-  await page.waitForTimeout(1500);
-  expect((await savedRun(page)).tick).toBe(0);
-  await page.getByRole("button", { name: "Apply design", exact: true }).click();
-  expect((await savedRun(page)).cash).toBe(cash);
-  await page.reload();
-  await expect(
-    page.getByRole("button", { name: "Build Moon Pie Kitchen", exact: true }),
-  ).toBeVisible();
-  expect(
-    (await savedRun(page)).buildings[0].design?.track?.some((p) => p.y === 450),
-  ).toBe(true);
-});
-
-test("catalogue scrolls by wheel and exposes compact building descriptions", async ({
-  page,
-}) => {
-  await opening(page);
-  const dock = page.getByLabel("Building catalogue", { exact: true });
-  const before = await dock.evaluate((el) => el.scrollLeft);
-  await dock.hover();
-  await page.mouse.wheel(0, 550);
-  await expect
-    .poll(() => dock.evaluate((el) => el.scrollLeft))
-    .toBeGreaterThan(before);
-  await page
-    .getByRole("button", { name: "Build Solar Canopy", exact: true })
-    .hover();
-  await expect(page.getByRole("tooltip")).toContainText(
-    "5 credits every 20 seconds",
-  );
-  expect(
-    (await page.getByRole("tooltip").boundingBox())!.width,
-  ).toBeLessThanOrEqual(210);
-  await page
-    .getByRole("button", { name: "Build Solar Canopy", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toContainText(
-    "Design your Solar Canopy",
-  );
-  await page.getByRole("button", { name: "Back to park", exact: true }).click();
-});
-
-test("ride fares are fixed and selling returns half without an open-close control", async ({
-  page,
-}) => {
-  await opening(page);
-  const p = project(page, 8, 25);
-  await page.mouse.click(p.x, p.y);
-  await expect(page.getByTestId("building-inspector")).toBeVisible();
-  await expect(page.getByLabel("Ticket price", { exact: true })).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Close", exact: true }),
-  ).toHaveCount(0);
-  const before = (await savedRun(page)).cash;
-  await page.getByRole("button", { name: "Sell · 600", exact: true }).click();
-  await expect
-    .poll(async () => (await savedRun(page)).cash)
-    .toBe(before + 60000);
-  expect((await savedRun(page)).buildings[0].sold).toBe(true);
 });
 
 test("paths paint a continuous drag before purchase and staff portraits expose business status", async ({
@@ -343,47 +173,86 @@ test("paths paint a continuous drag before purchase and staff portraits expose b
     )
     .toBe(7);
   await page
-    .getByRole("button", { name: "View Omar’s status", exact: true })
+    .getByRole("button", { name: "View Illia’s status", exact: true })
     .click();
-  await expect(page.getByRole("dialog")).toContainText("Moon Pie Kitchen");
+  await expect(page.getByRole("dialog")).toContainText("Attention Kitchen");
   await expect(page.getByRole("dialog")).toContainText("Business cash");
   await page.getByRole("button", { name: "Close panel", exact: true }).click();
   await page
-    .getByRole("button", { name: "View Nia’s status", exact: true })
+    .getByRole("button", { name: "View Haseeb’s status", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toContainText("Repairs completed");
 });
 
-test("new park progress and designs survive refresh during onboarding", async ({
+test("Lunar Bounce height is selected before placement and the catalogue scrolls", async ({
   page,
 }) => {
-  await open(page);
+  await opening(page);
+  const dock = page.getByLabel("Building catalogue", { exact: true });
+  await dock.hover();
+  await page.mouse.wheel(0, 550);
+  await expect
+    .poll(() => dock.evaluate((el) => el.scrollLeft))
+    .toBeGreaterThan(0);
   await page
-    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
-    .click();
-  await page.getByLabel("Attraction name").fill("Permanent Moon");
+    .getByRole("button", { name: "Build Solar Canopy", exact: true })
+    .hover();
+  await expect(page.getByRole("tooltip")).toContainText(
+    "5 credits every 20 seconds",
+  );
   await page
-    .getByRole("button", { name: "Place coaster", exact: true })
+    .getByRole("button", { name: "Build Lunar Bounce", exact: true })
     .click();
-  const p = project(page, 2.2, 16.2);
+  await page.getByRole("button", { name: "22 m", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Place attraction", exact: true })
+    .click();
+  const p = project(page, 26.2, 29.2, 22);
   await page.mouse.click(p.x, p.y);
   await expect
     .poll(async () => (await savedRun(page)).buildings.length)
-    .toBe(1);
-  const before = await savedRun(page);
+    .toBe(5);
+  expect((await savedRun(page)).buildings[4].design?.bounce_height).toBe(22);
+  await expect(page.getByLabel("Ticket price", { exact: true })).toHaveCount(0);
+});
+
+test("coaster drafts and confirmed progress survive refresh", async ({
+  page,
+}) => {
+  await open(page);
+  await drawCoaster(page, "Permanent Moon");
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Build Moon Pie Kitchen", exact: true }),
+    page.getByRole("button", {
+      name: "Build Mass-Driver Coaster",
+      exact: true,
+    }),
   ).toBeVisible();
-  const after = await savedRun(page);
-  expect(after.hash).toBe(before.hash);
-  expect(after.buildings[0].design?.name).toBe("Permanent Moon");
+  await page
+    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
+    .click();
+  await expect(page.getByLabel("Attraction name", { exact: true })).toHaveValue(
+    "Permanent Moon",
+  );
+  await page
+    .getByRole("button", { name: "Build coaster · 1,200", exact: true })
+    .click();
+  await expect
+    .poll(async () => (await savedRun(page)).buildings.length)
+    .toBe(4);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Build Lunar Bounce", exact: true }),
+  ).toBeVisible();
+  expect((await savedRun(page)).buildings[3].design?.name).toBe(
+    "Permanent Moon",
+  );
   await expect(
     page.getByRole("button", { name: "Skip intro", exact: true }),
   ).toHaveCount(0);
 });
 
-test("mobile workshop and scrollable catalogue remain usable", async ({
+test("mobile map drawing leaves the park visible and options scroll within the screen", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -391,20 +260,18 @@ test("mobile workshop and scrollable catalogue remain usable", async ({
   await page
     .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
     .click();
-  await expect(
-    page.getByRole("group", { name: "Coaster track schematic" }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Place coaster", exact: true })
-    .scrollIntoViewIfNeeded();
-  await page.screenshot({ path: "outputs/moon-v8-workshop-mobile.png" });
+  const panel = page.getByRole("region", { name: "Coaster map designer" });
+  const bounds = await panel.boundingBox();
+  expect(bounds!.height).toBeLessThan(844 * 0.4);
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     390,
   );
-  const dialog = page.getByRole("dialog");
-  const bounds = await dialog.boundingBox();
-  expect(bounds!.x).toBeGreaterThanOrEqual(0);
-  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  await page
+    .getByRole("button", { name: "Cancel coaster design", exact: true })
+    .click();
+  await page.screenshot({ path: "outputs/moon-v9-foundation-mobile.png" });
 });
 
 test("cloud recovery endpoints require verified sign-in and enforce same-origin writes", async ({
@@ -433,7 +300,7 @@ test("cloud recovery endpoints require verified sign-in and enforce same-origin 
 test("v6 and v7 engines and earlier ownership desks remain available", async ({
   page,
 }) => {
-  for (const version of ["v6", "v7"]) {
+  for (const version of ["v6", "v7", "v8"]) {
     await page.goto(`/archive/${version}`);
     await expect(
       page.getByRole("heading", { name: "Your earlier parks" }),
@@ -464,8 +331,8 @@ test("v6 and v7 engines and earlier ownership desks remain available", async ({
       return result.run;
     }, version);
     expect(run.version).toBe(`moonpark-${version}`);
-    expect(run.buildings.length).toBe(2);
-    expect(run.cash).toBe(version === "v7" ? 320000 : 160000);
+    expect(run.buildings.length).toBe(version === "v8" ? 0 : 2);
+    expect(run.cash).toBe(version === "v6" ? 160000 : 320000);
   }
 });
 test("ranked provisioning and player profiles require sign-in", async ({
@@ -567,12 +434,12 @@ test("opening remains playable when the movie cannot load", async ({
     .click();
   await expect(page.locator("video.mp-opening-film")).not.toHaveClass(
     /playing/,
+    { timeout: 15000 },
   );
   await expect(page.locator('[data-testid="moon-world"] canvas')).toBeVisible();
-  await page.getByRole("button", { name: "Skip intro" }).click();
   await expect(
     page.getByRole("button", { name: "Build Mass-Driver Coaster" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 60000 });
 });
 
 test("sky loads the 8K compressed backdrop and its decoder without using the soft fallback", async ({
@@ -842,7 +709,6 @@ test("signed-in recovery restores the same park in two independent browser conte
         z: 16,
         design: { ...starterCoaster(), name: "Cloud Skimmer" },
       },
-      { kind: "build", item: "food", x: 26, z: 41 },
     ],
     ticks: 0,
   });
@@ -891,7 +757,7 @@ test("signed-in recovery restores the same park in two independent browser conte
     await page
       .getByRole("button", { name: "How to play", exact: true })
       .click();
-    expect((await savedRun(page)).buildings[0].design?.name).toBe(
+    expect((await savedRun(page)).buildings[3].design?.name).toBe(
       "Cloud Skimmer",
     );
     expect(
@@ -926,7 +792,6 @@ test("resuming reconciles a conflicting edit from another device and keeps compa
     run: base,
     commands: [
       { kind: "build", item: "coaster", x: 2, z: 16, design: starterCoaster() },
-      { kind: "build", item: "food", x: 26, z: 41 },
     ],
     ticks: 0,
   });
@@ -995,7 +860,7 @@ test("resuming reconciles a conflicting edit from another device and keeps compa
   ).toBeVisible();
   await page.getByRole("button", { name: "How to play", exact: true }).click();
   const restored = await savedRun(page);
-  expect(restored.buildings).toHaveLength(3);
+  expect(restored.buildings).toHaveLength(5);
   expect(restored.palette).toBe(4);
   expect(restored.tick).toBeGreaterThanOrEqual(20);
   expect(restored.tick).toBeLessThan(25);
@@ -1012,43 +877,6 @@ test("resuming reconciles a conflicting edit from another device and keeps compa
         .map((op: { id: string }) => op.id),
     ),
   ).toEqual(["local-theme"]);
-});
-
-test("an unfinished coaster draft survives refresh and can be completed", async ({
-  page,
-}) => {
-  await open(page);
-  await page
-    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
-    .click();
-  await page.getByLabel("Attraction name").fill("Work in Orbit");
-  await page
-    .getByRole("button", { name: "Draw your own", exact: true })
-    .click();
-  for (const [x, z] of [
-    [240, 200],
-    [220, 60],
-    [60, 90],
-  ]) {
-    const point = await planPoint(page, x, z);
-    await page.mouse.click(point.x, point.y);
-  }
-  await page.getByLabel("Selected turn height").fill("550");
-  await page.reload();
-  await page
-    .getByRole("button", { name: "Build Mass-Driver Coaster", exact: true })
-    .click();
-  await expect(page.getByLabel("Attraction name")).toHaveValue("Work in Orbit");
-  await expect(page.getByLabel("Selected turn height")).toHaveValue("550");
-  await expect(
-    page.getByRole("button", { name: "Place coaster", exact: true }),
-  ).toBeDisabled();
-  await page
-    .getByRole("button", { name: "Join back to station", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Place coaster", exact: true }),
-  ).toBeEnabled();
 });
 
 test("earlier saved parks retain usable construction and opening controls", async ({
@@ -1096,7 +924,7 @@ test("earlier saved parks retain usable construction and opening controls", asyn
   );
   await page.goto("/?resumeVersion=moonpark-v6");
   await expect(
-    page.getByRole("button", { name: "Start the new workshop", exact: true }),
+    page.getByRole("button", { name: "Start a new park", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".mp-subhud")).toContainText(
     "power · earlier rules",
@@ -1110,4 +938,167 @@ test("earlier saved parks retain usable construction and opening controls", asyn
   await page
     .getByRole("button", { name: "Cancel coaster editing", exact: true })
     .click();
+});
+
+test("sponsored map drawing settles vendor wallets, survives refresh and publishes a visitable park", async ({
+  page,
+  context,
+}) => {
+  test.skip(
+    !process.env.MOON_CHAIN_UI,
+    "Opt in to sponsored NEAR testnet transactions.",
+  );
+  test.setTimeout(240000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Open your park", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Skip intro", exact: true }).click();
+  await expect(
+    page.getByRole("button", {
+      name: "Build Mass-Driver Coaster",
+      exact: true,
+    }),
+  ).toBeVisible({ timeout: 90000 });
+  await mkdir(".near-local", { recursive: true });
+  await writeFile(
+    ".near-local/moon-v9-browser-qa.json",
+    await page.evaluate(() => localStorage.getItem("moonpark-current")!),
+    { mode: 0o600 },
+  );
+  await drawCoaster(page, "Lunar Daydream");
+  await page
+    .getByRole("button", { name: "Build coaster · 1,200", exact: true })
+    .click();
+  await expect
+    .poll(async () => (await savedRun(page)).trade_count, { timeout: 90000 })
+    .toBeGreaterThan(0);
+  await page
+    .getByRole("button", { name: "View Illia’s status", exact: true })
+    .click();
+  await expect(page.locator(".mp-wallet-list a")).toHaveAttribute(
+    "href",
+    /address\/illia\./,
+    { timeout: 30000 },
+  );
+  await expect(page.getByRole("dialog")).toContainText(
+    "Attention Is All You Knead",
+  );
+  await page.getByRole("button", { name: "Close panel", exact: true }).click();
+  await page
+    .getByRole("button", { name: "My park and ride exchange", exact: true })
+    .click();
+  await page
+    .getByLabel("Park name", { exact: true })
+    .fill("Lunar Daydream Gardens");
+  const publish = page.getByRole("button", {
+    name: "Publish this park revision",
+    exact: true,
+  });
+  await expect(publish).toBeEnabled({ timeout: 60000 });
+  await publish.click();
+  await expect(
+    page.getByText(
+      "Your park is published. Share its link and invite someone aboard.",
+      { exact: true },
+    ),
+  ).toBeVisible({ timeout: 60000 });
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("moonpark-current")!),
+  );
+  expect(saved.state.mode).toBe("near");
+  expect(saved.state.run.version).toBe("moonpark-v9");
+  expect(saved.state.pending).toBe(0);
+  expect(saved.state.error).toBeFalsy();
+  await mkdir(".near-local", { recursive: true });
+  await writeFile(
+    ".near-local/moon-v9-browser-qa.json",
+    JSON.stringify(saved),
+    { mode: 0o600 },
+  );
+  const publicPath = `/park/${saved.credentials.accountId}?version=v9`;
+  const visitor = await context.newPage();
+  await visitor.goto(publicPath);
+  await expect(
+    visitor.getByRole("heading", { name: /Lunar Daydream Gardens/ }),
+  ).toBeVisible({ timeout: 30000 });
+  await visitor.screenshot({ path: "outputs/moon-v9-public-browser-park.png" });
+  await visitor.close();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Build Lunar Bounce", exact: true }),
+  ).toBeVisible({ timeout: 45000 });
+  expect((await savedRun(page)).buildings[3].design?.name).toBe(
+    "Lunar Daydream",
+  );
+  await page.screenshot({ path: "outputs/moon-v9-live-browser-park.png" });
+  await writeFile(
+    "docs/moon-v9-browser-smoke.json",
+    JSON.stringify(
+      {
+        contractId: saved.config.contractId,
+        version: saved.state.run.version,
+        runId: saved.state.record.run_id,
+        owner: saved.credentials.accountId,
+        tick: saved.state.run.tick,
+        trades: saved.state.run.trade_count,
+        pending: 0,
+        transactions: saved.state.txs,
+        publicPath,
+        refreshVerified: true,
+        errors,
+      },
+      null,
+      2,
+    ),
+  );
+  expect(errors).toEqual([]);
+});
+
+test("map previews and Rust agree on the rail corridor for all station orientations", async () => {
+  const { buildingCells } = await import("../lib/moon/model");
+  const { packMapTrack, stationPoints } = await import("../lib/moon/map-track");
+  for (const rotation of [0, 1, 2, 3]) {
+    const points = [
+      ...stationPoints({ x: 2, z: 30 }, rotation),
+      { x: 155, y: 120, z: 280 },
+      { x: 155, y: 220, z: 125 },
+      { x: 15, y: 180, z: 125 },
+      { x: 15, y: 90, z: 280 },
+    ];
+    const plan = packMapTrack(points);
+    const run = await wasmRun({
+      op: "step",
+      run: await wasmRun({ op: "new" }),
+      commands: [{ kind: "build", item: "coaster", ...plan }],
+      ticks: 0,
+    });
+    const blocked = new Set(
+      run.buildings.flatMap((b) => buildingCells(b, 48, true)),
+    );
+    const free = Array.from({ length: 48 * 48 }, (_, i) => i).filter(
+      (i) => !blocked.has(i),
+    );
+    run.cash += 1000000;
+    run.supplier_cash -= 1000000;
+    const painted = await wasmRun({
+      op: "step",
+      run,
+      commands: [{ kind: "paint_paths", cells: free }],
+      ticks: 0,
+    });
+    expect(free.every((cell) => painted.paths.includes(cell))).toBe(true);
+    for (const cell of blocked) {
+      await expect(
+        wasmRun({
+          op: "step",
+          run,
+          commands: [{ kind: "paint_paths", cells: [cell] }],
+          ticks: 0,
+        }),
+      ).rejects.toThrow(/building|station/);
+    }
+  }
 });

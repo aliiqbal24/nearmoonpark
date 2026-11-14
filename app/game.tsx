@@ -1,5 +1,12 @@
 "use client";
-import { useEffect, useRef, useState, lazy, Suspense } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  lazy,
+  Suspense,
+} from "react";
 import {
   ArrowRight,
   FastForward,
@@ -107,14 +114,15 @@ export default function Game() {
   };
   const dialogRef = useRef<HTMLElement>(null);
   const savedRef = useRef(saved);
-  savedRef.current = saved;
+  useLayoutEffect(() => {
+    savedRef.current = saved;
+  }, [saved]);
   const run = saved?.record.run,
     chapter = run ? Math.min(7, Math.floor(run.sol / 3)) : 0;
-  useEffect(() => {
-    if (run?.pending || run?.ending) setCouncilOpen(true);
-  }, [run?.pending, run?.sol, run?.ending]);
   const commit = (value: Saved) => {
     setSaved(value);
+    if (value.record.run.pending || value.record.run.ending)
+      setCouncilOpen(true);
     localStorage.setItem(STORAGE, JSON.stringify(value));
     const archive = JSON.parse(
       localStorage.getItem("last-signal-archive") || "[]",
@@ -128,24 +136,30 @@ export default function Game() {
     );
   };
   useEffect(() => {
-    try {
-      const s = localStorage.getItem(STORAGE);
-      if (s) {
-        const value = JSON.parse(s);
-        if (value.record.run.version === VERSION) setSaved(value);
+    const restore = () => {
+      try {
+        const s = localStorage.getItem(STORAGE);
+        if (s) {
+          const value = JSON.parse(s);
+          if (value.record.run.version === VERSION) setSaved(value);
+        }
+        const prev = localStorage.getItem("last-signal-previous");
+        if (prev) setPrevious(JSON.parse(prev));
+      } catch {
+        setError(
+          "The saved session could not be read. You can start a new colony.",
+        );
       }
-      const prev = localStorage.getItem("last-signal-previous");
-      if (prev) setPrevious(JSON.parse(prev));
-    } catch {
-      setError(
-        "The saved session could not be read. You can start a new colony.",
-      );
-    }
-    nearConfig()
+    };
+    void nearConfig()
       .then(setConfig)
       .catch(() => {})
-      .finally(() => setReady(true));
+      .finally(() => {
+        restore();
+        setReady(true);
+      });
   }, []);
+
   useEffect(() => {
     if (!run || !saved || saved.mode !== "near" || !config) return;
     readRun(saved.record.run_id, config)
@@ -208,9 +222,8 @@ export default function Game() {
     try {
       let record: RecordState;
       if (mode === "near" && config) {
-        let c: Credentials;
         const raw = localStorage.getItem("last-signal-credentials");
-        c = raw ? JSON.parse(raw) : await provision(config);
+        const c: Credentials = raw ? JSON.parse(raw) : await provision(config);
         if (c.contractId !== config.contractId)
           throw Error(
             "Account belongs to an older deployment. Import a matching recovery file or use practice.",
@@ -1125,7 +1138,7 @@ export default function Game() {
             >
               <X size={20} />
             </button>
-            <p className="eyebrow">ARES / GOVERNOR'S CONSOLE</p>
+            <p className="eyebrow">ARES / GOVERNOR’S CONSOLE</p>
             <h2 id="panel-title">
               {
                 {
@@ -1193,7 +1206,7 @@ export default function Game() {
             {panel === "why" && (
               <>
                 <p>
-                  These links come from the simulation's recorded events.
+                  These links come from the simulation’s recorded events.
                   Decisions, power shortages, maintenance, and household access
                   share the same history.
                 </p>

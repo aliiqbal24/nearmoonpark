@@ -275,7 +275,7 @@ export function kitchen(g: T.Group, b: StyledBuilding, c: ResortColors) {
   orbit.material = metal(c.accent);
   marquee(
     g,
-    b.design.name || "MOON PIES",
+    b.design.name || "ATTENTION KITCHEN",
     c.light,
     style === 2 ? 1.63 : 1.9,
     style === 1 ? 1.9 : 2.03,
@@ -335,7 +335,7 @@ export function drinks(g: T.Group, b: StyledBuilding, c: ResortColors) {
   }
   marquee(
     g,
-    b.design.name || "CRATER COOLERS",
+    b.design.name || "FINALITY FIZZ",
     c.light,
     1.94,
     b.design.style === 1 ? 1.9 : 2.03,
@@ -416,7 +416,37 @@ export function maintenance(
   robot.scale.setScalar(0.9);
   robot.position.set(0, 0.43, 0.5);
   g.add(robot);
-  marquee(g, b.design.name || "LUNAR CARE", c.light, 2.28, 1.82, 1.29);
+  const dragonfly = new T.Group();
+  dragonfly.position.set(0, 2.65, -0.12);
+  ellipsoid(dragonfly, c.accent, 0, 0, 0, 0.08, 0.07, 0.53).material = metal(
+    c.accent,
+  );
+  sphere(dragonfly, c.dark, 0, 0.04, 0.55, 0.13);
+  for (const side of [-1, 1]) {
+    for (const z of [-0.17, 0.17]) {
+      const wing = ellipsoid(
+        dragonfly,
+        c.primary,
+        side * 0.44,
+        0.02,
+        z,
+        0.48,
+        0.025,
+        0.14,
+      );
+      wing.rotation.y = side * z;
+      wing.material = glass;
+      beam(
+        dragonfly,
+        new T.Vector3(0, 0.04, z),
+        new T.Vector3(side * 0.87, 0.04, z),
+        0.015,
+        c.accent,
+      ).material = metal(c.accent);
+    }
+  }
+  g.add(dragonfly);
+  marquee(g, b.design.name || "DRAGONFLY GARAGE", c.light, 2.28, 1.82, 1.29);
   for (const side of [-1, 1]) {
     const panel = equipmentPanel(g, 0.95, 0.68);
     panel.position.set(side * 1.46, 0.95, 0.1);

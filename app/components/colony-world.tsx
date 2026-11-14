@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Home,
   Minus,
@@ -34,9 +34,11 @@ export default function ColonyWorld({
     runRef = useRef(run),
     speedRef = useRef(speed),
     selectRef = useRef(onSelect);
-  runRef.current = run;
-  speedRef.current = speed;
-  selectRef.current = onSelect;
+  useLayoutEffect(() => {
+    runRef.current = run;
+    speedRef.current = speed;
+    selectRef.current = onSelect;
+  }, [run, speed, onSelect]);
   const [hover, setHover] = useState<Detail | null>(null),
     [pinned, setPinned] = useState<Detail | null>(null),
     [failed, setFailed] = useState(false),
@@ -100,14 +102,8 @@ export default function ColonyWorld({
         <div
           className={`world-tooltip ${hover.kind}`}
           style={{
-            left: Math.min(
-              hover.x + 18,
-              Math.max(15, (host.current?.clientWidth || 800) - 270),
-            ),
-            top: Math.min(
-              hover.y - 20,
-              Math.max(100, (host.current?.clientHeight || 600) - 170),
-            ),
+            left: `clamp(15px, ${hover.x + 18}px, calc(100% - 270px))`,
+            top: `clamp(100px, ${hover.y - 20}px, calc(100% - 170px))`,
           }}
         >
           <span className="tooltip-kind">

@@ -1,0 +1,21 @@
+{
+  "contractId": "game.moonpark-mwguq289.testnet",
+  "version": "moonpark-v9",
+  "runId": "3",
+  "owner": "m60ad794954eac5451d1b.moonpark-mwguq289.testnet",
+  "tick": 28,
+  "trades": 3,
+  "pending": 0,
+  "transactions": [
+    "2gwtcLXu2gnsdnQTxKmA3puByJHASPK67pdFpVkcjhW1",
+    "tbPgyNPmkSvJxgMDt5QPTD1jHhvW1MsVqR15ds4Jpf8",
+    "Fo18DN94sha75n78HhBzZNK4ZNcUCGn34DZqd7PmtECD",
+    "451SEpSb3JWnXipGYY1cF5TSmziQJfkUwNET1w2riC5x",
+    "G8sgQcGs7k8EmmhBaoxhL6EtXQLo1uSTBcX1Wgn7A4GJ",
+    "5qqnjF6eMkFJvb3X8ij8ZJv77vSSi5zcuqSnt5XLBBPY",
+    "6KFvxUxBQyf71KWSordqpsCsUJ3AbgPkp15TAZqsrzN3"
+  ],
+  "publicPath": "/park/m60ad794954eac5451d1b.moonpark-mwguq289.testnet?version=v9",
+  "refreshVerified": true,
+  "errors": []
+}
