@@ -402,7 +402,7 @@ export class ParkSession {
         const predictionConfirmed =
           this.state.run.revision ===
             result.record.run.revision + this.ops.length &&
-          JSON.stringify(predicted) === JSON.stringify(result.record.run);
+          predicted.hash === result.record.run.hash;
         this.state.record = result.record;
         if (result.tx)
           this.state.txs = [...this.state.txs, result.tx].slice(-120);
